@@ -1,0 +1,76 @@
+services:
+  tako-api:
+    build: .
+    container_name: tako_api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DEFAULT_LOCALE=fr-FR
+      # Database
+      - DB_ENABLED=true
+      - DB_HOST=tako-db
+      - DB_PORT=5432
+      - DB_NAME=tako_cache
+      - DB_USER=tako
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      # FlareSolverr
+      - FSR_URL=http://flaresolverr:8191/v1
+      # VPN (optional)
+      - VPN_PROXY_URL=${VPN_PROXY_URL:-}
+      - GLUETUN_CONTROL_URL=${GLUETUN_CONTROL_URL:-}
+    depends_on:
+      - tako-db
+    networks:
+      - tako-network
+
+  tako-db:
+    image: postgres:16-alpine
+    container_name: tako_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=tako_cache
+      - POSTGRES_USER=tako
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+    volumes:
+      - tako-db-data:/var/lib/postgresql/data
+    networks:
+      - tako-network
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: tako_flaresolverr
+    restart: unless-stopped
+    ports:
+      - "8191:8191"
+    environment:
+      - LOG_LEVEL=info
+      - BROWSER_TIMEOUT=60000
+      # Limites pour éviter l'explosion de RAM/CPU
+      - MAX_SESSIONS=3
+      - SESSION_TTL=300000
+      - HEADLESS=true
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+    networks:
+      - tako-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8191/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  tako-network:
+    driver: bridge
+
+volumes:
+  tako-db-data:

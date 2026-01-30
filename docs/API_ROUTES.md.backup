@@ -1,0 +1,2677 @@
+# 📚 Tako API - Routes par Provider
+
+> Documentation complète de toutes les routes disponibles par domaine et provider.
+> 
+> **Dernière mise à jour** : 30 janvier 2026 - Ajout Coleka (objets de collection) avec traduction
+
+---
+
+## 📖 Table des matières
+
+1. [Comics / BD](#-comics--bd)
+   - [ComicVine](#comicvine)
+   - [Bedetheque](#bedetheque)
+2. [Books / Livres](#-books--livres)
+   - [OpenLibrary](#openlibrary)
+   - [Google Books](#google-books)
+3. [Construction Toys / Jouets de construction](#-construction-toys--jouets-de-construction)
+   - [Brickset](#brickset)
+   - [Rebrickable](#rebrickable)
+   - [LEGO](#lego)
+   - [Playmobil](#playmobil)
+   - [Klickypedia](#klickypedia)
+   - [MEGA](#mega)
+4. [Anime & Manga](#-anime--manga)
+   - [MangaUpdates](#mangaupdates)
+   - [Jikan (MyAnimeList)](#jikan-myanimelist)
+5. [Media / Films & Séries](#-media--films--séries)
+   - [TMDB](#tmdb)
+   - [TVDB](#tvdb)
+6. [Videogames / Jeux vidéo](#-videogames--jeux-vidéo)
+   - [IGDB](#igdb)
+   - [RAWG](#rawg)
+   - [JVC (JeuxVideo.com)](#jvc-jeuxvideocom)
+   - [ConsoleVariations](#consolevariations)
+7. [BoardGames / Jeux de société](#-boardgames--jeux-de-société)
+   - [BoardGameGeek (BGG)](#boardgamegeek-bgg)
+8. [Collectibles / Objets de collection](#-collectibles--objets-de-collection)
+   - [Coleka](#coleka)
+9. [Music / Musique](#-music--musique)
+   - [Discogs](#discogs)
+   - [Deezer](#deezer)
+   - [MusicBrainz](#musicbrainz)
+   - [iTunes](#itunes)
+
+---
+
+## 🦸 Comics / BD
+
+### ComicVine
+
+> **Base URL** : `/api/comics/comicvine`  
+> **Source** : [comicvine.gamespot.com](https://comicvine.gamespot.com)  
+> **API Key** : ✅ Requise (`COMICVINE_API_KEY`)  
+> **Rate Limit** : 200 requêtes / 15 min
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale (tous types) | ✅ Fonctionne |
+| `GET /search/volumes?q=` | Recherche de séries/volumes | ✅ Fonctionne |
+| `GET /search/issues?q=` | Recherche de numéros | ✅ Fonctionne |
+| `GET /search/characters?q=` | Recherche de personnages | ✅ Fonctionne |
+| `GET /search/publishers?q=` | Recherche d'éditeurs | ✅ Fonctionne |
+| `GET /search/creators?q=` | Recherche de créateurs (auteurs) | ✅ Fonctionne |
+| `GET /volume/:id` | Détails d'un volume/série | ✅ Fonctionne |
+| `GET /volume/:id/issues` | Issues d'un volume | ✅ Fonctionne |
+| `GET /issue/:id` | Détails d'un issue | ✅ Fonctionne |
+| `GET /character/:id` | Détails d'un personnage | ✅ Fonctionne |
+| `GET /creator/:id` | Détails d'un créateur | ✅ Fonctionne |
+| `GET /creator/:id/works` | Œuvres d'un créateur | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `maxResults` : Nombre max de résultats (défaut: 20, max: 100)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+---
+
+### Bedetheque
+
+> **Base URL** : `/api/comics/bedetheque`  
+> **Source** : [bedetheque.com](https://www.bedetheque.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : 1 requête / seconde  
+> **Note** : Utilise FlareSolverr pour les pages protégées
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale (séries + auteurs) | ✅ Fonctionne |
+| `GET /search/series?q=` | Recherche de séries | ✅ Fonctionne |
+| `GET /search/authors?q=` | Recherche d'auteurs | ✅ Fonctionne |
+| `GET /search/albums?q=` | Recherche d'albums par titre | ⚠️ Partiel |
+| `GET /serie/:id` | Détails d'une série | ⚠️ Partiel |
+| `GET /serie/:id/albums` | Albums d'une série | ✅ Fonctionne |
+| `GET /author/:id/works` | Œuvres d'un auteur | ✅ Fonctionne |
+| `GET /album/:id` | Détails d'un album | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `maxResults` : Nombre max de résultats (défaut: 20)
+- `lang` : Langue cible pour traduction
+- `autoTrad` : Activer traduction automatique
+
+**Technologies** :
+- API AJAX Bedetheque (recherches simples)
+- FlareSolverr (pages protégées anti-bot)
+
+---
+
+## 📚 Books / Livres
+
+### OpenLibrary
+
+> **Base URL** : `/api/books/openlibrary`  
+> **Source** : [openlibrary.org](https://openlibrary.org)  
+> **API Key** : ❌ Non requise  
+> **Rate Limit** : Aucun officiel (respecter usage raisonnable)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de livres | ✅ Fonctionne |
+| `GET /search/author?author=` | Recherche de livres par auteur | ✅ Fonctionne |
+| `GET /search/authors?q=` | Recherche d'auteurs (profils) | ✅ Fonctionne |
+| `GET /author/:id` | Détails d'un auteur | ✅ Fonctionne |
+| `GET /author/:id/works` | Œuvres d'un auteur | ✅ Fonctionne |
+| `GET /:olId` | Détails d'un livre par ID OpenLibrary | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `limit` : Nombre de résultats (défaut: 20, max: 100)
+- `offset` : Décalage pour pagination (défaut: 0)
+- `lang` : Langue cible pour traduction
+- `autoTrad` : Activer traduction automatique
+
+**Endpoint auteurs** :
+- Recherche d'auteurs : nom, biographie, nombre d'œuvres, note moyenne
+- Détails auteur : bio complète, liens, photos, noms alternatifs
+- Œuvres : liste paginée de toutes les œuvres avec sujets et couvertures
+
+---
+
+### Google Books
+
+> **Base URL** : `/api/books/googlebooks`  
+> **Source** : [books.google.com](https://books.google.com)  
+> **API Key** : ⚠️ Optionnelle (`GOOGLE_BOOKS_API_KEY`) - Augmente les quotas  
+> **Rate Limit** : 1000 requêtes/jour (sans clé), plus avec clé
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de livres | ✅ Fonctionne |
+| `GET /search/author?author=` | Recherche de livres par auteur | ✅ Fonctionne |
+| `GET /:volumeId` | Détails d'un livre par ID Google | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `maxResults` : Nombre de résultats (défaut: 20, max: 40)
+- `startIndex` : Index de départ pour pagination
+- `lang` : Langue cible pour traduction
+- `autoTrad` : Activer traduction automatique
+
+**⚠️ Limitations Google Books** :
+- Pas d'endpoint `/authors` ou `/search/authors` - l'API Google Books ne supporte pas les entités auteurs
+- Les auteurs sont de simples chaînes de texte dans les métadonnées des livres
+- Pour rechercher les profils d'auteurs avec biographies et listes d'œuvres, utiliser **OpenLibrary**
+
+---
+
+## 🧱 Construction Toys / Jouets de construction
+
+### Brickset
+
+> **Base URL** : `/construction-toys/brickset`  
+> **Source** : [brickset.com](https://brickset.com)  
+> **API Key** : ✅ Requise (`BRICKSET_API_KEY`)  
+> **Rate Limit** : Non spécifié
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de sets LEGO | ✅ Fonctionne |
+| `GET /themes` | Liste des thèmes | ✅ Fonctionne |
+| `GET /themes/:theme/subthemes` | Sous-thèmes d'un thème | ✅ Fonctionne |
+| `GET /years` | Liste des années | ✅ Fonctionne |
+| `GET /recently-updated` | Sets récemment mis à jour | ✅ Fonctionne |
+| `GET /sets/:id` | Détails d'un set | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Terme de recherche
+- `theme` : Filtrer par thème
+- `year` : Filtrer par année
+- `pageSize` : Nombre de résultats par page
+- `pageNumber` : Numéro de page
+
+---
+
+### Rebrickable
+
+> **Base URL** : `/construction-toys/rebrickable`  
+> **Source** : [rebrickable.com](https://rebrickable.com)  
+> **API Key** : ✅ Requise (`REBRICKABLE_API_KEY`)  
+> **Rate Limit** : 1 requête / seconde
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de sets | ✅ Fonctionne |
+| `GET /themes` | Liste des thèmes | ✅ Fonctionne |
+| `GET /colors` | Liste des couleurs | ✅ Fonctionne |
+| `GET /parts?q=` | Recherche de pièces | ✅ Fonctionne |
+| `GET /minifigs?q=` | Recherche de minifigs | ✅ Fonctionne |
+| `GET /sets/:id` | Détails d'un set | ✅ Fonctionne |
+| `GET /sets/:id/parts` | Pièces d'un set | ✅ Fonctionne |
+| `GET /sets/:id/minifigs` | Minifigs d'un set | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `theme_id` : Filtrer par thème
+- `min_year` / `max_year` : Filtrer par année
+- `page` : Numéro de page
+- `page_size` : Taille de page (max: 1000)
+
+---
+
+### LEGO
+
+> **Base URL** : `/construction-toys/lego`  
+> **Source** : [lego.com](https://www.lego.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Respecter délais raisonnables  
+> **Note** : Utilise FlareSolverr
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de sets | ✅ Fonctionne |
+| `GET /instructions/:productId` | Instructions PDF | ✅ Fonctionne |
+| `GET /:id` | Détails d'un set par numéro | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche
+- `maxResults` : Nombre max de résultats
+
+---
+
+### Playmobil
+
+> **Base URL** : `/construction-toys/playmobil`  
+> **Source** : [playmobil.fr](https://www.playmobil.fr)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : ~18s par requête (FlareSolverr)  
+> **Note** : Utilise FlareSolverr - Temps de réponse élevé
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de sets | ✅ Fonctionne |
+| `GET /instructions/:productId` | Instructions PDF | ✅ Fonctionne |
+| `GET /:id` | Détails d'un set | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche
+- `maxResults` : Nombre max de résultats
+
+---
+
+### Klickypedia
+
+> **Base URL** : `/construction-toys/klickypedia`  
+> **Source** : [klickypedia.com](https://www.klickypedia.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Respecter délais raisonnables
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de sets Playmobil | ✅ Fonctionne |
+| `GET /instructions/:id` | Instructions PDF | ✅ Fonctionne |
+| `GET /:id` | Détails d'un set | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche
+- `maxResults` : Nombre max de résultats
+
+---
+
+### MEGA
+
+> **Base URL** : `/construction-toys/mega`  
+> **Source** : [megabrands.com](https://megabrands.com)  
+> **API Key** : ❌ Non requise (API Searchspring)  
+> **Rate Limit** : Non spécifié
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de sets MEGA | ✅ Fonctionne |
+| `GET /instructions/:sku` | Instructions PDF par SKU | ✅ Fonctionne |
+| `GET /:id` | Détails d'un set | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche
+- `maxResults` : Nombre max de résultats (défaut: 20)
+
+---
+
+## 🎌 Anime & Manga
+
+### MangaUpdates
+
+> **Base URL** : `/api/anime-manga/mangaupdates`  
+> **Source** : [mangaupdates.com](https://www.mangaupdates.com)  
+> **API Key** : ❌ Non requise  
+> **Rate Limit** : Raisonnable (non documenté)  
+> **Note** : Pas de filtrage NSFW, base de données manga complète
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de séries manga | ✅ Fonctionne |
+| `GET /search/authors?q=` | Recherche d'auteurs | ✅ Fonctionne |
+| `GET /search/publishers?q=` | Recherche d'éditeurs | ✅ Fonctionne |
+| `GET /series/:id` | Détails d'une série | ✅ Fonctionne |
+| `GET /series/:id/recommendations` | Recommandations pour une série | ✅ Fonctionne |
+| `GET /author/:id` | Détails d'un auteur | ✅ Fonctionne |
+| `GET /author/:id/works` | Œuvres d'un auteur | ✅ Fonctionne |
+| `GET /genres` | Liste des genres avec statistiques | ✅ Fonctionne |
+| `GET /releases` | Dernières sorties de chapitres | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `maxResults` : Nombre max de résultats (défaut: 20)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+- `frenchTitle` : Rechercher le titre français via Nautiljon (1 ou true)
+
+**Paramètres spécifiques** :
+- `/search` : `type` (manga, manhwa, manhua, etc.), `year`, `genre`
+- `/releases` : `maxResults` (défaut: 20)
+
+**Fonctionnalités** :
+- **Titre français** : Recherche automatique du titre français via Nautiljon.com
+- **Traduction** : Descriptions traduites automatiquement en français
+- **Pas de filtrage NSFW** : Contrairement à Jikan/MangaDex, accès à tout le catalogue
+
+---
+
+### Jikan (MyAnimeList)
+
+> **Base URL** : `/api/anime-manga/jikan`  
+> **Source** : [jikan.moe](https://jikan.moe) (API non-officielle MyAnimeList)  
+> **API Key** : ❌ Non requise  
+> **Rate Limit** : 3 req/sec, 60 req/min  
+> **⚠️ AUCUN FILTRAGE NSFW** : Contenu adulte/hentai inclus (`sfw=false` toujours actif)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| **Recherche** | | |
+| `GET /health` | Health check avec liste des fonctionnalités | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale (anime + manga) | ✅ Fonctionne |
+| `GET /search/anime?q=` | Recherche anime uniquement | ✅ Fonctionne |
+| `GET /search/manga?q=` | Recherche manga uniquement | ✅ Fonctionne |
+| `GET /search/characters?q=` | Recherche de personnages | ✅ Fonctionne |
+| `GET /search/people?q=` | Recherche de personnes (seiyuu, staff) | ✅ Fonctionne |
+| `GET /search/producers?q=` | Recherche de studios/producteurs | ✅ Fonctionne |
+| **Anime** | | |
+| `GET /anime/:id` | Détails complets d'un anime | ✅ Fonctionne |
+| `GET /anime/:id/episodes` | Liste des épisodes | ✅ Fonctionne |
+| `GET /anime/:id/characters` | Personnages et doubleurs | ✅ Fonctionne |
+| `GET /anime/:id/staff` | Staff de production | ✅ Fonctionne |
+| `GET /anime/:id/recommendations` | Anime similaires | ✅ Fonctionne |
+| `GET /anime/random` | Anime aléatoire | ✅ Fonctionne |
+| **Manga** | | |
+| `GET /manga/:id` | Détails complets d'un manga | ✅ Fonctionne |
+| `GET /manga/:id/characters` | Personnages du manga | ✅ Fonctionne |
+| `GET /manga/:id/recommendations` | Manga similaires | ✅ Fonctionne |
+| `GET /manga/random` | Manga aléatoire | ✅ Fonctionne |
+| **Saisons** | | |
+| `GET /seasons` | Liste des saisons disponibles | ✅ Fonctionne |
+| `GET /seasons/now` | Anime de la saison en cours | ✅ Fonctionne |
+| `GET /seasons/:year/:season` | Anime d'une saison spécifique | ✅ Fonctionne |
+| **Classements** | | |
+| `GET /top/anime` | Top anime (par score MAL) | ✅ Fonctionne |
+| `GET /top/manga` | Top manga (par score MAL) | ✅ Fonctionne |
+| **Plannings** | | |
+| `GET /schedules` | Programme complet de diffusion | ✅ Fonctionne |
+| `GET /schedules/:day` | Programme d'un jour spécifique | ✅ Fonctionne |
+| **Genres** | | |
+| `GET /genres/anime` | Liste des genres anime | ✅ Fonctionne |
+| `GET /genres/manga` | Liste des genres manga | ✅ Fonctionne |
+| **Entités** | | |
+| `GET /characters/:id` | Détails d'un personnage | ✅ Fonctionne |
+| `GET /people/:id` | Détails d'une personne | ✅ Fonctionne |
+| `GET /producers/:id` | Détails d'un studio/producteur | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `limit` : Nombre max de résultats (défaut: 25, max: 25)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres de recherche anime/manga** :
+- `type` : Type (tv, movie, ova, special, ona, music pour anime / manga, novel, lightnovel, oneshot, doujin, manhwa, manhua)
+- `score` : Score minimum (1-10)
+- `status` : Statut (airing, complete, upcoming pour anime / publishing, complete, hiatus, discontinued)
+- `rating` : Classification (g, pg, pg13, r17, r, rx)
+- `genres` : IDs de genres (ex: 1,2,3)
+- `orderBy` : Tri (mal_id, title, start_date, end_date, episodes, score, scored_by, rank, popularity, members, favorites)
+- `sort` : Direction (asc, desc)
+
+**Paramètres saisons** :
+- `:year` : Année (ex: 2024)
+- `:season` : Saison (winter, spring, summer, fall)
+- `filter` : Filtre (tv, movie, ova, special, ona, music)
+
+**Paramètres top** :
+- `filter` : Filtre (airing, upcoming, bypopularity, favorite)
+- `type` : Type de contenu
+
+**Paramètres schedules** :
+- `:day` : Jour (monday, tuesday, wednesday, thursday, friday, saturday, sunday, unknown)
+
+**Classification des âges** :
+| Code | Description | Âge min |
+|------|-------------|---------|
+| g | Tous publics | 0 |
+| pg | Enfants | 0 |
+| pg13 | Ados 13+ | 13 |
+| r17 | Violence/Langage 17+ | 17 |
+| r | Nudité légère | 17 |
+| rx | Hentai | 18 |
+
+**⚠️ Note importante sur le contenu adulte** :
+- Cette API n'applique **AUCUN filtrage** sur le contenu adulte (hentai, ecchi, etc.)
+- Le paramètre `sfw=false` est **toujours utilisé** côté serveur
+- Tous les genres et classifications sont accessibles, y compris Rx (Hentai)
+- Idéal pour les applications qui nécessitent un catalogue complet sans censure
+
+---
+
+## 🎬 Media / Films & Séries
+
+### TMDB
+
+> **Base URL** : `/api/media/tmdb`  
+> **Source** : [themoviedb.org](https://www.themoviedb.org)  
+> **API Key** : ✅ Requise (`TMDB_API_KEY` ou `TMDB_KEY`)  
+> **Rate Limit** : ~40 requêtes / 10 secondes
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale (films + séries) | ✅ Fonctionne |
+| `GET /search/movies?q=` | Recherche de films | ✅ Fonctionne |
+| `GET /search/series?q=` | Recherche de séries TV | ✅ Fonctionne |
+| `GET /movies/:id` | Détails d'un film | ✅ Fonctionne |
+| `GET /series/:id` | Détails d'une série | ✅ Fonctionne |
+| `GET /series/:id/season/:n` | Détails d'une saison | ✅ Fonctionne |
+| `GET /series/:id/season/:n/episode/:e` | Détails d'un épisode | ✅ Fonctionne |
+| `GET /collections/:id` | Détails d'une saga/collection | ✅ Fonctionne |
+| `GET /persons/:id` | Détails d'une personne | ✅ Fonctionne |
+| `GET /directors/:id/movies` | Filmographie d'un réalisateur | ✅ Fonctionne |
+| `GET /discover/movies` | Découvrir des films par critères | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `pageSize` : Nombre max de résultats (défaut: 20)
+- `page` : Numéro de page
+- `lang` : Langue (défaut: fr-FR)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres discover** :
+- `genre` : ID de genre TMDB
+- `year` : Année de sortie
+- `sort` : Tri (popularity.desc, vote_average.desc, release_date.desc)
+
+**Données retournées** :
+- **Films** : titre, synopsis, genres, durée, budget, revenus, cast, crew, collection, images
+- **Séries** : titre, synopsis, saisons, épisodes, networks, status, créateurs
+- **Saisons** : numéro, nom, synopsis, date, épisodes avec détails
+- **Épisodes** : titre, synopsis, date, durée, crew, guest stars
+- **Collections** : nom, synopsis, films ordonnés avec posters
+- **Personnes** : nom, bio, filmographie, photos
+
+---
+
+### TVDB
+
+> **Base URL** : `/api/media/tvdb`  
+> **Source** : [thetvdb.com](https://thetvdb.com)  
+> **API Key** : ✅ Requise (`TVDB_API_KEY` ou `TVDB_KEY`)  
+> **Rate Limit** : Non spécifié  
+> **Note** : Authentification Bearer Token (validité 25 jours)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale (films, séries, personnes, listes) | ✅ Fonctionne |
+| `GET /search/movies?q=` | Recherche de films | ✅ Fonctionne |
+| `GET /search/series?q=` | Recherche de séries | ✅ Fonctionne |
+| `GET /movies/:id` | Détails d'un film | ✅ Fonctionne |
+| `GET /series/:id` | Détails d'une série | ✅ Fonctionne |
+| `GET /series/:id/seasons` | Liste des saisons d'une série | ✅ Fonctionne |
+| `GET /seasons/:id` | Détails d'une saison (par ID TVDB) | ✅ Fonctionne |
+| `GET /series/:id/episodes` | Épisodes d'une série | ✅ Fonctionne |
+| `GET /episodes/:id` | Détails d'un épisode (par ID TVDB) | ✅ Fonctionne |
+| `GET /lists/:id` | Détails d'une liste/saga | ✅ Fonctionne |
+| `GET /persons/:id` | Détails d'une personne | ✅ Fonctionne |
+| `GET /directors/:id/works` | Filmographie d'un réalisateur | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `type` : Type de contenu (series, movie, person, company)
+- `pageSize` : Nombre max de résultats (défaut: 20, max: 50)
+- `lang` : Code langue ISO 639-1 (fr, en, de...) - converti automatiquement en ISO 639-2
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Traductions natives** :
+- TVDB supporte les traductions directement via le paramètre `lang`
+- L'autoTrad sert de fallback si la traduction native n'existe pas
+
+**Différences avec TMDB** :
+- Les saisons et épisodes ont des IDs TVDB uniques (accès direct sans seriesId)
+- Les listes TVDB permettent de regrouper des contenus (sagas, franchises)
+- Artworks plus variés (posters, banners, fanarts, clearlogos)
+
+**Données retournées** :
+- **Films** : titre, synopsis, année, durée, status, artworks, cast, genres
+- **Séries** : titre, synopsis, années, saisons (Aired Order), networks, status
+- **Saisons** : numéro, nom, synopsis, épisodes complets
+- **Épisodes** : titre, synopsis, date, durée, réalisateurs, scénaristes, guests
+- **Personnes** : nom, bio, date naissance, characters (filmographie)
+- **Listes** : nom, description, entités (films/séries)
+
+---
+
+## � Videogames / Jeux vidéo
+
+### IGDB
+
+> **Base URL** : `/api/videogames/igdb`  
+> **Source** : [igdb.com](https://www.igdb.com)  
+> **API Key** : ✅ Requise (OAuth2 via Twitch - `IGDB_CLIENT_ID` + `IGDB_CLIENT_SECRET`)  
+> **Rate Limit** : 4 requêtes / seconde
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de jeux | ✅ Fonctionne |
+| `GET /advanced-search` | Recherche avancée avec filtres | ✅ Fonctionne |
+| `GET /game/:id` | Détails d'un jeu par ID | ✅ Fonctionne |
+| `GET /game/slug/:slug` | Détails d'un jeu par slug | ✅ Fonctionne |
+| `GET /genres` | Liste des genres disponibles | ✅ Fonctionne |
+| `GET /platforms` | Liste des plateformes | ✅ Fonctionne |
+| `GET /themes` | Liste des thèmes | ✅ Fonctionne |
+| `GET /game-modes` | Liste des modes de jeu | ✅ Fonctionne |
+| `GET /player-perspectives` | Liste des perspectives | ✅ Fonctionne |
+| `GET /companies/search?q=` | Recherche de compagnies | ✅ Fonctionne |
+| `GET /companies/:id` | Détails d'une compagnie | ✅ Fonctionne |
+| `GET /companies/:id/games/developed` | Jeux développés | ✅ Fonctionne |
+| `GET /companies/:id/games/published` | Jeux publiés | ✅ Fonctionne |
+| `GET /franchises/search?q=` | Recherche de franchises | ✅ Fonctionne |
+| `GET /franchises/:id` | Détails d'une franchise | ✅ Fonctionne |
+| `GET /collections/:id` | Détails d'une collection | ✅ Fonctionne |
+| `GET /top-rated` | Jeux les mieux notés | ✅ Fonctionne |
+| `GET /recent-releases` | Sorties récentes | ✅ Fonctionne |
+| `GET /upcoming` | Jeux à venir | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `limit` : Nombre max de résultats (défaut: 20, max: 500)
+- `offset` : Position de départ (pagination)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres de recherche avancée** :
+- `platforms` : IDs de plateformes séparés par virgules (ex: "6,48,49" = PC, PS4, Xbox One)
+- `genres` : IDs de genres séparés par virgules
+- `themes` : IDs de thèmes séparés par virgules
+- `gameModes` : IDs de modes de jeu séparés par virgules
+- `playerPerspectives` : IDs de perspectives séparés par virgules
+- `minRating` : Note minimale (0-100)
+- `releaseYear` : Année de sortie
+
+**Données retournées** :
+- **Jeux** : titre, résumé (traduit), storyline, genres (traduits), plateformes, notes, dates, cover, screenshots, artworks, vidéos, DLCs, remakes, franchises, compagnies
+- **Genres** : 23 genres disponibles avec traductions
+- **Plateformes** : Toutes générations (Atari → PS5/Xbox Series)
+- **Compagnies** : développeurs, éditeurs, description, logo, pays
+- **Franchises** : nom, jeux de la série
+
+**Technologies** :
+- OAuth2 via Twitch (renouvellement automatique du token)
+- Requêtes POST avec body Apicalypse
+- Cache token en mémoire
+
+---
+
+### RAWG
+
+> **Base URL** : `/api/videogames/rawg`  
+> **Source** : [rawg.io](https://rawg.io)  
+> **API Key** : ✅ Requise (`RAWG_API_KEY`)  
+> **Rate Limit** : 5 requêtes / seconde (non strict)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de jeux | ✅ Fonctionne |
+| `GET /advanced-search` | Recherche avancée avec filtres | ✅ Fonctionne |
+| `GET /game/:idOrSlug` | Détails d'un jeu | ✅ Fonctionne |
+| `GET /game/:idOrSlug/screenshots` | Screenshots d'un jeu | ✅ Fonctionne |
+| `GET /game/:idOrSlug/stores` | Magasins où acheter | ✅ Fonctionne |
+| `GET /game/:idOrSlug/series` | Jeux de la même série | ✅ Fonctionne |
+| `GET /game/:idOrSlug/additions` | DLCs et extensions | ✅ Fonctionne |
+| `GET /game/:idOrSlug/achievements` | Achievements du jeu | ✅ Fonctionne |
+| `GET /game/:idOrSlug/movies` | Vidéos/trailers | ✅ Fonctionne |
+| `GET /game/:idOrSlug/reddit` | Posts Reddit | ✅ Fonctionne |
+| `GET /game/:idOrSlug/twitch` | Streams Twitch | ✅ Fonctionne |
+| `GET /genres` | Liste des genres | ✅ Fonctionne |
+| `GET /platforms` | Liste des plateformes | ✅ Fonctionne |
+| `GET /parent-platforms` | Plateformes parentes | ✅ Fonctionne |
+| `GET /tags` | Liste des tags | ✅ Fonctionne |
+| `GET /stores` | Liste des magasins | ✅ Fonctionne |
+| `GET /developers` | Liste des développeurs | ✅ Fonctionne |
+| `GET /developers/:id` | Détails développeur | ✅ Fonctionne |
+| `GET /developers/:id/games` | Jeux du développeur | ✅ Fonctionne |
+| `GET /publishers` | Liste des éditeurs | ✅ Fonctionne |
+| `GET /publishers/:id` | Détails éditeur | ✅ Fonctionne |
+| `GET /publishers/:id/games` | Jeux de l'éditeur | ✅ Fonctionne |
+| `GET /creators` | Liste des créateurs | ✅ Fonctionne |
+| `GET /creators/:id` | Détails créateur | ✅ Fonctionne |
+| `GET /top-rated` | Jeux les mieux notés | ✅ Fonctionne |
+| `GET /recent-releases` | Sorties récentes | ✅ Fonctionne |
+| `GET /upcoming` | Jeux à venir | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `page` : Numéro de page (défaut: 1)
+- `page_size` : Taille de page (défaut: 20, max: 40)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres de recherche avancée** :
+- `platforms` : IDs de plateformes séparés par virgules
+- `genres` : IDs de genres séparés par virgules
+- `tags` : IDs de tags séparés par virgules
+- `developers` : IDs de développeurs séparés par virgules
+- `publishers` : IDs d'éditeurs séparés par virgules
+- `stores` : IDs de magasins séparés par virgules
+- `dates` : Période (ex: "2020-01-01,2020-12-31")
+- `metacritic` : Score Metacritic minimum (ex: "80,100")
+- `ordering` : Tri (released, -released, name, -name, -rating, -metacritic)
+
+**Données retournées** :
+- **Jeux** : titre, description (traduite), genres (traduits), plateformes, notes (RAWG + Metacritic), dates, cover, screenshots, clips, achievements, tags, stores, ESRB rating
+- **Métadonnées** : 19 genres, 50+ plateformes, 400+ tags, stores (Steam, Epic, GOG, PlayStation, Xbox, Nintendo)
+- **Développeurs/Éditeurs** : nom, description, jeux, image
+- **Créateurs** : game designers, position, jeux
+
+**Différences avec IGDB** :
+- Plus de métadonnées communautaires (tags, achievements, Reddit, Twitch)
+- Scores Metacritic intégrés
+- Liens directs vers les magasins
+- Moins de données historiques (focus jeux modernes)
+- Description HTML plus riche
+
+---
+
+### JVC (JeuxVideo.com)
+
+> **Base URL** : `/api/videogames/jvc`  
+> **Source** : [jeuxvideo.com](https://www.jeuxvideo.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Dépend de FlareSolverr  
+> **Note** : Nécessite FlareSolverr pour contourner la protection Cloudflare
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de jeux | ✅ Fonctionne |
+| `GET /game/:id` | Détails d'un jeu | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `limit` : Nombre max de résultats (défaut: 20, max: 50)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Données retournées** :
+- **Jeux** : titre, description (française native), genres (traduits), plateformes, notes (test JVC + utilisateurs), PEGI, âge minimum, nombre de joueurs, supports physiques (Cartouche/CD/DVD/eShop), liens vers tests
+- **Notes** : Échelle JVC 0-20 normalisée vers 0-5
+- **Métadonnées** : Développeur, éditeur, PEGI, multijoueur, supports, vidéos
+
+**Particularités** :
+- Contenu 100% français (pas de traduction nécessaire vers fr)
+- Focus sur le marché français
+- Tests et avis de la rédaction JVC
+- Notes communautaires françaises
+- Informations PEGI détaillées
+- Supports physiques et dématérialisés
+
+**Prérequis** :
+- FlareSolverr doit être configuré et accessible
+- Variable d'environnement : `FLARESOLVERR_URL` (défaut: http://localhost:8191/v1)
+- Optionnel : `FSR_SESSION_ID` pour performances optimales
+
+---
+
+### ConsoleVariations
+
+> **Base URL** : `/api/videogames/consolevariations`  
+> **Source** : [consolevariations.com](https://consolevariations.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Dépend de FlareSolverr (~3-5s par requête)  
+> **Note** : Nécessite FlareSolverr - Base de données de variations de consoles
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check FlareSolverr | ✅ Fonctionne |
+| `GET /search?q=&type=` | Recherche de variations | ✅ Fonctionne |
+| `GET /details?url=` | Détails d'une variation | ✅ Fonctionne |
+| `GET /item/:slug` | Détails par slug direct | ✅ Fonctionne |
+| `GET /platforms?brand=` | Liste marques ou plateformes | ✅ Fonctionne |
+| `GET /browse/:platform` | Browse items d'une plateforme | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (pour /search)
+- `type` : Type de filtre (all|consoles|controllers|accessories) [défaut: all]
+- `max` : Nombre max de résultats (défaut: 20)
+- `lang` : Langue cible pour traduction (fr, de, es, it, pt)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+- `brand` : Marque (nintendo, sony, microsoft, sega, atari, etc.)
+- `url` : URL Tako_Api format `consolevariations://item/{slug}`
+
+**Données retournées** :
+- **Variations** : nom, images multiples, marque, plateforme, type (console/controller/accessory)
+- **Détails** : pays/année release, type release (retail/promotional/bundle/prototype), code région
+- **Production** : quantité estimée, édition limitée (bool), bundle (bool), couleur
+- **Rareté** : score 0-100, niveau (common/uncommon/rare/very_rare/extremely_rare)
+- **Communauté** : nombre de personnes qui veulent/possèdent l'item
+- **Identification** : barcode si disponible
+
+**Types de variations** :
+- **Consoles** : éditions spéciales, couleurs, régions, packs bundle
+- **Controllers** : manettes officielles/tierces, couleurs, éditions limitées
+- **Accessories** : périphériques, câbles, adaptateurs, packs
+
+**Particularités** :
+- Base de données collaborative de collectionneurs
+- Scores de rareté basés sur communauté
+- Photos multiples haute qualité
+- Historique de production détaillé
+- Focus sur éditions limitées et promos
+- Comparaison de variations
+
+**Exemples** :
+```bash
+# Recherche toutes variations PS2
+GET /api/videogames/consolevariations/search?q=playstation%202&type=all
+
+# Recherche uniquement consoles Nintendo
+GET /api/videogames/consolevariations/search?q=nintendo&type=consoles
+
+# Détails avec traduction française
+GET /api/videogames/consolevariations/details?url=consolevariations://item/sony-playstation-2-slim-limited-edition&lang=fr&autoTrad=1
+
+# Détails par slug direct
+GET /api/videogames/consolevariations/item/sega-dreamcast-hello-kitty
+
+# Liste des marques
+GET /api/videogames/consolevariations/platforms
+
+# Plateformes Nintendo
+GET /api/videogames/consolevariations/platforms?brand=nintendo
+
+# Browse toutes variations NES
+GET /api/videogames/consolevariations/browse/nes?max=50
+```
+
+**Prérequis** :
+- FlareSolverr doit être configuré et accessible
+- Variable d'environnement : `FLARESOLVERR_URL`
+- Temps de réponse élevé (3-5s) dû au scraping anti-bot
+
+
+
+## 🎲 BoardGames / Jeux de société
+
+### BoardGameGeek (BGG)
+
+> **Base URL** : `/api/boardgames/bgg`  
+> **Source** : [boardgamegeek.com](https://boardgamegeek.com)  
+> **API Key** : ✅ Requise (`BGG_API_TOKEN`)  
+> **Rate Limit** : 1 requête / seconde (1000ms)  
+> **Format** : XML (parser custom intégré)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de jeux par nom | ✅ Fonctionne |
+| `GET /search/category?q=` | Recherche par catégorie | ✅ Fonctionne |
+| `GET /game/:id` | Détails d'un jeu | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche (requis pour /search)
+- `limit` : Nombre max de résultats (défaut: 20)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+- `targetLang` : Langue cible (fr, de, es, it)
+
+**Exemples** :
+
+```bash
+# Health check
+curl "http://localhost:3000/api/boardgames/bgg/health"
+
+# Recherche de jeux
+curl "http://localhost:3000/api/boardgames/bgg/search?q=catan&limit=5"
+
+# Recherche en français
+curl "http://localhost:3000/api/boardgames/bgg/search?q=Les%20Aventuriers%20du%20Rail"
+
+# Détails avec traduction française
+curl "http://localhost:3000/api/boardgames/bgg/game/13?autoTrad=1&targetLang=fr"
+```
+
+**Réponse type** :
+
+```json
+{
+  "id": "13",
+  "name": "CATAN",
+  "localizedName": "Les Colons de Catane",
+  "year": 1995,
+  "players": { "min": 3, "max": 4 },
+  "playTime": { "min": 60, "max": 120 },
+  "stats": { "rating": 7.1, "rank": 610, "complexity": 2.28 },
+  "categories": ["Économique", "Négociation"],
+  "mechanics": ["Dice Rolling", "Trading", ...],
+  "designers": ["Klaus Teuber"]
+}
+```
+
+**Fonctionnalités** :
+- 🌍 **Noms localisés** : Extraction automatique (FR/DE/ES/IT)
+- 🔍 **Recherche multilingue** : Accepte "Catane", "Les Aventuriers du Rail"
+- 📊 **Dictionnaire** : 80+ catégories traduites en 5 langues
+
+---
+
+## 🎁 Collectibles / Objets de collection
+
+### Coleka
+
+> **Base URL** : `/api/collectibles/coleka`  
+> **Source** : [coleka.com](https://www.coleka.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Dépend de FlareSolverr (~3-5s par requête)  
+> **Note** : Nécessite FlareSolverr - Base de données collaborative de collectibles
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check FlareSolverr | ✅ Fonctionne |
+| `GET /search?q=&category=` | Recherche d'objets | ✅ Fonctionne |
+| `GET /details?url=` | Détails d'un objet | ✅ Fonctionne |
+| `GET /item/:path` | Détails par path direct | ✅ Fonctionne |
+| `GET /categories` | Liste des catégories | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (pour /search)
+- `max` : Nombre max de résultats (défaut: 20)
+- `lang` : Langue (fr, en) (défaut: fr)
+- `category` : Filtre par catégorie (lego, funko, figurines, playmobil, etc.)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+- `url` : URL Tako_Api format `coleka://item/{path}`
+
+**Données retournées** :
+- **Collectibles** : nom, images haute qualité, marque, série, catégorie
+- **Détails** : description, année, référence, code-barres
+- **Attributs** : nombre de pièces (LEGO), couleur, édition limitée
+- **Classification** : licences/franchises, catégories (fil d'Ariane)
+- **JSON-LD** : métadonnées structurées si disponibles
+
+**Types d'objets** :
+- **LEGO** : sets, minifigures, briques
+- **Funko Pop** : figurines de toutes licences
+- **Figurines** : action figures, statuettes
+- **Playmobil** : sets et figurines
+- **Jeux de société** : jeux de plateau et de cartes
+- **Cartes à collectionner** : Pokemon, Magic, Yu-Gi-Oh
+- **Peluches** : jouets en tissu
+- **Comics & BD** : bandes dessinées
+
+**Particularités** :
+- Base de données collaborative française
+- Images haute qualité dédupliquées (www vs thumbs)
+- Support des données structurées JSON-LD
+- Extraction des catégories depuis fil d'Ariane
+- Multi-marques/licences par item
+- Challenge anti-bot résolu automatiquement
+
+**Exemples** :
+```bash
+# Recherche tous objets LEGO
+GET /api/collectibles/coleka/search?q=lego%20star%20wars
+
+# Recherche uniquement Funko Pop
+GET /api/collectibles/coleka/search?q=batman&category=funko
+
+# Détails avec traduction anglaise
+GET /api/collectibles/coleka/details?url=coleka://item/fr/lego/star-wars/millennium-falcon_i12345&lang=en&autoTrad=1
+
+# Détails par path direct
+GET /api/collectibles/coleka/item/fr/funko/marvel/iron-man_i67890
+
+# Liste des catégories
+GET /api/collectibles/coleka/categories?lang=fr
+```
+
+**Prérequis** :
+- FlareSolverr doit être configuré et accessible
+- Variable d'environnement : `FLARESOLVERR_URL`
+- Temps de réponse élevé (3-5s) dû au scraping anti-bot
+
+---
+
+### Lulu-Berlu
+
+> **Base URL** : `/api/collectibles/luluberlu`  
+> **Source** : [lulu-berlu.com](https://www.lulu-berlu.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Dépend de FlareSolverr (~2-4s par requête)  
+> **Note** : Figurines et collectibles vintage français - Pas de challenge anti-bot
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check FlareSolverr | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de produits | ✅ Fonctionne |
+| `GET /details?url=` | Détails par URL complète | ✅ Fonctionne |
+| `GET /item/:path` | Détails par chemin | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `url` : URL complète du produit (requis pour /details)
+- `max` : Nombre max de résultats (défaut: 24, par page: 12)
+- `lang` : Langue cible pour traduction (défaut: fr)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Données retournées** :
+- **Produits** : nom, marque, prix (EUR), disponibilité
+- **Images** : URL principale et galerie (haute qualité)
+- **Détails** : description, référence SKU, condition
+- **Attributs** : type, matière, taille, origine, année
+
+**Spécialités** :
+- **Figurines** : Final Fantasy, Star Wars, Marvel, DC Comics
+- **Jouets vintage** : Transformers, LEGO anciens, Bandai
+- **Statuettes** : collector, résine, cold-cast
+- **Trading Arts** : figurines japonaises articulées
+- **Kotobukiya** : statues haute qualité
+
+**Particularités** :
+- Site français spécialisé dans le vintage
+- Prix en euros uniquement
+- Images grande taille (p-image-*-grande)
+- Extraction via pattern `idproduit="(\d+)"`
+- Pas de catégories (recherche libre)
+- `/details?url=` accepte l'URL complète retournée par /search
+- `/item/:path` accepte le chemin relatif du produit
+
+**Exemples** :
+```bash
+# Recherche de figurines Final Fantasy
+GET /api/collectibles/luluberlu/search?q=squall&max=6
+
+# Recherche LEGO vintage
+GET /api/collectibles/luluberlu/search?q=lego%20star%20wars
+
+# Détails par URL complète (retournée par /search)
+GET /api/collectibles/luluberlu/details?url=https://www.lulu-berlu.com/final-fantasy-viii-bandai-figurine-15cm-squall-leonhart-a47524.html
+
+# Détails par chemin relatif
+GET /api/collectibles/luluberlu/item/final-fantasy-viii-bandai-figurine-15cm-squall-leonhart-a47524.html
+
+# Avec traduction anglaise
+GET /api/collectibles/luluberlu/item/final-fantasy-viii-bandai-figurine-15cm-squall-leonhart-a47524.html?lang=en&autoTrad=1
+```
+
+**Prérequis** :
+- FlareSolverr doit être configuré et accessible
+- Variable d'environnement : `FLARESOLVERR_URL`
+- Temps de réponse moyen (2-4s) pour le scraping
+
+---
+
+### Transformerland
+
+> **Base URL** : `/api/collectibles/transformerland`  
+> **Source** : [transformerland.com](https://www.transformerland.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Dépend de FlareSolverr (~3-5s par requête)  
+> **Note** : Guide de collection Transformers et boutique vintage - Nécessite FlareSolverr
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check FlareSolverr | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de jouets Transformers | ✅ Fonctionne |
+| `GET /details?id=` | Détails par toyId ou URL | ✅ Fonctionne |
+| `GET /item/:id` | Détails par toyId | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `id` : Toy ID numérique, URL complète ou chemin (requis pour /details et /item)
+- `max` : Nombre max de résultats (défaut: 24)
+- `lang` : Langue cible pour traduction (défaut: en)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Données retournées** :
+- **Jouets** : nom, série (G1, Beast Wars, etc.), subgroup, faction
+- **Images** : thumbnails, reference_images, scans (instructions, specs)
+- **Détails** : année, taille, fabricant (Hasbro, Takara), disponibilité
+- **Attributs** : toyLine, allegiance (Autobot/Decepticon), condition, prix (si boutique)
+
+**Types de pages supportées** :
+1. **Guide du collectionneur** (`show_parent_g12.php?action=show_parent&toyid=`)
+   - Infos techniques complètes
+   - Images de référence haute qualité
+   - Scans instructions/specs
+   - Pas de prix (référence uniquement)
+   
+2. **Pages boutique** (`/store/item/`)
+   - Prix en USD
+   - Disponibilité en stock
+   - Condition du produit
+   - Schema.org/Product metadata
+
+**Séries principales** :
+- **G1 (1984-1992)** : Génération 1 originale (Optimus Prime, Megatron, etc.)
+- **G2 (1993-1995)** : Génération 2
+- **Beast Wars** : Transformers animaux
+- **Armada, Energon, Cybertron** : Unicron Trilogy
+- **Classics, Universe** : Reprises modernes de G1
+- **Prime, RID** : Séries récentes
+- **Masterpiece** : Rééditions premium haute qualité
+- **Studio Series** : Basés sur les films
+
+**Fabricants** :
+- **Hasbro** : Version US/internationale
+- **Takara / TakaraTomy** : Version japonaise (souvent meilleure qualité)
+- **Third Party** : FansProject, MMC, DX9, TFC, Unique Toys
+
+**Factions** :
+- **Autobot** : Gentils (Optimus Prime, Bumblebee, Jazz)
+- **Decepticon** : Méchants (Megatron, Starscream, Soundwave)
+- **Maximal / Predacon** : Beast Wars
+- **Neutral** : Non-alignés
+
+**Particularités** :
+- Contenu toujours en anglais (source US)
+- Extraction via regex complexe (structure HTML tableau)
+- Support toyId numérique, URL complète ou chemin relatif
+- Images: `/thumbnails/` → `/reference_images/` (haute qualité)
+- Scans: `/image/archive/.../full/` pour instructions/specs
+- Année extraite du subgroup (format "Leaders (1984)")
+- Pas de challenge Cloudflare actif (mais FlareSolverr nécessaire)
+
+**Exemples** :
+```bash
+# Recherche Optimus Prime
+GET /api/collectibles/transformerland/search?q=optimus+prime&max=5
+
+# Recherche Beast Wars
+GET /api/collectibles/transformerland/search?q=beast+wars
+
+# Détails G1 Optimus Prime par toyId
+GET /api/collectibles/transformerland/details?id=158
+
+# Détails par URL complète
+GET /api/collectibles/transformerland/details?id=https://www.transformerland.com/show_parent_g12.php?action=show_parent&toyid=158
+
+# Détails via /item/:id
+GET /api/collectibles/transformerland/item/158
+
+# Avec traduction française
+GET /api/collectibles/transformerland/item/158?lang=fr&autoTrad=1
+
+# Health check
+GET /api/collectibles/transformerland/health
+```
+
+**Exemples de résultats** :
+```json
+{
+  "id": "158",
+  "name": "Leaders Optimus Prime",
+  "url": "https://www.transformerland.com/show_parent_g12.php?action=show_parent&toyid=158",
+  "series": "G1",
+  "subgroup": "Leaders (1984)",
+  "faction": "Autobot",
+  "year": 1984,
+  "images": [
+    "https://www.transformerland.com/image/reference_images/161.jpg",
+    "https://www.transformerland.com/image/archive/g1/full/instructions_optimus_prime.jpg"
+  ],
+  "attributes": {
+    "toyLine": "Transformers"
+  },
+  "source": "transformerland"
+}
+```
+
+**Prérequis** :
+- FlareSolverr doit être configuré et accessible
+- Variable d'environnement : `FLARESOLVERR_URL`
+- Temps de réponse élevé (3-5s) pour le scraping avec FlareSolverr
+- Site potentiellement protégé par Cloudflare (d'où FlareSolverr)
+
+---
+
+### Paninimania
+
+> **Base URL** : `/api/collectibles/paninimania`  
+> **Source** : [paninimania.com](https://www.paninimania.com)  
+> **API Key** : ❌ Non requise (scraping)  
+> **Rate Limit** : Dépend de FlareSolverr (~3-5s par requête)  
+> **Note** : Base de données d'albums Panini et stickers - Parsing très complexe
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check FlareSolverr | ✅ Fonctionne |
+| `GET /search?q=` | Recherche d'albums Panini | ✅ Fonctionne |
+| `GET /details?id=` | Détails par ID ou URL | ✅ Fonctionne |
+| `GET /album/:id` | Détails par ID (path) | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche (requis pour /search)
+- `id` : ID album ou URL complète (requis pour /details et /album)
+- `max` : Nombre max de résultats (défaut: 24)
+- `lang` : Langue cible pour traduction (défaut: fr)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Données retournées (structure complexe)** :
+
+**Albums (recherche)** :
+- `id` : ID album unique
+- `title` : Titre de l'album
+- `url` : URL vers la page de détails
+- `image` / `thumbnail` : Image de couverture
+- `year` : Année de parution
+
+**Albums (détails)** :
+- `id`, `title`, `url` : Identifiants de base
+- `description` : Description détaillée (multilignes)
+- `mainImage` : Image principale haute qualité
+- `barcode` : Code-barres (EAN/UPC)
+- `copyright` : Détenteur des droits
+- `releaseDate` : Date de première parution
+- `editor` : Éditeur (généralement "Panini")
+
+**Checklist** (structure détaillée) :
+```json
+{
+  "raw": "1 à 226, LE1 à LE5",
+  "total": 226,
+  "items": [1, 2, 3, ..., 226],
+  "totalWithSpecials": 276
+}
+```
+- `raw` : Format brut de la checklist
+- `total` : Nombre d'images normales
+- `items` : Tableau des numéros individuels
+- `totalWithSpecials` : Total incluant les images spéciales
+
+**Special Stickers** (images spéciales) :
+Types supportés : Fluorescentes, Brillantes, Hologrammes, Métallisées, Pailletées, Transparentes, Puzzle, Relief, Autocollantes, Tatouages, Phosphorescentes, 3D, Lenticulaires, Dorées, Argentées
+
+```json
+{
+  "specialStickers": [
+    {
+      "name": "brillantes",
+      "raw": "1, 2, 4, 5, 8, 10, 12, ...",
+      "total": 50,
+      "list": [1, 2, 4, 5, 8, 10, 12, ...]
+    },
+    {
+      "name": "Limitées",
+      "raw": "LE1, LE2, LE3, LE4, LE5",
+      "total": 5,
+      "list": ["LE1", "LE2", "LE3", "LE4", "LE5"]
+    }
+  ]
+}
+```
+
+**Additional Images** (images supplémentaires) :
+```json
+{
+  "additionalImages": [
+    {
+      "url": "https://www.paninimania.com/files/.../image.jpg",
+      "caption": "Dos de l'album"
+    },
+    {
+      "url": "https://www.paninimania.com/files/.../image2.jpg",
+      "caption": "Pochette"
+    }
+  ]
+}
+```
+
+**Autres données** :
+- `categories` : Tableau de catégories (ex: ["Sports", "Football"])
+- `articles` : Articles divers associés (packs, tin box, etc.)
+
+**Types de listes supportées** :
+
+1. **Numéros** : `1 à 100`, `105`, `110-120`
+   - Résultat : `[1, 2, 3, ..., 100, 105, 110, 111, ..., 120]`
+
+2. **Lettres** : `A à Z`, `A, B, C`
+   - Résultat : `["A", "B", "C", ..., "Z"]`
+
+3. **Alphanumériques** : `A1, B2, C3`, `LE1 à LE5`
+   - Résultat : `["A1", "B2", "C3"]` ou `["LE1", "LE2", "LE3", "LE4", "LE5"]`
+
+4. **Romains** : `I, II, III, IV`
+   - Résultat : `["I", "II", "III", "IV"]`
+
+**Exemples** :
+```bash
+# Recherche albums foot
+GET /api/collectibles/paninimania/search?q=football&max=10
+
+# Recherche Star Wars
+GET /api/collectibles/paninimania/search?q=star+wars
+
+# Détails album par ID
+GET /api/collectibles/paninimania/details?id=7523
+
+# Détails via /album/:id
+GET /api/collectibles/paninimania/album/7523
+
+# Avec traduction anglaise
+GET /api/collectibles/paninimania/album/7523?lang=en&autoTrad=1
+
+# Health check
+GET /api/collectibles/paninimania/health
+```
+
+**Exemple de réponse complète** :
+```json
+{
+  "id": "7523",
+  "title": "# Fiers d'être Bleus - Sticker Album - Panini - 2023",
+  "url": "https://www.paninimania.com/?pag=cid508_alb&idf=15&idm=7523",
+  "description": "Paru en France.\n\nEdition Limitée\n\nLe Sommer et Griezman = LE1...",
+  "mainImage": null,
+  "barcode": null,
+  "copyright": "Panini",
+  "releaseDate": "aout 2023",
+  "editor": "Panini",
+  "checklist": {
+    "raw": "1 à 226, LE1 à LE5",
+    "total": 226,
+    "items": [1, 2, 3, ..., 226],
+    "totalWithSpecials": 276
+  },
+  "categories": ["Sports", "Football"],
+  "additionalImages": [
+    {
+      "url": "https://www.paninimania.com/files/15/31/?n=7523_i1b_d1wmyy.jpg",
+      "caption": "Dos de l`album"
+    }
+  ],
+  "articles": [
+    "Pack de démarrage : Album + 3 pochettes + 1 limitée : 4,95 €",
+    "Album : 2.90 €"
+  ],
+  "specialStickers": [
+    {
+      "name": "brillantes",
+      "raw": "1, 2, 4, 5, 8, 10, 12, ...",
+      "total": 50,
+      "list": [1, 2, 4, 5, 8, 10, 12, ...]
+    }
+  ],
+  "source": "paninimania"
+}
+```
+
+**Particularités** :
+
+- **Parsing ultra-complexe** : Gère 15+ types d'images spéciales différentes
+- **Formats multiples** : Numéros, lettres, alphanumériques, romains
+- **Checklist détaillée** : Total normal + total avec spéciales
+- **Images multiples** : Image principale + 10-20 images additionnelles avec légendes
+- **Metadata riche** : Code-barres, copyright, date de parution, éditeur
+- **Articles divers** : Prix des packs, tin box, blisters
+- **Catégorisation** : Extraction depuis fil d'Ariane
+- **Format brut préservé** : `raw` conserve le format original pour référence
+
+**Cas d'usage** :
+
+- **Collectionneurs** : Checklist complète pour savoir quelles images chercher
+- **Détaillants** : Prix des packs et produits dérivés
+- **Recherche** : Trouver albums par thème (sport, dessin animé, film)
+- **Inventaire** : Liste exhaustive de toutes les images (normales + spéciales)
+- **Vérification** : Code-barres pour authentification
+
+**Prérequis** :
+- FlareSolverr doit être configuré et accessible
+- Variable d'environnement : `FLARESOLVERR_URL`
+- Temps de réponse élevé (3-5s minimum) pour le scraping complexe
+- Site en français (traduction automatique disponible)
+
+---
+
+## � TCG / Trading Card Games
+
+### Pokémon TCG
+
+> **Base URL** : `/api/tcg/pokemon`  
+> **Source** : [pokemontcg.io](https://pokemontcg.io)  
+> **API Key** : ⚠️ Optionnelle (`TCG_POKEMON_TOKEN`) - 1000/jour sans, 5000 avec  
+> **Rate Limit** : 1000-5000 requêtes / jour selon clé  
+> **Note** : Cartes Pokémon officielles avec prix, sets, traductions
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /search?q=` | Recherche de cartes | ✅ Fonctionne |
+| `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
+| `GET /sets` | Liste des sets | ✅ Fonctionne |
+| `GET /health` | Health check API | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Nom de carte (requis) - supporte wildcard `*`
+- `lang` : Langue (défaut: fr)
+- `max` : Résultats max (défaut: 20)
+- `page` : Page de résultats (défaut: 1)
+- `set` : Filtrer par set ID (ex: base1, swsh1)
+- `type` : Filtrer par type (Fire, Water, Grass, Lightning, etc.)
+- `rarity` : Filtrer par rareté (Common, Uncommon, Rare, Ultra Rare, etc.)
+- `supertype` : Filtrer par supertype (Pokemon, Trainer, Energy)
+- `subtype` : Filtrer par subtype (EX, GX, VMAX, V, VSTAR, etc.)
+- `autoTrad` : Traduction automatique (true/false)
+
+**Paramètres de sets** :
+- `series` : Filtrer par série (Sword & Shield, Sun & Moon, XY, etc.)
+- `year` : Filtrer par année de sortie
+- `max` : Résultats max (défaut: 100)
+
+**Données retournées** :
+
+**Cartes (recherche)** :
+- `id` : ID unique carte (ex: base1-4, swsh1-25)
+- `title` : Nom de la carte
+- `subtitle` : Supertype (Pokemon, Trainer, Energy)
+- `image` / `thumbnail` : Images de la carte
+- `year` : Année de parution
+- `metadata` :
+  - `set` : Informations du set (id, name, series, logo)
+  - `cardNumber` : Numérotation (ex: 25/102)
+  - `rarity` : Rareté
+  - `types` : Types élémentaires (Fire, Water, etc.)
+  - `hp` : Points de vie (pour Pokémon)
+  - `artist` : Illustrateur
+
+**Cartes (détails)** :
+- Tout de recherche +
+- `description` : Capacités et attaques formatées
+- `flavorText` : Texte d'ambiance (traduit si autoTrad)
+- `metadata` :
+  - `evolvesFrom` / `evolvesTo` : Chaîne d'évolution
+  - `attacks` : Liste des attaques avec coûts et dégâts
+  - `abilities` : Capacités spéciales
+  - `weaknesses` / `resistances` : Faiblesses et résistances
+  - `retreatCost` : Coût de retraite
+  - `rules` : Règles spéciales de la carte
+  - `legalities` : Légalité dans les formats (Standard, Expanded, Unlimited)
+  - `nationalPokedexNumbers` : Numéro Pokédex national
+- `prices` :
+  - `currency` : USD ou EUR
+  - `low` / `mid` / `high` / `market` : Prix du marché
+  - `source` : tcgplayer ou cardmarket
+  - `updatedAt` : Date de mise à jour
+- `externalLinks` : Liens TCGPlayer, Cardmarket
+
+**Sets** :
+- `id` : ID du set (ex: base1, swsh1)
+- `title` : Nom du set
+- `subtitle` : Série (Sword & Shield, Sun & Moon, etc.)
+- `image` : Logo du set
+- `year` : Année de sortie
+- `metadata` :
+  - `total` / `printedTotal` : Nombre total de cartes
+  - `releaseDate` : Date de parution (YYYY-MM-DD)
+  - `legalities` : Formats légaux
+  - `ptcgoCode` : Code Pokemon TCG Online
+  - `series` : Nom de la série
+
+**Exemples** :
+```bash
+# Recherche Pikachu
+GET /api/tcg/pokemon/search?q=pikachu&max=10
+
+# Pikachu avec filtres
+GET /api/tcg/pokemon/search?q=pikachu&rarity=Rare&type=Lightning
+
+# Chercher dans un set spécifique
+GET /api/tcg/pokemon/search?q=charizard&set=base1
+
+# Détails d'une carte spécifique
+GET /api/tcg/pokemon/card/base1-4
+
+# Détails avec traduction française
+GET /api/tcg/pokemon/card/swsh1-25?lang=fr&autoTrad=true
+
+# Liste tous les sets
+GET /api/tcg/pokemon/sets
+
+# Sets d'une série spécifique
+GET /api/tcg/pokemon/sets?series=Sword & Shield
+
+# Sets par année
+GET /api/tcg/pokemon/sets?year=2023
+
+# Health check
+GET /api/tcg/pokemon/health
+```
+
+**Exemple de réponse (recherche)** :
+```json
+{
+  "success": true,
+  "provider": "pokemon",
+  "query": "pikachu",
+  "total": 237,
+  "count": 10,
+  "page": 1,
+  "data": [
+    {
+      "id": "base1-58",
+      "source": "pokemon",
+      "collection": "Pokémon TCG",
+      "title": "Pikachu",
+      "subtitle": "Pokemon",
+      "description": "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
+      "image": "https://images.pokemontcg.io/base1/58.png",
+      "thumbnail": "https://images.pokemontcg.io/base1/58_hires.png",
+      "year": 1999,
+      "metadata": {
+        "set": {
+          "id": "base1",
+          "name": "Base",
+          "series": "Base",
+          "logo": "https://images.pokemontcg.io/base1/logo.png"
+        },
+        "cardNumber": "58/102",
+        "rarity": "Common",
+        "types": ["Lightning"],
+        "hp": "40",
+        "artist": "Mitsuhiro Arita"
+      },
+      "detailUrl": "/api/tcg/pokemon/card/base1-58"
+    }
+  ],
+  "meta": {
+    "fetchedAt": "2026-01-30T08:15:00.000Z",
+    "lang": "fr",
+    "autoTrad": false
+  }
+}
+```
+
+---
+
+## Magic: The Gathering (MTG)
+
+**Base URL** : `/api/tcg/mtg`
+
+**Source** : Scryfall API (api.scryfall.com)
+
+### Endpoints
+
+| Méthode | Route | Description | Authentification |
+|---------|-------|-------------|-----------------|
+| GET | `/search` | Recherche de cartes MTG | Non |
+| GET | `/card/:id` | Détails d'une carte | Non |
+| GET | `/sets` | Liste des sets/éditions | Non |
+| GET | `/health` | Health check | Non |
+
+### Paramètres
+
+#### `/search`
+- `q` (requis) : Requête de recherche (syntaxe Scryfall supportée)
+- `lang` : Langue (en, fr, es, de, it, pt, ja, ko, ru, zh-Hans, zh-Hant) [défaut: "en"]
+- `max` : Nombre max de résultats (1-175) [défaut: 20]
+- `order` : Tri (name, set, released, rarity, color, usd, tix, eur, cmc, power, toughness, edhrec, penny, artist, review) [défaut: "name"]
+- `unique` : Filtre doublons (cards, art, prints) [défaut: "cards"]
+- `dir` : Direction tri (auto, asc, desc) [défaut: "auto"]
+- `autoTrad` : Traduction automatique (true/false) [défaut: false]
+
+#### `/card/:id`
+- `:id` : UUID Scryfall ou format `{set}/{collector_number}` (ex: "clu/141")
+- `lang` : Langue [défaut: "en"]
+- `autoTrad` : Traduction automatique [défaut: false]
+
+#### `/sets`
+- Aucun paramètre (retourne tous les sets)
+
+**Exemples de recherche** :
+```bash
+# Recherche simple
+GET /api/tcg/mtg/search?q=lightning+bolt
+
+# Recherche avancée Scryfall (coût de mana)
+GET /api/tcg/mtg/search?q=mv=1+type:instant+color:r
+
+# Recherche avec tri
+GET /api/tcg/mtg/search?q=legendary+creature&order=edhrec&max=10
+
+# Carte par UUID
+GET /api/tcg/mtg/card/77c6fa74-5543-42ac-9ead-0e890b188e99
+
+# Carte par set/numéro
+GET /api/tcg/mtg/card/clu/141
+
+# Sets
+GET /api/tcg/mtg/sets
+
+# Health check
+GET /api/tcg/mtg/health
+```
+
+**Exemple de réponse (recherche)** :
+```json
+{
+  "success": true,
+  "provider": "mtg",
+  "query": "lightning bolt",
+  "total": 0,
+  "count": 1,
+  "hasMore": false,
+  "data": [
+    {
+      "id": "77c6fa74-5543-42ac-9ead-0e890b188e99",
+      "source": "mtg",
+      "collection": "Magic: The Gathering",
+      "title": "Lightning Bolt",
+      "subtitle": "Instant",
+      "description": "Instant - Lightning Bolt deals 3 damage to any target.",
+      "image": "https://cards.scryfall.io/normal/front/7/7/77c6fa74-5543-42ac-9ead-0e890b188e99.jpg",
+      "thumbnail": "https://cards.scryfall.io/normal/front/7/7/77c6fa74-5543-42ac-9ead-0e890b188e99.jpg",
+      "year": 2024,
+      "metadata": {
+        "set": {
+          "name": "Ravnica: Clue Edition",
+          "code": "clu"
+        },
+        "rarity": "uncommon",
+        "colors": ["R"],
+        "manaCost": "{R}",
+        "cmc": 1,
+        "artist": "Christopher Moeller",
+        "collectorNumber": "141"
+      },
+      "prices": {
+        "usd": "1.76",
+        "eur": "1.49",
+        "tix": "0.02"
+      },
+      "detailUrl": "/api/tcg/mtg/card/77c6fa74-5543-42ac-9ead-0e890b188e99"
+    }
+  ],
+  "meta": {
+    "fetchedAt": "2026-01-30T08:19:00.000Z",
+    "lang": "en",
+    "autoTrad": false
+  }
+}
+```
+
+**Exemple de réponse (détails)** :
+```json
+{
+  "success": true,
+  "provider": "mtg",
+  "data": {
+    "id": "77c6fa74-5543-42ac-9ead-0e890b188e99",
+    "source": "mtg",
+    "title": "Lightning Bolt",
+    "subtitle": "Instant",
+    "description": "Lightning Bolt deals 3 damage to any target.",
+    "flavorText": "The sparkmage shrieked, calling on the rage of the storms of his youth.",
+    "images": [
+      {
+        "url": "https://cards.scryfall.io/large/front/7/7/77c6fa74-5543-42ac-9ead-0e890b188e99.jpg",
+        "thumbnail": "https://cards.scryfall.io/small/front/7/7/77c6fa74-5543-42ac-9ead-0e890b188e99.jpg",
+        "caption": "Carte",
+        "isMain": true
+      }
+    ],
+    "year": 2024,
+    "metadata": {
+      "set": {
+        "id": "d4bfabcf-a859-43a4-9d8a-665533c8b174",
+        "code": "clu",
+        "name": "Ravnica: Clue Edition",
+        "type": "draft_innovation",
+        "iconSvg": "https://api.scryfall.com/sets/d4bfabcf-a859-43a4-9d8a-665533c8b174"
+      },
+      "scryfallId": "77c6fa74-5543-42ac-9ead-0e890b188e99",
+      "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
+      "multiverseIds": [651876],
+      "mtgoId": 123066,
+      "collectorNumber": "141",
+      "manaCost": "{R}",
+      "cmc": 1,
+      "typeLine": "Instant",
+      "oracleText": "Lightning Bolt deals 3 damage to any target.",
+      "power": null,
+      "toughness": null,
+      "loyalty": null,
+      "colors": ["R"],
+      "colorIdentity": ["R"],
+      "rarity": "uncommon",
+      "artist": "Christopher Moeller",
+      "layout": "normal",
+      "keywords": [],
+      "legalities": {
+        "standard": "not_legal",
+        "modern": "legal",
+        "legacy": "legal",
+        "pauper": "legal",
+        "vintage": "legal",
+        "commander": "legal"
+      }
+    },
+    "prices": {
+      "usd": "1.76",
+      "usdFoil": null,
+      "eur": "1.49",
+      "eurFoil": null,
+      "tix": "0.02",
+      "currency": "USD/EUR",
+      "source": "scryfall",
+      "updatedAt": "2026-01-30T08:19:32.610Z"
+    },
+    "externalLinks": {
+      "scryfall": "https://scryfall.com/card/clu/141/lightning-bolt",
+      "tcgplayer": "https://www.tcgplayer.com/product/534658",
+      "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=752712"
+    },
+    "rulings": "https://api.scryfall.com/cards/77c6fa74-5543-42ac-9ead-0e890b188e99/rulings"
+  },
+  "meta": {
+    "fetchedAt": "2026-01-30T08:19:32.610Z",
+    "lang": "en"
+  }
+}
+```
+
+**Exemple de réponse (sets)** :
+```json
+{
+  "success": true,
+  "provider": "mtg",
+  "total": 0,
+  "count": 1028,
+  "data": [
+    {
+      "id": "974e1012-df4a-44ea-aea4-4bf2f62b4cbf",
+      "source": "mtg",
+      "title": "Through the Omenpaths 2",
+      "subtitle": "expansion",
+      "description": null,
+      "image": "https://svgs.scryfall.io/sets/default.svg",
+      "thumbnail": "https://svgs.scryfall.io/sets/default.svg",
+      "year": 2026,
+      "metadata": {
+        "code": "om2",
+        "type": "expansion",
+        "cardCount": 0,
+        "digital": false,
+        "foilOnly": true
+      }
+    }
+  ],
+  "meta": {
+    "fetchedAt": "2026-01-30T08:20:00.000Z"
+  }
+}
+```
+
+**Notes** :
+- Syntaxe Scryfall complète supportée (mv, color, type, rarity, oracle, etc.)
+- Rate limiting : 100ms entre requêtes (10 req/sec)
+- Aucune clé API requise
+- Prix : USD, EUR, MTGO Tix (source Scryfall)
+- Legalités : 14 formats (Standard, Modern, Legacy, Pauper, Commander, etc.)
+- Double-faced cards : Retourne face avant par défaut
+
+**Cas d'usage** :
+- Recherche de cartes par nom, couleur, coût
+- Vérification des prix Scryfall (USD/EUR)
+- Consultation des legalités par format
+- Exploration des sets/éditions MTG
+- Recherche avancée avec syntaxe Scryfall (mv=1, type:instant, etc.)
+
+---
+
+## Yu-Gi-Oh! TCG
+
+**Base URL** : `/api/tcg/yugioh`
+
+**Source** : YGOPRODeck API (db.ygoprodeck.com)
+
+### Endpoints
+
+| Méthode | Route | Description | Authentification |
+|---------|-------|-------------|-----------------|
+| GET | `/search` | Recherche de cartes Yu-Gi-Oh! | Non |
+| GET | `/card/:id` | Détails d'une carte | Non |
+| GET | `/sets` | Liste des sets | Non |
+| GET | `/archetype` | Recherche par archétype | Non |
+| GET | `/health` | Health check | Non |
+
+### Paramètres
+
+#### `/search`
+- `q` (requis) : Nom de la carte (fuzzy search)
+- `type` : Type (Monster, Spell, Trap)
+- `race` : Race/Type (Dragon, Spellcaster, Warrior, etc.)
+- `attribute` : Attribut (DARK, LIGHT, WATER, FIRE, EARTH, WIND, DIVINE)
+- `level` : Niveau (1-12)
+- `archetype` : Archétype (Blue-Eyes, Dark Magician, etc.)
+- `max` : Nombre max de résultats (1-100) [défaut: 20]
+- `sort` : Tri (name, atk, def, level) [défaut: "name"]
+- `lang` : Langue (en, fr, de, it, pt) [défaut: "en"]
+- `autoTrad` : Traduction automatique (true/false) [défaut: false]
+
+#### `/card/:id`
+- `:id` : ID YGOPRODeck (ex: "46986414" pour Dark Magician)
+- `lang` : Langue [défaut: "en"]
+- `autoTrad` : Traduction automatique [défaut: false]
+
+#### `/archetype`
+- `name` (requis) : Nom de l'archétype
+- `max` : Nombre max de résultats (1-100) [défaut: 20]
+- `lang` : Langue [défaut: "en"]
+- `autoTrad` : Traduction automatique [défaut: false]
+
+#### `/sets`
+- Aucun paramètre (retourne tous les sets)
+
+**Exemples de recherche** :
+```bash
+# Recherche simple
+GET /api/tcg/yugioh/search?q=Dark+Magician
+
+# Recherche par type
+GET /api/tcg/yugioh/search?q=dragon&type=Monster&race=Dragon&max=10
+
+# Recherche par attribut et niveau
+GET /api/tcg/yugioh/search?q=warrior&attribute=EARTH&level=4
+
+# Carte par ID
+GET /api/tcg/yugioh/card/46986414
+
+# Recherche par archétype
+GET /api/tcg/yugioh/archetype?name=Blue-Eyes&max=20
+
+# Sets
+GET /api/tcg/yugioh/sets
+
+# Health check
+GET /api/tcg/yugioh/health
+```
+
+**Exemple de réponse (recherche)** :
+```json
+{
+  "success": true,
+  "provider": "yugioh",
+  "query": "Dark Magician",
+  "total": 14,
+  "count": 2,
+  "data": [
+    {
+      "id": "46986414",
+      "source": "yugioh",
+      "collection": "Yu-Gi-Oh! Trading Card Game",
+      "title": "Dark Magician",
+      "subtitle": "Normal Monster",
+      "description": "Normal Monster - ''The ultimate wizard in terms of attack and defense.''",
+      "image": "https://images.ygoprodeck.com/images/cards/46986414.jpg",
+      "thumbnail": "https://images.ygoprodeck.com/images/cards_small/46986414.jpg",
+      "year": 2002,
+      "metadata": {
+        "type": "Normal Monster",
+        "race": "Spellcaster",
+        "archetype": "Dark Magician",
+        "atk": 2500,
+        "def": 2100,
+        "level": 7,
+        "attribute": "DARK"
+      },
+      "detailUrl": "/api/tcg/yugioh/card/46986414"
+    }
+  ],
+  "meta": {
+    "fetchedAt": "2026-01-30T08:27:32.382Z",
+    "lang": "en",
+    "autoTrad": false,
+    "sort": "name"
+  }
+}
+```
+
+**Exemple de réponse (détails)** :
+```json
+{
+  "success": true,
+  "provider": "yugioh",
+  "data": {
+    "id": "46986414",
+    "source": "yugioh",
+    "title": "Dark Magician",
+    "subtitle": "Normal Monster",
+    "description": "''The ultimate wizard in terms of attack and defense.''",
+    "images": [
+      {
+        "url": "https://images.ygoprodeck.com/images/cards/46986414.jpg",
+        "thumbnail": "https://images.ygoprodeck.com/images/cards_small/46986414.jpg",
+        "cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986414.jpg",
+        "caption": "Carte",
+        "isMain": true
+      }
+    ],
+    "year": 2002,
+    "metadata": {
+      "type": "Normal Monster",
+      "frameType": "normal",
+      "race": "Spellcaster",
+      "archetype": "Dark Magician",
+      "atk": 2500,
+      "def": 2100,
+      "level": 7,
+      "attribute": "DARK",
+      "cardSets": [
+        {
+          "name": "2016 Mega-Tins",
+          "code": "CT13-EN003",
+          "rarity": "Ultra Rare",
+          "rarityCode": "(UR)",
+          "price": "6.97"
+        }
+      ],
+      "banlistInfo": {
+        "tcg": "Unlimited",
+        "ocg": "Unlimited",
+        "goat": "Unlimited"
+      },
+      "ygoprodeckUrl": "https://ygoprodeck.com/card/dark-magician-46986414"
+    },
+    "prices": {
+      "cardmarket": "1.23",
+      "tcgplayer": "2.45",
+      "ebay": "3.50",
+      "amazon": "4.99",
+      "coolstuffinc": "2.99",
+      "currency": "USD/EUR",
+      "source": "ygoprodeck",
+      "updatedAt": "2026-01-30T08:27:35.610Z"
+    },
+    "externalLinks": {
+      "ygoprodeck": "https://ygoprodeck.com/card/dark-magician-46986414",
+      "cardmarket": "https://www.cardmarket.com/en/YuGiOh/Products/Search?searchString=Dark+Magician",
+      "tcgplayer": "https://www.tcgplayer.com/search/yugioh/product?q=Dark+Magician"
+    }
+  },
+  "meta": {
+    "fetchedAt": "2026-01-30T08:27:35.610Z",
+    "lang": "en"
+  }
+}
+```
+
+**Exemple de réponse (archétype)** :
+```json
+{
+  "success": true,
+  "provider": "yugioh",
+  "archetype": "Blue-Eyes",
+  "total": 40,
+  "count": 3,
+  "data": [
+    {
+      "id": "50371210",
+      "source": "yugioh",
+      "collection": "Yu-Gi-Oh! Trading Card Game",
+      "title": "Beacon of White",
+      "subtitle": "Spell Card",
+      "description": "Spell Card - If you do not control another \"Beacon of White\"...",
+      "image": "https://images.ygoprodeck.com/images/cards/50371210.jpg",
+      "thumbnail": "https://images.ygoprodeck.com/images/cards_small/50371210.jpg",
+      "year": null,
+      "metadata": {
+        "type": "Spell Card",
+        "race": "Normal",
+        "archetype": "Blue-Eyes"
+      },
+      "detailUrl": "/api/tcg/yugioh/card/50371210"
+    }
+  ],
+  "meta": {
+    "fetchedAt": "2026-01-30T08:28:00.000Z",
+    "lang": "en",
+    "autoTrad": false
+  }
+}
+```
+
+**Notes** :
+- Aucune clé API requise
+- Rate limiting : 50ms entre requêtes (20 req/sec)
+- Langues supportées : en, fr, de, it, pt
+- Types de cartes : Monster, Spell, Trap (+ variations : Effect, Fusion, Synchro, Xyz, Link, Pendulum)
+- Banlist info : TCG, OCG, GOAT formats
+- Prix : Cardmarket, TCGPlayer, eBay, Amazon, CoolStuffInc
+- Images : 3 formats (normal, small, cropped)
+
+**Cas d'usage** :
+- Recherche de cartes par nom, type, race
+- Exploration des archétypes (Blue-Eyes, Dark Magician, etc.)
+- Vérification des prix multi-sources
+- Consultation du banlist (TCG/OCG)
+- Construction de deck par attribut/niveau
+- Recherche de Link/Pendulum monsters
+
+**Exemple de réponse (détails)** :
+```json
+{
+  "success": true,
+  "provider": "pokemon",
+  "data": {
+    "id": "base1-4",
+    "source": "pokemon",
+    "title": "Charizard",
+    "subtitle": "Pokemon",
+    "description": "**Energy Burn** (Pokémon Power): As often as you like during your turn (before your attack), you may turn all Energy attached to Charizard into Fire Energy for the rest of the turn.\n\n**Fire Spin** (Fire Fire Fire Fire): Discard 2 Energy cards attached to Charizard. [100]",
+    "flavorText": "Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",
+    "images": [
+      {
+        "url": "https://images.pokemontcg.io/base1/4_hires.png",
+        "thumbnail": "https://images.pokemontcg.io/base1/4.png",
+        "caption": "Carte normale",
+        "isMain": true
+      }
+    ],
+    "year": 1999,
+    "metadata": {
+      "set": {
+        "id": "base1",
+        "name": "Base",
+        "series": "Base",
+        "printedTotal": 102,
+        "releaseDate": "1999-01-09",
+        "logo": "https://images.pokemontcg.io/base1/logo.png",
+        "symbol": "https://images.pokemontcg.io/base1/symbol.png"
+      },
+      "number": "4",
+      "cardNumber": "4/102",
+      "supertype": "Pokemon",
+      "subtypes": ["Stage 2"],
+      "types": ["Fire"],
+      "hp": "120",
+      "rarity": "Rare Holo",
+      "artist": "Mitsuhiro Arita",
+      "evolvesFrom": "Charmeleon",
+      "evolvesTo": [],
+      "attacks": [
+        {
+          "name": "Fire Spin",
+          "cost": ["Fire", "Fire", "Fire", "Fire"],
+          "convertedEnergyCost": 4,
+          "damage": "100",
+          "text": "Discard 2 Energy cards attached to Charizard in order to use this attack."
+        }
+      ],
+      "abilities": [
+        {
+          "name": "Energy Burn",
+          "text": "As often as you like during your turn (before your attack), you may turn all Energy attached to Charizard into Fire Energy for the rest of the turn. This power can't be used if Charizard is Asleep, Confused, or Paralyzed.",
+          "type": "Pokémon Power"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Water",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreatCost": ["Colorless", "Colorless", "Colorless"],
+      "rules": [],
+      "regulationMark": null,
+      "legalities": {
+        "unlimited": "Legal",
+        "standard": "Banned",
+        "expanded": "Banned"
+      },
+      "nationalPokedexNumbers": [6]
+    },
+    "prices": {
+      "currency": "USD",
+      "low": 150.00,
+      "mid": 300.00,
+      "high": 600.00,
+      "market": 275.00,
+      "source": "tcgplayer",
+      "updatedAt": "2026-01-30T00:00:00Z"
+    },
+    "externalLinks": {
+      "tcgplayer": "https://prices.pokemontcg.io/tcgplayer/base1-4",
+      "cardmarket": "https://prices.pokemontcg.io/cardmarket/base1-4"
+    }
+  },
+  "meta": {
+    "fetchedAt": "2026-01-30T08:15:00.000Z",
+    "lang": "fr",
+    "autoTrad": true
+  }
+}
+```
+
+**Particularités** :
+
+- **Syntaxe Lucene** : L'API supporte des recherches avancées (ex: `name:pikachu* types:lightning`)
+- **IDs de cartes** : Format `{set}-{number}` (ex: base1-4, swsh1-25)
+- **Prix multiples** : TCGPlayer (USD) et Cardmarket (EUR) quand disponibles
+- **Traduction** : Descriptions et flavor text traduits si `autoTrad=true`
+- **Images haute qualité** : Versions normale et HD disponibles
+- **Légalité** : Formats Standard, Expanded, Unlimited
+- **Évolution** : Chaîne complète avec `evolvesFrom` et `evolvesTo`
+- **Attaques** : Coûts énergétiques détaillés, dégâts, effets
+- **Numérotation** : Numéro de carte imprimé (peut différer du total réel)
+
+**Cas d'usage** :
+
+- **Collectionneurs** : Recherche de cartes, consultation des prix
+- **Joueurs** : Vérification légalité, consultation des attaques
+- **Decklists** : Construction de decks avec filtres avancés
+- **Inventaire** : Gestion de collection avec sets et numéros
+- **Commerce** : Prix du marché TCGPlayer et Cardmarket
+
+**Prérequis** :
+- API Key optionnelle mais recommandée (rate limit 5x plus élevé)
+- Variable d'environnement : `TCG_POKEMON_TOKEN`
+- Sans clé : 1000 requêtes/jour
+- Avec clé : 5000 requêtes/jour
+
+**Note importante** :
+L'API pokemontcg.io peut parfois être lente ou indisponible. En cas d'erreur 504, réessayez quelques secondes plus tard.
+
+---
+
+
+## Disney Lorcana
+
+**Base URL** : `/api/tcg/lorcana`
+
+**Source** : LorcanaJSON (lorcanajson.org)
+
+### Endpoints
+
+| Méthode | Route | Description | Authentification |
+|---------|-------|-------------|-----------------|
+| GET | `/search` | Recherche de cartes Lorcana | Non |
+| GET | `/card/:id` | Détails d'une carte | Non |
+| GET | `/sets` | Liste des sets | Non |
+| GET | `/health` | Health check | Non |
+
+### Paramètres
+
+#### `/search`
+- `q` (requis) : Nom de la carte (fuzzy search)
+- `color` : Couleur (Amber, Amethyst, Emerald, Ruby, Sapphire, Steel)
+- `type` : Type (Character, Action, Item, Location)
+- `rarity` : Rareté (Common, Uncommon, Rare, Super Rare, Legendary, Enchanted)
+- `set` : Code du set (TFC, ROF, ITI, URR, SHI, AZU)
+- `cost` : Coût en encre (0-10)
+- `inkable` : Peut servir d'encre (true/false)
+- `max` : Nombre max de résultats (1-250) [défaut: 100]
+- `page` : Page de résultats [défaut: 1]
+- `lang` : Langue (en, fr, de, it) [défaut: "en"]
+- `autoTrad` : Traduction automatique (true/false) [défaut: false]
+
+#### `/card/:id`
+- `:id` : ID complet de la carte (ex: "40/204 • EN • 1")
+- `lang` : Langue (en, fr, de, it) [défaut: "en"]
+- `autoTrad` : Traduction automatique [défaut: false]
+
+#### `/sets`
+- `lang` : Langue (en, fr, de, it) [défaut: "en"]
+
+**Exemples** :
+```bash
+GET /api/tcg/lorcana/search?q=elsa&lang=en
+GET /api/tcg/lorcana/search?q=mickey&color=Amber&type=Character&max=10
+GET /api/tcg/lorcana/card/40%2F204%20%E2%80%A2%20EN%20%E2%80%A2%201
+GET /api/tcg/lorcana/sets?lang=fr
+GET /api/tcg/lorcana/health
+```
+
+**Notes** :
+- Aucune clé API requise
+- Cache interne : 1 heure (JSON statique)
+- Langues : en, fr, de, it
+- Couleurs : Amber, Amethyst, Emerald, Ruby, Sapphire, Steel
+- Types : Character, Action, Item, Location
+- Stats : Strength, Willpower, Lore
+- Sets : TFC, ROF, ITI, URR, SHI, AZU
+
+**Cas d'usage** :
+- Recherche de cartes Disney par nom
+- Filtrage par couleur et type
+- Construction de deck (coût, inkable)
+- Consultation des stats
+- Exploration des franchises Disney
+
+---
+
+## �🎵 Music / Musique
+
+
+## Digimon Card Game
+
+**Base URL** : `/api/tcg/digimon`
+
+**Source** : DigimonCard.io API
+
+### Endpoints
+
+| Méthode | Route | Description | Authentification |
+|---------|-------|-------------|-----------------|
+| GET | `/search` | Recherche de cartes Digimon | Non |
+| GET | `/card/:id` | Détails d'une carte | Non |
+| GET | `/health` | Health check | Non |
+
+### Paramètres
+
+#### `/search`
+- `q` (requis) : Nom de la carte
+- `type` : Type (Digimon, Digi-Egg, Tamer, Option)
+- `color` : Couleur (Red, Blue, Yellow, Green, Black, Purple, White)
+- `level` : Niveau (2-7)
+- `series` : Série [défaut: "Digimon Card Game"]
+- `attribute` : Attribut (Vaccine, Virus, Data, Free, Variable)
+- `rarity` : Rareté (c, u, r, sr, sec)
+- `stage` : Stage (In-Training, Rookie, Champion, Ultimate, Mega)
+- `max` : Nombre max de résultats (1-250) [défaut: 100]
+- `lang` : Langue [défaut: "en"]
+- `autoTrad` : Traduction automatique (true/false) [défaut: false]
+
+#### `/card/:id`
+- `:id` : ID de la carte (ex: "BT1-010")
+- `lang` : Langue [défaut: "en"]
+- `autoTrad` : Traduction automatique [défaut: false]
+
+**Exemples** :
+```bash
+GET /api/tcg/digimon/search?q=Agumon
+GET /api/tcg/digimon/search?q=greymon&color=Red&type=Digimon&level=4
+GET /api/tcg/digimon/card/BT1-010
+GET /api/tcg/digimon/health
+```
+
+**Notes** :
+- Aucune clé API requise
+- Rate limiting : 50ms entre requêtes (20 req/sec)
+- Types : Digimon, Digi-Egg, Tamer, Option
+- Couleurs : Red, Blue, Yellow, Green, Black, Purple, White
+- Stages : In-Training, Rookie, Champion, Ultimate, Mega
+- Stats : DP (Digimon Power), Play Cost, Digivolve Cost
+
+**Cas d'usage** :
+- Recherche de cartes Digimon par nom
+- Filtrage par couleur, type, niveau
+- Construction de deck
+- Consultation des effets et stats
+- Vérification des coûts de digivolution
+
+---
+
+### Discogs
+
+> **Base URL** : `/api/music/discogs`  
+> **Source** : [discogs.com](https://www.discogs.com)  
+> **API Key** : ⚠️ Optionnelle (`DISCOG_API_KEY`) - 25 req/min sans, 60 avec  
+> **Rate Limit** : 25-60 requêtes / minute selon auth
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale | ✅ Fonctionne |
+| `GET /search/albums?q=` | Recherche de releases | ✅ Fonctionne |
+| `GET /search/masters?q=` | Recherche de masters | ✅ Fonctionne |
+| `GET /search/artists?q=` | Recherche d'artistes | ✅ Fonctionne |
+| `GET /search/labels?q=` | Recherche de labels | ✅ Fonctionne |
+| `GET /barcode/:barcode` | Recherche par code-barres | ✅ Fonctionne |
+| `GET /releases/:id` | Détails d'une release | ✅ Fonctionne |
+| `GET /masters/:id` | Détails d'un master | ✅ Fonctionne |
+| `GET /masters/:id/versions` | Versions d'un master | ✅ Fonctionne |
+| `GET /artists/:id` | Détails d'un artiste | ✅ Fonctionne |
+| `GET /artists/:id/releases` | Discographie d'un artiste | ✅ Fonctionne |
+| `GET /labels/:id` | Détails d'un label | ✅ Fonctionne |
+| `GET /labels/:id/releases` | Releases d'un label | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `type` : Type (release, master, artist, label)
+- `page` : Numéro de page
+- `perPage` : Résultats par page (défaut: 25)
+- `autoTrad` : Traduction automatique
+
+**Données retournées** :
+- **Releases** : titre, artistes, labels, formats, tracklist, images, code-barres
+- **Masters** : version canonique, artistes principaux, versions disponibles
+- **Artistes** : nom, profil, alias, membres (groupes), discographie
+- **Labels** : nom, profil, sous-labels, releases publiées
+
+---
+
+### Deezer
+
+> **Base URL** : `/api/music/deezer`  
+> **Source** : [deezer.com](https://www.deezer.com)  
+> **API Key** : ❌ Non requise  
+> **Rate Limit** : Non spécifié (usage raisonnable)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale | ✅ Fonctionne |
+| `GET /search/albums?q=` | Recherche d'albums | ✅ Fonctionne |
+| `GET /search/artists?q=` | Recherche d'artistes | ✅ Fonctionne |
+| `GET /search/tracks?q=` | Recherche de tracks | ✅ Fonctionne |
+| `GET /albums/:id` | Détails d'un album | ✅ Fonctionne |
+| `GET /albums/:id/tracks` | Tracks d'un album | ✅ Fonctionne |
+| `GET /artists/:id` | Détails d'un artiste | ✅ Fonctionne |
+| `GET /artists/:id/top` | Top tracks artiste | ✅ Fonctionne |
+| `GET /artists/:id/albums` | Albums d'un artiste | ✅ Fonctionne |
+| `GET /artists/:id/related` | Artistes similaires | ✅ Fonctionne |
+| `GET /tracks/:id` | Détails d'un track | ✅ Fonctionne |
+| `GET /genres` | Liste des genres | ✅ Fonctionne |
+| `GET /chart/albums` | Charts albums | ✅ Fonctionne |
+| `GET /chart/tracks` | Charts tracks | ✅ Fonctionne |
+| `GET /chart/artists` | Charts artistes | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `limit` : Nombre de résultats (défaut: 25)
+- `index` : Offset pour pagination
+
+**Données retournées** :
+- **Albums** : titre, artiste, cover, tracklist, durée, genres
+- **Artistes** : nom, image, fans, top tracks, discographie
+- **Tracks** : titre, durée, preview 30s, BPM, artiste, album
+- **Charts** : tops albums/tracks/artistes par genre
+
+---
+
+### MusicBrainz
+
+> **Base URL** : `/api/music/musicbrainz`  
+> **Source** : [musicbrainz.org](https://musicbrainz.org)  
+> **API Key** : ❌ Non requise (User-Agent requis)  
+> **Rate Limit** : 1 requête / seconde (stricte)  
+> **Note** : Base de données libre et communautaire
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale | ✅ Fonctionne |
+| `GET /search/albums?q=` | Recherche d'albums (release-groups) | ✅ Fonctionne |
+| `GET /search/artists?q=` | Recherche d'artistes | ✅ Fonctionne |
+| `GET /barcode/:barcode` | Recherche par code-barres (UPC/EAN) | ✅ Fonctionne |
+| `GET /albums/:id` | Détails d'un album | ✅ Fonctionne |
+| `GET /albums/:id/cover` | Pochette album (Cover Art Archive) | ✅ Fonctionne |
+| `GET /artists/:id` | Détails d'un artiste | ✅ Fonctionne |
+| `GET /artists/:id/albums` | Albums d'un artiste | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `limit` : Nombre de résultats (défaut: 25)
+- `offset` : Décalage pour pagination
+- `type` : Type d'album (album, single, ep, etc.)
+
+**Données retournées** :
+- **Albums** : titre, artistes, date, type, tags, rating, pochette (Cover Art Archive)
+- **Artistes** : nom, type (personne/groupe), pays, tags, liens externes
+- **Barcode** : release correspondant au code-barres avec détails complets
+
+---
+
+### iTunes
+
+> **Base URL** : `/api/music/itunes`  
+> **Source** : [itunes.apple.com](https://itunes.apple.com)  
+> **API Key** : ❌ Non requise  
+> **Rate Limit** : ~20 requêtes / minute
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche globale | ✅ Fonctionne |
+| `GET /search/albums?q=` | Recherche d'albums | ✅ Fonctionne |
+| `GET /search/artists?q=` | Recherche d'artistes | ✅ Fonctionne |
+| `GET /search/tracks?q=` | Recherche de tracks | ✅ Fonctionne |
+| `GET /albums/:id` | Détails d'un album + tracks | ✅ Fonctionne |
+| `GET /artists/:id` | Détails d'un artiste | ✅ Fonctionne |
+| `GET /artists/:id/albums` | Albums d'un artiste | ✅ Fonctionne |
+| `GET /tracks/:id` | Détails d'un track | ✅ Fonctionne |
+
+**Paramètres communs** :
+- `q` : Terme de recherche
+- `limit` : Nombre de résultats (défaut: 25, max: 200)
+- `country` : Code pays (défaut: FR)
+
+**Données retournées** :
+- **Albums** : titre, artiste, cover HD, tracklist, prix, date
+- **Artistes** : nom, genre principal, liens iTunes/Apple Music
+- **Tracks** : titre, durée, preview 30s, prix, explicit flag
+- Support multi-pays pour prix et disponibilité
+
+---
+
+## 🔧 Paramètres globaux
+
+Ces paramètres sont disponibles sur la plupart des endpoints de recherche :
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `q` | string | Terme de recherche (requis) |
+| `maxResults` | number | Nombre max de résultats |
+| `page` | number | Numéro de page |
+| `lang` | string | Code langue cible (fr, en, de, es, it, pt) |
+| `autoTrad` | boolean | Activer la traduction automatique |
+
+---
+
+## 📊 Légende des statuts
+
+| Status | Signification |
+|--------|---------------|
+| ✅ Fonctionne | Endpoint pleinement opérationnel |
+| ⚠️ Partiel | Fonctionne mais données incomplètes ou améliorations possibles |
+| ❌ Non implémenté | Route déclarée mais pas encore fonctionnelle |
+| 🔧 En maintenance | Temporairement indisponible |
+
+---
+
+## 🚀 Exemple d'utilisation
+
+```bash
+# Recherche de comics sur ComicVine
+curl "http://localhost:3000/api/comics/comicvine/search?q=batman&maxResults=5"
+
+# Albums d'une série Bedetheque
+curl "http://localhost:3000/api/comics/bedetheque/serie/59/albums"
+
+# Recherche de livres sur OpenLibrary
+curl "http://localhost:3000/api/books/openlibrary/search?q=dune"
+
+# Recherche de sets LEGO sur Brickset
+curl "http://localhost:3000/construction-toys/brickset/search?q=star%20wars"
+
+# Recherche de manga sur MangaUpdates avec titre français
+curl "http://localhost:3000/api/anime-manga/mangaupdates/search?q=one%20piece&frenchTitle=1"
+
+# Œuvres d'un auteur manga (Eiichiro Oda)
+curl "http://localhost:3000/api/anime-manga/mangaupdates/author/30829461792/works"
+
+# Liste des genres manga avec statistiques
+curl "http://localhost:3000/api/anime-manga/mangaupdates/genres"
+
+# Recherche de films sur TMDB
+curl "http://localhost:3000/api/media/tmdb/search/movies?q=matrix"
+
+# Détails d'un film TMDB avec traduction auto
+curl "http://localhost:3000/api/media/tmdb/movies/603?autoTrad=1"
+
+# Détails d'une série TMDB
+curl "http://localhost:3000/api/media/tmdb/series/1399"
+
+# Saison d'une série TMDB
+curl "http://localhost:3000/api/media/tmdb/series/1399/season/1"
+
+# Collection/Saga TMDB (Matrix)
+curl "http://localhost:3000/api/media/tmdb/collections/2344"
+
+# Filmographie d'un réalisateur TMDB
+curl "http://localhost:3000/api/media/tmdb/directors/525/movies"
+
+# Recherche TVDB
+curl "http://localhost:3000/api/media/tvdb/search?q=breaking%20bad"
+
+# Détails série TVDB avec traduction française
+curl "http://localhost:3000/api/media/tvdb/series/81189?lang=fr"
+
+# Saisons d'une série TVDB
+curl "http://localhost:3000/api/media/tvdb/series/81189/seasons"
+
+# Épisode TVDB par ID
+curl "http://localhost:3000/api/media/tvdb/episodes/349232"
+
+# Recherche anime Jikan
+curl "http://localhost:3000/api/anime-manga/jikan/search/anime?q=naruto"
+
+# Recherche globale Jikan (anime + manga)
+curl "http://localhost:3000/api/anime-manga/jikan/search?q=one%20piece"
+
+# Détails anime Jikan (Cowboy Bebop = 1)
+curl "http://localhost:3000/api/anime-manga/jikan/anime/1"
+
+# Épisodes d'un anime
+curl "http://localhost:3000/api/anime-manga/jikan/anime/1/episodes"
+
+# Personnages d'un anime avec doubleurs
+curl "http://localhost:3000/api/anime-manga/jikan/anime/21/characters"
+
+# Détails manga Jikan (Berserk = 2)
+curl "http://localhost:3000/api/media-manga/jikan/manga/2"
+
+# Top anime par score MAL
+curl "http://localhost:3000/api/anime-manga/jikan/top/anime"
+
+# Anime de la saison actuelle
+curl "http://localhost:3000/api/anime-manga/jikan/seasons/now"
+
+# Anime Winter 2024
+curl "http://localhost:3000/api/anime-manga/jikan/seasons/2024/winter"
+
+# Programme de diffusion du lundi
+curl "http://localhost:3000/api/anime-manga/jikan/schedules/monday"
+
+# Anime aléatoire (contenu adulte possible)
+curl "http://localhost:3000/api/anime-manga/jikan/anime/random"
+
+# Recherche personnage
+curl "http://localhost:3000/api/anime-manga/jikan/search/characters?q=luffy"
+
+# Détails d'un seiyuu/acteur
+curl "http://localhost:3000/api/anime-manga/jikan/people/118"
+
+# Liste des genres anime
+curl "http://localhost:3000/api/anime-manga/jikan/genres/anime"
+
+# ===== VIDEOGAMES =====
+
+# Recherche jeux IGDB
+curl "http://localhost:3000/api/videogames/igdb/search?q=zelda&limit=10"
+
+# Recherche avancée IGDB (PC, RPG, note > 80)
+curl "http://localhost:3000/api/videogames/igdb/advanced-search?platforms=6&genres=12&minRating=80"
+
+# Détails jeu IGDB avec traduction FR
+curl "http://localhost:3000/api/videogames/igdb/game/1074?lang=fr&autoTrad=1"
+
+# Détails jeu par slug IGDB
+curl "http://localhost:3000/api/videogames/igdb/game/slug/the-witcher-3-wild-hunt"
+
+# Genres disponibles IGDB
+curl "http://localhost:3000/api/videogames/igdb/genres"
+
+# Plateformes IGDB
+curl "http://localhost:3000/api/videogames/igdb/platforms"
+
+# Recherche compagnie IGDB
+curl "http://localhost:3000/api/videogames/igdb/companies/search?q=nintendo"
+
+# Jeux développés par Nintendo
+curl "http://localhost:3000/api/videogames/igdb/companies/70/games/developed"
+
+# Recherche franchise IGDB
+curl "http://localhost:3000/api/videogames/igdb/franchises/search?q=final%20fantasy"
+
+# Top jeux IGDB
+curl "http://localhost:3000/api/videogames/igdb/top-rated?limit=20"
+
+# Jeux à venir IGDB
+curl "http://localhost:3000/api/videogames/igdb/upcoming?limit=10"
+
+# Recherche jeux RAWG
+curl "http://localhost:3000/api/videogames/rawg/search?q=witcher"
+
+# Recherche avancée RAWG (PS5, Action, Metacritic > 90)
+curl "http://localhost:3000/api/videogames/rawg/advanced-search?platforms=187&genres=4&metacritic=90,100"
+
+# Détails jeu RAWG avec traduction FR
+curl "http://localhost:3000/api/videogames/rawg/game/3328?lang=fr&autoTrad=1"
+
+# Screenshots d'un jeu RAWG
+curl "http://localhost:3000/api/videogames/rawg/game/3328/screenshots"
+
+# Achievements d'un jeu RAWG
+curl "http://localhost:3000/api/videogames/rawg/game/3328/achievements"
+
+# DLCs d'un jeu RAWG
+curl "http://localhost:3000/api/videogames/rawg/game/3328/additions"
+
+# Genres disponibles RAWG
+curl "http://localhost:3000/api/videogames/rawg/genres"
+
+# Développeurs RAWG
+curl "http://localhost:3000/api/videogames/rawg/developers?page=1&page_size=20"
+
+# Jeux d'un développeur RAWG (CD Projekt Red)
+curl "http://localhost:3000/api/videogames/rawg/developers/9023/games"
+
+# Top jeux RAWG
+curl "http://localhost:3000/api/videogames/rawg/top-rated?page_size=20"
+
+# Recherche jeux JVC
+curl "http://localhost:3000/api/videogames/jvc/search?q=zelda"
+
+# Détails jeu JVC avec traduction EN
+curl "http://localhost:3000/api/videogames/jvc/game/114792?lang=en&autoTrad=1"
+
+# Health check JVC (vérifie FlareSolverr)
+curl "http://localhost:3000/api/videogames/jvc/health"
+
+# Recherche variations consoles (toutes)
+curl "http://localhost:3000/api/videogames/consolevariations/search?q=playstation%202"
+
+# Recherche uniquement consoles Nintendo
+curl "http://localhost:3000/api/videogames/consolevariations/search?q=nintendo&type=consoles&max=30"
+
+# Recherche controllers Xbox
+curl "http://localhost:3000/api/videogames/consolevariations/search?q=xbox&type=controllers"
+
+# Détails variation avec traduction française
+curl "http://localhost:3000/api/videogames/consolevariations/item/sony-playstation-2-slim-silver?lang=fr&autoTrad=1"
+
+# Liste des marques
+curl "http://localhost:3000/api/videogames/consolevariations/platforms"
+
+# Plateformes Nintendo
+curl "http://localhost:3000/api/videogames/consolevariations/platforms?brand=nintendo"
+
+# Browse variations NES
+curl "http://localhost:3000/api/videogames/consolevariations/browse/nes?max=50"
+
+# Health check ConsoleVariations
+curl "http://localhost:3000/api/videogames/consolevariations/health"
+
+# ===== COLLECTIBLES =====
+
+# Recherche LEGO Star Wars
+curl "http://localhost:3000/api/collectibles/coleka/search?q=lego%20star%20wars&max=10"
+
+# Recherche uniquement Funko Pop Batman
+curl "http://localhost:3000/api/collectibles/coleka/search?q=batman&category=funko"
+
+# Recherche figurines Marvel
+curl "http://localhost:3000/api/collectibles/coleka/search?q=marvel&category=figurines&lang=fr"
+
+# Détails item avec traduction anglaise
+curl "http://localhost:3000/api/collectibles/coleka/item/fr/lego/technic/42100-liebherr-r-9800_i123456?lang=en&autoTrad=1"
+
+# Liste des catégories Coleka
+curl "http://localhost:3000/api/collectibles/coleka/categories"
+
+# Health check Coleka (FlareSolverr)
+curl "http://localhost:3000/api/collectibles/coleka/health"
+
+# Recherche figurines Final Fantasy (Lulu-Berlu)
+curl "http://localhost:3000/api/collectibles/luluberlu/search?q=squall&max=6"
+
+# Recherche LEGO vintage (Lulu-Berlu)
+curl "http://localhost:3000/api/collectibles/luluberlu/search?q=lego%20star%20wars"
+
+# Détails par URL complète (Lulu-Berlu)
+curl "http://localhost:3000/api/collectibles/luluberlu/details?url=https://www.lulu-berlu.com/final-fantasy-viii-bandai-figurine-15cm-squall-leonhart-a47524.html"
+
+# Détails item par path (Lulu-Berlu)
+curl "http://localhost:3000/api/collectibles/luluberlu/item/final-fantasy-viii-bandai-figurine-15cm-squall-leonhart-a47524.html"
+
+# Détails avec traduction anglaise (Lulu-Berlu)
+curl "http://localhost:3000/api/collectibles/luluberlu/item/final-fantasy-viii-bandai-figurine-15cm-squall-leonhart-a47524.html?lang=en&autoTrad=1"
+
+# Health check Lulu-Berlu (FlareSolverr)
+curl "http://localhost:3000/api/collectibles/luluberlu/health"
+
+# ===== MUSIC =====
+
+# Recherche albums sur Discogs
+curl "http://localhost:3000/api/music/discogs/search/albums?q=daft%20punk"
+
+# Détails d'une release Discogs (Random Access Memories)
+curl "http://localhost:3000/api/music/discogs/releases/4571215"
+
+# Recherche par code-barres Discogs
+curl "http://localhost:3000/api/music/discogs/barcode/0887654764225"
+
+# Discographie d'un artiste Discogs
+curl "http://localhost:3000/api/music/discogs/artists/3289/releases"
+
+# Recherche albums sur Deezer
+curl "http://localhost:3000/api/music/deezer/search/albums?q=discovery"
+
+# Détails album Deezer
+curl "http://localhost:3000/api/music/deezer/albums/302127"
+
+# Top tracks d'un artiste Deezer
+curl "http://localhost:3000/api/music/deezer/artists/27/top"
+
+# Charts albums Deezer
+curl "http://localhost:3000/api/music/deezer/chart/albums"
+
+# Recherche albums MusicBrainz
+curl "http://localhost:3000/api/music/musicbrainz/search/albums?q=ok%20computer"
+
+# Détails artiste MusicBrainz (Radiohead)
+curl "http://localhost:3000/api/music/musicbrainz/artists/a74b1b7f-71a5-4011-9441-d0b5e4122711"
+
+# Pochette album MusicBrainz (via Cover Art Archive)
+curl "http://localhost:3000/api/music/musicbrainz/albums/a4864e94-6d75-3622-b477-f9ac58ed24c0/cover"
+
+# Recherche iTunes
+curl "http://localhost:3000/api/music/itunes/search?q=beyonce"
+
+# Détails album iTunes avec tracks
+curl "http://localhost:3000/api/music/itunes/albums/1440935467"
+
+# Albums d'un artiste iTunes
+curl "http://localhost:3000/api/music/itunes/artists/1419227/albums?country=FR"
+```
+
+---
+
+## 📝 Notes
+
+1. **FlareSolverr** : Certains providers (Bedetheque, LEGO, Playmobil) nécessitent FlareSolverr pour contourner les protections anti-bot. Temps de réponse plus élevé (~3-18s).
+
+2. **Traduction** : La traduction automatique est disponible via le paramètre `autoTrad=1`. Elle utilise un service de traduction interne.
+
+3. **Rate Limiting** : Respectez les limites de chaque API pour éviter les blocages.
+
+4. **Clés API** : Configurez les clés dans le fichier `.env` :
+   ```env
+   COMICVINE_API_KEY=your_key
+   BRICKSET_API_KEY=your_key
+   REBRICKABLE_API_KEY=your_key
+   GOOGLE_BOOKS_API_KEY=your_key  # optionnel
+   TMDB_API_KEY=your_key
+   TVDB_API_KEY=your_key
+   IGDB_CLIENT_ID=your_twitch_client_id
+   IGDB_CLIENT_SECRET=your_twitch_client_secret
+   RAWG_API_KEY=your_key
+   BGG_API_TOKEN=your_boardgamegeek_token
+   DISCOG_API_KEY=your_key  # optionnel, augmente rate limit
+   ```
