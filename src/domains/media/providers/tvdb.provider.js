@@ -55,7 +55,7 @@ export class TvdbProvider extends BaseProvider {
 
     this.normalizer = new TvdbNormalizer();
     this.log = createLogger('TvdbProvider');
-    this.apiKey = env.TVDB_API_KEY;
+    this.apiKey = env.TVDB_API_KEY || env.TVDB_KEY;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

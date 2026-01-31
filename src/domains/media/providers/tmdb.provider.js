@@ -40,7 +40,7 @@ export class TmdbProvider extends BaseProvider {
 
     this.normalizer = new TmdbNormalizer();
     this.log = createLogger('TmdbProvider');
-    this.apiKey = env.TMDB_API_KEY;
+    this.apiKey = env.TMDB_API_KEY || env.TMDB_KEY;
     this.imageBaseUrl = TMDB_IMAGE_BASE_URL;
   }
 
