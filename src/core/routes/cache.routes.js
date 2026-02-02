@@ -65,17 +65,20 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 }));
 
 /**
- * DELETE /api/cache/clear
+ * POST|DELETE /api/cache/clear
  * Vide tout le cache (DANGER)
  */
-router.delete('/clear', asyncHandler(async (req, res) => {
+const clearHandler = asyncHandler(async (req, res) => {
   const deleted = await clearAllCache();
   
   res.json({
     success: true,
     deleted,
-    message: 'Cache cleared'
+    message: 'Cache cleared successfully'
   });
-}));
+});
+
+router.post('/clear', clearHandler);
+router.delete('/clear', clearHandler);
 
 export default router;
