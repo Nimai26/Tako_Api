@@ -684,19 +684,21 @@ export class TmdbProvider extends BaseProvider {
     let url;
     if (mediaType === 'movie') {
       // Pour les films: discover avec release_date >= aujourd'hui
+      // Tri par popularité pour avoir les films les plus attendus
       url = this.buildUrl('/discover/movie', {
         language: lang,
         page,
         'primary_release_date.gte': today,
-        'sort_by': 'primary_release_date.asc'
+        'sort_by': 'popularity.desc'
       });
     } else {
       // Pour les séries: discover avec first_air_date >= aujourd'hui
+      // Tri par popularité pour avoir les séries les plus attendues
       url = this.buildUrl('/discover/tv', {
         language: lang,
         page,
         'first_air_date.gte': today,
-        'sort_by': 'first_air_date.asc'
+        'sort_by': 'popularity.desc'
       });
     }
 
