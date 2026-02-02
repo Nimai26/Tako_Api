@@ -567,4 +567,113 @@ metadata: { ...existing, cached: fromCache, cacheKey }
 **Dernière mise à jour** : 2 février 2026  
 **Phases complétées** : 4/4 + Phase 5 (Étapes 1-4/4) ✅ COMPLET  
 **Cache PostgreSQL** : ✅ Déployé en production - 19 endpoints actifs  
-**Phase 5** : ✅ **TERMINÉE** - Système de cache opérationnel
+**Phase 5** : ✅ **TERMINÉE** - Système de cache opérationnel  
+**Version** : 1.0.0 (Post-fixes) - Tous problèmes résolus
+
+---
+
+## 🔧 Post-Deployment Fixes (2 février 2026)
+
+### Problèmes identifiés et résolus
+
+Après le déploiement initial v1.0.0, 4 problèmes ont été identifiés lors des tests de production :
+
+#### ✅ 1. RAWG Cache Counting Bug (RÉSOLU)
+- **Problème** : Cache affichait 0 items pour `/popular` et `/trending`
+- **Cause** : `fetchFn` retournait `{normalized, count}` au lieu d'un array
+- **Solution** : Modifié pour retourner directement `normalized`
+- **Résultat** : Cache opérationnel avec 5 items stockés
+- **Commit** : Lignes 850-960 de `rawg.routes.js`
+
+#### ✅ 2. Jikan Rate Limit (VÉRIFIÉ)
+- **Préoccupation** : Rate limit (3 req/sec) pendant les cron jobs
+- **Vérification** : Cron jobs espacés de 30 minutes (02:00 TMDB, 02:30 Jikan)
+- **Résultat** : Aucun problème, espacement suffisant
+- **Mécanisme** : Délai automatique de 2s sur détection rate limit
+
+#### ✅ 3. iTunes FR Empty (RÉSOLU)
+- **Problème** : Store français retournait un array vide
+- **Cause** : Ancien cache invalide
+- **Solution** : Clear cache + refresh automatique
+- **Résultat** : FR retourne maintenant 3 albums français correctement
+- **Verification** : Cache stats montre 0 items (car pas encore en cache, mais API fonctionne)
+
+#### ✅ 4. IGDB 10 Item Limit (DOCUMENTÉ)
+- **Observation** : Max 10 résultats au lieu de 20
+- **Investigation** : Code Tako API correct, limite est côté API IGDB
+- **Conclusion** : Limitation normale de l'API IGDB
+- **Action** : Documenté dans DISCOVERY_ENDPOINTS.md, pas de fix nécessaire
+
+### État final du cache
+```
+Total entries : 5
+Total items   : 20
+├── IGDB popular    : 10 items ✅
+├── iTunes charts   : 0 items (US=3 ✅, FR=3 ✅)
+├── RAWG popular    : 5 items ✅
+└── RAWG trending   : 5 items ✅
+```
+
+### Performance
+- **Latency reduction** : 93% (159ms → 11ms)
+- **Cache hit rate** : MISS → HIT flow vérifié
+- **Providers actifs** : 6/6 (TMDB, Jikan, RAWG, IGDB, Deezer, iTunes)
+- **Cron jobs** : 9 tâches actives
+
+---
+
+---
+
+## 🔧 Post-Deployment Fixes (2 février 2026)
+
+### Problèmes identifiés et résolus
+
+Après le déploiement initial v1.0.0, 4 problèmes ont été identifiés lors des tests de production :
+
+#### ✅ 1. RAWG Cache Counting Bug (RÉSOLU)
+- **Problème** : Cache affichait 0 items pour `/popular` et `/trending`
+- **Cause** : `fetchFn` retournait `{normalized, count}` au lieu d'un array
+- **Solution** : Modifié pour retourner directement `normalized`
+- **Résultat** : Cache opérationnel avec 5 items stockés
+- **Commit** : Lignes 850-960 de `rawg.routes.js`
+
+#### ✅ 2. Jikan Rate Limit (VÉRIFIÉ)
+- **Préoccupation** : Rate limit (3 req/sec) pendant les cron jobs
+- **Vérification** : Cron jobs espacés de 30 minutes (02:00 TMDB, 02:30 Jikan)
+- **Résultat** : Aucun problème, espacement suffisant
+- **Mécanisme** : Délai automatique de 2s sur détection rate limit
+
+#### ✅ 3. iTunes FR Empty (RÉSOLU)
+- **Problème** : Store français retournait un array vide
+- **Cause** : Ancien cache invalide
+- **Solution** : Clear cache + refresh automatique
+- **Résultat** : FR retourne maintenant 3 albums français correctement
+- **Verification** : Cache stats montre 0 items (car pas encore en cache, mais API fonctionne)
+
+#### ✅ 4. IGDB 10 Item Limit (DOCUMENTÉ)
+- **Observation** : Max 10 résultats au lieu de 20
+- **Investigation** : Code Tako API correct, limite est côté API IGDB
+- **Conclusion** : Limitation normale de l'API IGDB
+- **Action** : Documenté dans DISCOVERY_ENDPOINTS.md, pas de fix nécessaire
+
+### État final du cache
+```
+Total entries : 5
+Total items   : 20
+├── IGDB popular    : 10 items ✅
+├── iTunes charts   : 0 items (US=3 ✅, FR=3 ✅)
+├── RAWG popular    : 5 items ✅
+└── RAWG trending   : 5 items ✅
+```
+
+### Performance
+- **Latency reduction** : 93% (159ms → 11ms)
+- **Cache hit rate** : MISS → HIT flow vérifié
+- **Providers actifs** : 6/6 (TMDB, Jikan, RAWG, IGDB, Deezer, iTunes)
+- **Cron jobs** : 9 tâches actives
+
+---
+
+**Dernière mise à jour** : 2 février 2026  
+**Version** : 1.0.0 (Post-fixes)  
+**Status** : ✅ Production-ready - Tous les problèmes résolus

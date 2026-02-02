@@ -847,7 +847,7 @@ router.get('/popular', asyncHandler(async (req, res) => {
   
   const limit = Math.min(parseInt(pageSize), 100);
   
-  const { data: rawData, fromCache, cacheKey } = await withDiscoveryCache({
+  const { data: normalized, fromCache, cacheKey } = await withDiscoveryCache({
     provider: 'rawg',
     endpoint: 'popular',
     fetchFn: async () => {
@@ -867,10 +867,8 @@ router.get('/popular', asyncHandler(async (req, res) => {
         normalized = await translateGameGenres(normalized, autoTrad, lang);
       }
       
-      return {
-        normalized,
-        count: data.count
-      };
+      // Retourner directement l'array pour que le cache compte les résultats
+      return normalized;
     },
     cacheOptions: {
       category: platforms || 'all',
@@ -883,10 +881,10 @@ router.get('/popular', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     endpoint: 'popular',
-    data: rawData.normalized,
+    data: normalized,
     metadata: {
       page: parseInt(page),
-      totalResults: rawData.count || 0,
+      totalResults: normalized.length,
       platforms: platforms || 'all',
       genres: genres || 'all',
       cached: fromCache,
@@ -912,7 +910,7 @@ router.get('/trending', asyncHandler(async (req, res) => {
   
   const limit = Math.min(parseInt(pageSize), 100);
   
-  const { data: rawData, fromCache, cacheKey } = await withDiscoveryCache({
+  const { data: normalized, fromCache, cacheKey } = await withDiscoveryCache({
     provider: 'rawg',
     endpoint: 'trending',
     fetchFn: async () => {
@@ -932,10 +930,8 @@ router.get('/trending', asyncHandler(async (req, res) => {
         normalized = await translateGameGenres(normalized, autoTrad, lang);
       }
       
-      return {
-        normalized,
-        count: data.count
-      };
+      // Retourner directement l'array pour que le cache compte les résultats
+      return normalized;
     },
     cacheOptions: {
       category: platforms || 'all',
@@ -948,10 +944,10 @@ router.get('/trending', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     endpoint: 'trending',
-    data: rawData.normalized,
+    data: normalized,
     metadata: {
       page: parseInt(page),
-      totalResults: rawData.count || 0,
+      totalResults: normalized.length,
       platforms: platforms || 'all',
       genres: genres || 'all',
       ordering: 'recently_added',

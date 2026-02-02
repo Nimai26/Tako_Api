@@ -32,3 +32,6 @@ Une fois toutes les fonctionnalités testées et validée de l'ajout d'un domain
 
 Le logger est exporté en named export
 le healthCheck retourne healthy
+
+Les credentilas github et docker sont ici: 
+/mnt/egon/Programmation/Images docker/Credentials/Credentials
