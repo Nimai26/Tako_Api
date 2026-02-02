@@ -154,3 +154,55 @@ export async function forceRefreshExpired(batchSize = 10) {
   log.info(`🔄 Force refresh: ${batchSize} expired entries`);
   return await refreshExpiredCaches(batchSize);
 }
+/**
+ * Force un refresh de TOUTES les entrées (même non expirées)
+ * @returns {Promise<Object>}
+ */
+export async function forceRefreshAll() {
+  log.info('🔄 Force refresh: ALL entries (including valid ones)');
+  
+  const { getAllEntries } = await import('./discovery-cache.repository.js');
+  const { refreshCacheEntry } = await import('./cache-refresher.js');
+  
+  const startTime = Date.now();
+  
+  try {
+    // Récupérer TOUTES les entrées
+    const allEntries = await getAllEntries();
+    
+    if (allEntries.length === 0) {
+      log.debug('No cache entries to refresh');
+      return { total: 0, success: 0, failed: 0 };
+    }
+    
+    log.info(`🔄 Refreshing ${allEntries.length} cache entries (forced)...`);
+    
+    let success = 0;
+    let failed = 0;
+    
+    for (const entry of allEntries) {
+      const result = await refreshCacheEntry(entry);
+      if (result) {
+        success++;
+      } else {
+        failed++;
+      }
+      
+      // Délai entre chaque refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    const duration = Date.now() - startTime;
+    log.info(`✅ Forced refresh complete: ${success} success, ${failed} failed (${duration}ms)`);
+    
+    return {
+      total: allEntries.length,
+      success,
+      failed,
+      duration
+    };
+  } catch (err) {
+    log.error(`❌ Forced refresh error: ${err.message}`);
+    return { total: 0, success: 0, failed: 0, error: err.message };
+  }
+}

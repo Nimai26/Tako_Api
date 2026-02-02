@@ -52,15 +52,26 @@ router.post('/refresh/:provider', asyncHandler(async (req, res) => {
  * 
  * Query params :
  * - batchSize : Nombre d'entrées à rafraîchir (défaut 10)
+ * - force : Si true, rafraîchit TOUTES les entrées (même non expirées)
  */
 router.post('/refresh', asyncHandler(async (req, res) => {
   const batchSize = parseInt(req.query.batchSize) || 10;
+  const force = req.query.force === 'true';
   
-  const result = await forceRefreshExpired(batchSize);
+  let result;
+  if (force) {
+    // Rafraîchir TOUTES les entrées
+    const { forceRefreshAll } = await import('../../infrastructure/database/refresh-scheduler.js');
+    result = await forceRefreshAll();
+  } else {
+    // Rafraîchir seulement les expirées
+    result = await forceRefreshExpired(batchSize);
+  }
   
   res.json({
-    success: true,
-    ...result
+    ...result,
+    success: result.total > 0 || result.success > 0,
+    forced: force
   });
 }));
 

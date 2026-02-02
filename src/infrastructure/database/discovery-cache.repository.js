@@ -148,6 +148,29 @@ export async function getExpiredEntries(limit = 10) {
 }
 
 /**
+ * Récupère TOUTES les entrées de cache
+ * @returns {Promise<Array>}
+ */
+export async function getAllEntries() {
+  if (!getIsConnected()) return [];
+  
+  try {
+    const result = await queryAll(
+      `SELECT cache_key, provider, endpoint, category, period,
+              expires_at, updated_at, fetch_count
+       FROM discovery_cache 
+       ORDER BY provider, endpoint, category`,
+      []
+    );
+    
+    return result;
+  } catch (err) {
+    log.error(`Erreur getAllEntries: ${err.message}`);
+    return [];
+  }
+}
+
+/**
  * Supprime les entrées trop anciennes (non accédées depuis X jours)
  * @param {number} daysThreshold - Nombre de jours
  * @returns {Promise<number>} Nombre d'entrées supprimées

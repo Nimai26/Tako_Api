@@ -42,15 +42,11 @@ const PROVIDER_FETCHERS = {
     upcoming: async (options) => {
       const { TmdbProvider } = await import('../../domains/media/providers/tmdb.provider.js');
       const provider = new TmdbProvider();
-      if (options.category === 'movie') {
-        return await provider.getUpcomingMovies({ limit: 20, lang: 'fr-FR', page: 1 });
-      } else if (options.category === 'tv') {
-        if (options.variant === 'on-the-air') {
-          return await provider.getOnTheAir({ limit: 20, lang: 'fr-FR', page: 1 });
-        } else {
-          return await provider.getAiringToday({ limit: 20, lang: 'fr-FR', page: 1 });
-        }
-      }
+      return await provider.getUpcoming(options.category || 'movie', { 
+        limit: 20, 
+        lang: 'fr-FR', 
+        page: 1 
+      });
     }
   },
   
@@ -130,7 +126,12 @@ const PROVIDER_FETCHERS = {
  * @param {Object} entry - Entrée de cache à rafraîchir
  * @returns {Promise<boolean>} Succès du refresh
  */
-async function refreshCacheEntry(entry) {
+/**
+ * Rafraîchit une entrée de cache expirée
+ * @param {Object} entry - Entrée de cache à rafraîchir
+ * @returns {Promise<boolean>} - true si succès
+ */
+export async function refreshCacheEntry(entry) {
   const { cache_key, provider, endpoint, category, period } = entry;
   
   try {
