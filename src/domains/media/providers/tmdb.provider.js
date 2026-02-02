@@ -677,16 +677,21 @@ export class TmdbProvider extends BaseProvider {
 
     this.log.debug(`Upcoming ${mediaType}, limit: ${limit}`);
 
+    // Utiliser discover avec filtre de date pour les deux types
+    // car /movie/upcoming retourne des films du passé
+    const today = new Date().toISOString().split('T')[0];
+    
     let url;
     if (mediaType === 'movie') {
-      // Pour les films: endpoint dédié /movie/upcoming
-      url = this.buildUrl('/movie/upcoming', {
+      // Pour les films: discover avec release_date >= aujourd'hui
+      url = this.buildUrl('/discover/movie', {
         language: lang,
-        page
+        page,
+        'primary_release_date.gte': today,
+        'sort_by': 'primary_release_date.asc'
       });
     } else {
       // Pour les séries: discover avec first_air_date >= aujourd'hui
-      const today = new Date().toISOString().split('T')[0];
       url = this.buildUrl('/discover/tv', {
         language: lang,
         page,
