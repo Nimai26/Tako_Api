@@ -404,6 +404,43 @@ export async function getTopRated(options = {}) {
 }
 
 /**
+ * Jeux populaires (par rating)
+ * 
+ * @param {Object} options Options de recherche
+ * @param {number} options.page Numéro de page
+ * @param {number} options.pageSize Nombre de résultats par page
+ * @param {string} options.platforms IDs de plateformes (séparés par virgule)
+ * @param {string} options.genres IDs de genres (séparés par virgule)
+ * @param {string} options.tags IDs de tags (séparés par virgule)
+ * @returns {Promise} Jeux populaires
+ */
+export async function getPopular(options = {}) {
+  return advancedSearch({
+    ...options,
+    ordering: '-rating',
+    metacritic: '70,100' // Jeux bien notés
+  });
+}
+
+/**
+ * Jeux trending (récemment ajoutés à la base)
+ * 
+ * @param {Object} options Options de recherche
+ * @param {number} options.page Numéro de page
+ * @param {number} options.pageSize Nombre de résultats par page
+ * @param {string} options.platforms IDs de plateformes (séparés par virgule)
+ * @param {string} options.genres IDs de genres (séparés par virgule)
+ * @param {string} options.tags IDs de tags (séparés par virgule)
+ * @returns {Promise} Jeux récemment ajoutés
+ */
+export async function getTrending(options = {}) {
+  return advancedSearch({
+    ...options,
+    ordering: '-added' // Triés par date d'ajout (récents d'abord)
+  });
+}
+
+/**
  * Jeux récents
  */
 export async function getRecentReleases(options = {}) {

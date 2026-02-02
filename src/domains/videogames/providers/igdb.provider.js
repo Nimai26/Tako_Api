@@ -448,6 +448,31 @@ export async function getTopRated(options = {}) {
 }
 
 /**
+ * Jeux populaires (par popularité)
+ * 
+ * @param {Object} options Options de recherche
+ * @param {number} options.limit Nombre de résultats (défaut: 20)
+ * @param {number} options.offset Décalage pour pagination
+ * @param {string} options.platforms IDs de plateformes (ex: "6,48,49" pour PC, PS4, Xbox One)
+ * @param {string} options.genres IDs de genres (ex: "4,5,12" pour Fighting, Shooter, RPG)
+ * @returns {Promise} Jeux populaires
+ */
+export async function getPopular(options = {}) {
+  const { limit = 20, offset = 0, platforms, genres } = options;
+  
+  let body = `
+    fields id,name,slug,summary,cover.image_id,total_rating,total_rating_count,follows,hypes,
+    first_release_date,genres.id,genres.name,platforms.id,platforms.abbreviation;
+    where total_rating_count >= 50;
+  `;
+  if (platforms) body += ` & platforms = (${platforms})`;
+  if (genres) body += ` & genres = (${genres})`;
+  body += `; sort total_rating_count desc; limit ${limit}; offset ${offset};`;
+  
+  return igdbRequest('games', body);
+}
+
+/**
  * Jeux récents
  */
 export async function getRecentReleases(options = {}) {

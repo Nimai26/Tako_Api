@@ -21,6 +21,7 @@ import {
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
+import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const log = logger.create('IGDBRoutes');
 const router = express.Router();
@@ -514,6 +515,60 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
     source: 'igdb',
     count: normalized.length,
     results: normalized
+  });
+}));
+
+/**
+ * Jeux populaires (par follows/popularité)
+ * GET /api/videogames/igdb/popular?limit=20&platforms=6,48,49&genres=4,5&lang=fr&autoTrad=1
+ */
+router.get('/popular', asyncHandler(async (req, res) => {
+  const { 
+    limit = 20, 
+    offset = 0,
+    platforms,
+    genres,
+    lang, 
+    autoTrad 
+  } = req.query;
+  
+  const { data: normalized, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'igdb',
+    endpoint: 'popular',
+    fetchFn: async () => {
+      const games = await igdbProvider.getPopular({ 
+        limit: Math.min(parseInt(limit), 100),
+        offset: parseInt(offset),
+        platforms,
+        genres
+      });
+      
+      let normalized = games.map(g => igdbNormalizer.normalizeSearchResult(g));
+      normalized = await translateGameGenres(normalized, autoTrad, lang);
+      
+      return normalized;
+    },
+    cacheOptions: {
+      category: platforms || 'all',
+      ttl: getTTL('popular')
+    }
+  });
+  
+  res.json({
+    success: true,
+    provider: 'igdb',
+    domain: 'videogames',
+    endpoint: 'popular',
+    data: normalized,
+    metadata: {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      platforms: platforms || 'all',
+      genres: genres || 'all',
+      ordering: 'popularity',
+      cached: fromCache,
+      cacheKey
+    }
   });
 }));
 

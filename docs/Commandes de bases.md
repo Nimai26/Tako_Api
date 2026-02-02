@@ -1,7 +1,7 @@
 Nous sommes dans un container docker donc les modifications nécéssite un rebliud et
 redeploiement pour tester. Port 3000
 
-L'import de chaque domaine doit permettre d'importer ses fonctions d'origines mais si possible en améliorant le code et les retours avec plus de routes de rechechers qui sont possibles.
+
 
 La traduction auto qui doit être dans tous les providers est gérée ici :
 /mnt/egon/Programmation/Images docker/Tako_Api/src/shared/utils/translator.js

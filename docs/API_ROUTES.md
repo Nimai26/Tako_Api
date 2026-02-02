@@ -2,7 +2,9 @@
 
 > Documentation complète de toutes les routes disponibles par domaine et provider.
 > 
-> **Dernière mise à jour** : 30 janvier 2026 - Ajout E-commerce (Amazon multi-marketplaces)
+> **Dernière mise à jour** : 2 février 2026 - **Phase 5 : Cache PostgreSQL** ✅ Complétée  
+> **Endpoints discovery** : 19 (TMDB 7, Jikan 4, RAWG 2, IGDB 1, Deezer 1, iTunes 1)  
+> **Cache** : PostgreSQL actif - 93% réduction latence
 
 ---
 
@@ -43,6 +45,8 @@
    - [iTunes](#itunes)
 10. [E-commerce](#-e-commerce)
     - [Amazon](#amazon)
+11. [Cache & Administration](#-cache--administration)
+    - [Cache Admin](#cache-admin)
 
 ---
 
@@ -390,6 +394,10 @@
 | **Classements** | | |
 | `GET /top/anime` | Top anime (par score MAL) | ✅ Fonctionne |
 | `GET /top/manga` | Top manga (par score MAL) | ✅ Fonctionne |
+| `GET /top` | **Top anime/manga (🆕)** | ✅ Fonctionne |
+| `GET /trending` | **Anime de la saison en cours (🆕)** | ✅ Fonctionne |
+| `GET /upcoming` | **Anime à venir prochaine saison (🆕 Phase 4)** | ✅ Fonctionne |
+| `GET /schedule` | **Planning de diffusion unifié (🆕 Phase 4)** | ✅ Fonctionne |
 | **Plannings** | | |
 | `GET /schedules` | Programme complet de diffusion | ✅ Fonctionne |
 | `GET /schedules/:day` | Programme d'un jour spécifique | ✅ Fonctionne |
@@ -425,6 +433,59 @@
 **Paramètres top** :
 - `filter` : Filtre (airing, upcoming, bypopularity, favorite)
 - `type` : Type de contenu
+
+**Paramètres top/trending** (🆕) :
+- `type` : Type (`anime` ou `manga`, défaut: `anime`)
+- `filter` : Filtre (`bypopularity`, `favorite`, `airing`, `publishing`)
+- `subtype` : Sous-type (tv, movie, ova, special pour anime / manga, novel, lightnovel pour manga)
+- `limit` : Nombre de résultats (défaut: 25, max: 25)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue pour traduction
+- `autoTrad` : Activer traduction auto (1 ou true)
+
+**Paramètres upcoming/schedule** (🆕 Phase 4) :
+- `day` : Jour de la semaine (monday, tuesday, wednesday, thursday, friday, saturday, sunday, unknown, other) - uniquement pour /schedule
+- `filter` : Filtre par type (tv, movie, ova, special, ona, music) - optionnel
+- `limit` : Nombre de résultats (défaut: 25, max: 25)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue pour traduction
+- `autoTrad` : Activer traduction auto (1 ou true)
+
+**Exemples top/trending** (🆕) :
+```bash
+# Top anime par popularité
+GET /api/anime-manga/jikan/top?type=anime&filter=bypopularity&limit=10
+
+# Top manga par favoris
+GET /api/anime-manga/jikan/top?type=manga&filter=favorite
+
+# Anime trending de la saison en cours
+GET /api/anime-manga/jikan/trending?limit=20
+
+# Anime d'une saison spécifique
+GET /api/anime-manga/jikan/seasons/2024/winter?filter=tv
+
+# Avec traduction automatique
+GET /api/anime-manga/jikan/top?type=anime&filter=bypopularity&autoTrad=1&lang=fr
+```
+
+**Exemples upcoming/schedule** (🆕 Phase 4) :
+```bash
+# Anime à venir prochaine saison (627 anime)
+GET /api/anime-manga/jikan/upcoming?limit=10
+
+# Anime à venir filtrés par type TV
+GET /api/anime-manga/jikan/upcoming?filter=tv&limit=20
+
+# Planning des anime diffusés le lundi
+GET /api/anime-manga/jikan/schedule?day=monday&limit=15
+
+# Planning du vendredi avec traduction
+GET /api/anime-manga/jikan/schedule?day=friday&autoTrad=1&lang=fr
+
+# Tous les anime du planning (tous les jours)
+GET /api/anime-manga/jikan/schedule?day=unknown&limit=25
+```
 
 **Paramètres schedules** :
 - `:day` : Jour (monday, tuesday, wednesday, thursday, friday, saturday, sunday, unknown)
@@ -470,6 +531,12 @@
 | `GET /persons/:id` | Détails d'une personne | ✅ Fonctionne |
 | `GET /directors/:id/movies` | Filmographie d'un réalisateur | ✅ Fonctionne |
 | `GET /discover/movies` | Découvrir des films par critères | ✅ Fonctionne |
+| `GET /trending` | **Films/séries trending** (🆕) | ✅ Fonctionne |
+| `GET /popular` | **Films/séries populaires** (🆕) | ✅ Fonctionne |
+| `GET /top-rated` | **Films/séries les mieux notés** (🆕) | ✅ Fonctionne |
+| `GET /upcoming` | **Films/séries à venir** (🆕 Phase 4) | ✅ Fonctionne |
+| `GET /on-the-air` | **Séries avec nouveaux épisodes** (🆕 Phase 4) | ✅ Fonctionne |
+| `GET /airing-today` | **Séries diffusées aujourd'hui** (🆕 Phase 4) | ✅ Fonctionne |
 
 **Paramètres communs** :
 - `q` : Terme de recherche (requis pour /search)
@@ -482,6 +549,57 @@
 - `genre` : ID de genre TMDB
 - `year` : Année de sortie
 - `sort` : Tri (popularity.desc, vote_average.desc, release_date.desc)
+
+**Paramètres trending/popular/top-rated** (🆕) :
+- `category` : Type de contenu (`movie` ou `tv`, défaut: `movie`)
+- `period` : Période trending (`day` ou `week`, défaut: `week`) - uniquement pour /trending
+- `limit` : Nombre de résultats (défaut: 20, max: 100)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue (défaut: fr-FR)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres upcoming/on-the-air/airing-today** (🆕 Phase 4) :
+- `category` : Type de contenu (`movie` ou `tv`) - uniquement pour /upcoming
+- `limit` : Nombre de résultats (défaut: 20, max: 100)
+- `page` : Numéro de page (défaut: 1)
+- `lang` : Langue (défaut: fr-FR)
+- `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Exemples trending/popular/top-rated** (🆕) :
+```bash
+# Films trending de la semaine
+GET /api/media/tmdb/trending?category=movie&period=week&limit=10
+
+# Séries trending du jour
+GET /api/media/tmdb/trending?category=tv&period=day
+
+# Films populaires
+GET /api/media/tmdb/popular?category=movie&limit=20
+
+# Séries les mieux notées
+GET /api/media/tmdb/top-rated?category=tv&limit=30
+
+# Avec traduction automatique
+GET /api/media/tmdb/trending?category=movie&period=week&autoTrad=1&lang=fr
+```
+
+**Exemples upcoming/on-the-air/airing-today** (🆕 Phase 4) :
+```bash
+# Films à venir (956 films)
+GET /api/media/tmdb/upcoming?category=movie&limit=10
+
+# Séries à venir jamais diffusées (388 séries)
+GET /api/media/tmdb/upcoming?category=tv&limit=20
+
+# Séries avec nouveaux épisodes dans les 7 prochains jours (1225 séries)
+GET /api/media/tmdb/on-the-air?limit=15
+
+# Séries diffusées aujourd'hui
+GET /api/media/tmdb/airing-today?limit=10
+
+# Avec traduction automatique
+GET /api/media/tmdb/upcoming?category=movie&autoTrad=1&lang=fr
+```
 
 **Données retournées** :
 - **Films** : titre, synopsis, genres, durée, budget, revenus, cast, crew, collection, images
@@ -572,8 +690,9 @@
 | `GET /franchises/:id` | Détails d'une franchise | ✅ Fonctionne |
 | `GET /collections/:id` | Détails d'une collection | ✅ Fonctionne |
 | `GET /top-rated` | Jeux les mieux notés | ✅ Fonctionne |
+| `GET /popular` | **Jeux populaires (🆕)** | ✅ Fonctionne |
 | `GET /recent-releases` | Sorties récentes | ✅ Fonctionne |
-| `GET /upcoming` | Jeux à venir | ✅ Fonctionne |
+| `GET /upcoming` | **Jeux à venir** (🆕 Phase 4) | ✅ Fonctionne |
 
 **Paramètres communs** :
 - `q` : Terme de recherche (requis pour /search)
@@ -581,6 +700,45 @@
 - `offset` : Position de départ (pagination)
 - `lang` : Langue cible pour traduction (fr, de, es, it, pt)
 - `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres popular** (🆕) :
+- `limit` : Nombre de résultats (défaut: 20, max: 100)
+- `offset` : Décalage pour pagination
+- `platforms` : IDs de plateformes (ex: "6,48,49" pour PC, PS4, Xbox One)
+- `genres` : IDs de genres (ex: "4,5,12" pour Fighting, Shooter, RPG)
+- `lang` : Langue pour traduction
+- `autoTrad` : Activer traduction (1 ou true)
+
+**Paramètres upcoming** (🆕 Phase 4) :
+- `limit` : Nombre de résultats (défaut: 20)
+- `offset` : Décalage pour pagination
+- `platforms` : IDs de plateformes (ex: "6,48,49" pour PC, PS4, Xbox One)
+- `lang` : Langue pour traduction
+- `autoTrad` : Activer traduction (1 ou true)
+
+**Exemples popular** (🆕) :
+```bash
+# Jeux populaires (triés par nombre de votes)
+GET /api/videogames/igdb/popular?limit=20
+
+# Popular filtrés par plateforme PC (ID=6)
+GET /api/videogames/igdb/popular?platforms=6&limit=10
+
+# Popular genre RPG (ID=12) avec traduction
+GET /api/videogames/igdb/popular?genres=12&autoTrad=1&lang=fr
+```
+
+**Exemples upcoming** (🆕 Phase 4) :
+```bash
+# Jeux à venir (10+ jeux)
+GET /api/videogames/igdb/upcoming?limit=10
+
+# Jeux à venir filtrés par plateforme PS5 (ID=167)
+GET /api/videogames/igdb/upcoming?platforms=167&limit=20
+
+# Avec traduction automatique
+GET /api/videogames/igdb/upcoming?autoTrad=1&lang=fr
+```
 
 **Paramètres de recherche avancée** :
 - `platforms` : IDs de plateformes séparés par virgules (ex: "6,48,49" = PC, PS4, Xbox One)
@@ -640,15 +798,55 @@
 | `GET /creators` | Liste des créateurs | ✅ Fonctionne |
 | `GET /creators/:id` | Détails créateur | ✅ Fonctionne |
 | `GET /top-rated` | Jeux les mieux notés | ✅ Fonctionne |
+| `GET /popular` | **Jeux populaires (🆕)** | ✅ Fonctionne |
+| `GET /trending` | **Jeux trending récents (🆕)** | ✅ Fonctionne |
 | `GET /recent-releases` | Sorties récentes | ✅ Fonctionne |
-| `GET /upcoming` | Jeux à venir | ✅ Fonctionne |
+| `GET /upcoming` | **Jeux à venir** (🆕 Phase 4) | ✅ Fonctionne |
 
 **Paramètres communs** :
 - `q` : Terme de recherche
 - `page` : Numéro de page (défaut: 1)
-- `page_size` : Taille de page (défaut: 20, max: 40)
+- `page_size` / `pageSize` : Taille de page (défaut: 20, max: 100)
 - `lang` : Langue cible pour traduction (fr, de, es, it, pt)
 - `autoTrad` : Activer traduction automatique (1 ou true)
+
+**Paramètres popular/trending** (🆕) :
+- `pageSize` : Nombre de résultats (défaut: 20, max: 100)
+- `platforms` : IDs de plateformes (ex: "4,187" pour PC, PS5)
+- `genres` : IDs de genres (ex: "4,5" pour Action, Shooter)
+- `tags` : IDs de tags
+- `lang` : Langue pour traduction auto
+- `autoTrad` : Activer traduction (1 ou true)
+
+**Paramètres upcoming** (🆕 Phase 4) :
+- `page` : Numéro de page (défaut: 1)
+- `pageSize` : Nombre de résultats (défaut: 20)
+- `lang` : Langue pour traduction
+- `autoTrad` : Activer traduction (1 ou true)
+
+**Exemples popular/trending** (🆕) :
+```bash
+# Jeux populaires (bien notés, metacritic 70+)
+GET /api/videogames/rawg/popular?pageSize=10
+
+# Jeux trending (récemment ajoutés)
+GET /api/videogames/rawg/trending?pageSize=10
+
+# Popular filtrés par plateforme PC (ID=4)
+GET /api/videogames/rawg/popular?platforms=4&pageSize=20
+
+# Trending genre Shooter (ID=2) avec traduction
+GET /api/videogames/rawg/trending?genres=2&autoTrad=1&lang=fr
+```
+
+**Exemples upcoming** (🆕 Phase 4) :
+```bash
+# Jeux à venir (42 jeux)
+GET /api/videogames/rawg/upcoming?pageSize=10
+
+# Jeux à venir avec traduction
+GET /api/videogames/rawg/upcoming?pageSize=20&autoTrad=1&lang=fr
+```
 
 **Paramètres de recherche avancée** :
 - `platforms` : IDs de plateformes séparés par virgules
@@ -2146,17 +2344,31 @@ L'API pokemontcg.io peut parfois être lente ou indisponible. En cas d'erreur 50
 | `GET /chart/albums` | Charts albums | ✅ Fonctionne |
 | `GET /chart/tracks` | Charts tracks | ✅ Fonctionne |
 | `GET /chart/artists` | Charts artistes | ✅ Fonctionne |
+| `GET /charts` | **🆕 Charts unifié** (albums/tracks/artists) | ✅ Fonctionne |
 
 **Paramètres communs** :
 - `q` : Terme de recherche
 - `limit` : Nombre de résultats (défaut: 25)
 - `index` : Offset pour pagination
+- `category` : Type de chart (albums/tracks/artists) pour endpoint `/charts`
 
 **Données retournées** :
 - **Albums** : titre, artiste, cover, tracklist, durée, genres
 - **Artistes** : nom, image, fans, top tracks, discographie
 - **Tracks** : titre, durée, preview 30s, BPM, artiste, album
-- **Charts** : tops albums/tracks/artistes par genre
+- **Charts** : tops albums/tracks/artistes avec position, rank, tendances
+
+**Exemple - Charts Deezer** :
+```bash
+# Top albums France
+curl "http://localhost:3000/api/music/deezer/charts?category=albums&limit=10"
+
+# Top tracks
+curl "http://localhost:3000/api/music/deezer/charts?category=tracks&limit=20"
+
+# Top artistes
+curl "http://localhost:3000/api/music/deezer/charts?category=artists&limit=15"
+```
 
 ---
 
@@ -2211,17 +2423,32 @@ L'API pokemontcg.io peut parfois être lente ou indisponible. En cas d'erreur 50
 | `GET /artists/:id` | Détails d'un artiste | ✅ Fonctionne |
 | `GET /artists/:id/albums` | Albums d'un artiste | ✅ Fonctionne |
 | `GET /tracks/:id` | Détails d'un track | ✅ Fonctionne |
+| `GET /charts` | **🆕 Charts par pays** (albums/songs) | ✅ Fonctionne |
 
 **Paramètres communs** :
 - `q` : Terme de recherche
 - `limit` : Nombre de résultats (défaut: 25, max: 200)
 - `country` : Code pays (défaut: FR)
+- `category` : Type de chart (album/song) pour endpoint `/charts`
 
 **Données retournées** :
 - **Albums** : titre, artiste, cover HD, tracklist, prix, date
 - **Artistes** : nom, genre principal, liens iTunes/Apple Music
 - **Tracks** : titre, durée, preview 30s, prix, explicit flag
+- **Charts** : top albums/songs par pays via RSS feed iTunes
 - Support multi-pays pour prix et disponibilité
+
+**Exemple - Charts iTunes** :
+```bash
+# Top albums France
+curl "http://localhost:3000/api/music/itunes/charts?country=fr&category=album&limit=10"
+
+# Top songs US
+curl "http://localhost:3000/api/music/itunes/charts?country=us&category=song&limit=20"
+
+# Top albums UK
+curl "http://localhost:3000/api/music/itunes/charts?country=gb&category=album"
+```
 
 ---
 
@@ -2725,7 +2952,105 @@ curl "http://localhost:3000/api/ecommerce/amazon/health"
 
 ---
 
-## 📝 Notes
+## �️ Cache & Administration
+
+### Cache Admin
+
+> **Base URL** : `/api/cache`  
+> **Source** : PostgreSQL interne  
+> **Authentification** : ❌ Non requise (endpoints publics)  
+> **Phase 5** : ✅ Opérationnel depuis 2 février 2026
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /stats` | Statistiques globales du cache | ✅ Fonctionne |
+| `POST /refresh/:provider` | Force refresh d'un provider | ✅ Fonctionne |
+| `POST /refresh` | Refresh des entrées expirées | ✅ Fonctionne |
+| `DELETE /clear` | Vide tout le cache | ✅ Fonctionne |
+
+**Paramètres /refresh** :
+- `:provider` : Nom du provider (`tmdb`, `jikan`, `rawg`, `igdb`, `deezer`, `itunes`)
+- `batchSize` : Nombre d'entrées à rafraîchir (défaut: 10) - uniquement pour `POST /refresh`
+
+**Exemples** :
+```bash
+# Statistiques du cache
+curl "http://localhost:3000/api/cache/stats"
+
+# Force refresh TMDB (tous les endpoints)
+curl -X POST "http://localhost:3000/api/cache/refresh/tmdb"
+
+# Refresh 20 entrées expirées
+curl -X POST "http://localhost:3000/api/cache/refresh?batchSize=20"
+
+# Vider tout le cache
+curl -X DELETE "http://localhost:3000/api/cache/clear"
+```
+
+**Réponse GET /stats** :
+```json
+{
+  "success": true,
+  "cache": {
+    "global": {
+      "total_entries": "14",
+      "total_items": "118",
+      "total_fetches": "14",
+      "valid_entries": "14",
+      "expired_entries": "0",
+      "accessed_today": "14"
+    },
+    "byProvider": [
+      {
+        "provider": "tmdb",
+        "endpoint": "trending",
+        "total_entries": "2",
+        "total_items": "40",
+        "total_fetches": "2",
+        "avg_refreshes": 2,
+        "oldest_update": "2026-02-02T13:20:13.875Z",
+        "latest_update": "2026-02-02T13:20:14.402Z",
+        "valid_entries": "2",
+        "expired_entries": "0"
+      }
+    ]
+  },
+  "database": {
+    "connected": true,
+    "totalCount": 1,
+    "idleCount": 1
+  }
+}
+```
+
+**Cache automatique actif sur** :
+- **TMDB** : 7 endpoints (trending, popular, top-rated, upcoming, on-the-air, airing-today)
+- **Jikan** : 4 endpoints (top, trending, upcoming, schedule)
+- **RAWG** : 2 endpoints (popular, trending)
+- **IGDB** : 1 endpoint (popular)
+- **Deezer** : 1 endpoint (charts)
+- **iTunes** : 1 endpoint (charts)
+
+**Refresh automatique** (9 cron jobs) :
+- `02:00` → TMDB trending
+- `02:30` → Jikan trending  
+- `03:00` → TMDB/RAWG popular
+- `03:30` → IGDB popular
+- `04:00` → Deezer charts
+- `04:30` → iTunes charts
+- `*/6h`  → Upcoming refresh
+- `05:00` → Purge anciennes entrées (>90j)
+- `*/1h`  → Monitoring stats
+
+**Performance** :
+- Réduction latence : **-93%** (159ms → 11ms)
+- Gain de vitesse : **14x plus rapide**
+- TTL : 24h (trending/popular/charts), 6h (upcoming/schedule)
+- Toutes les réponses incluent `metadata.cached` et `metadata.cacheKey`
+
+---
+
+## �📝 Notes
 ```
 1. **FlareSolverr** : Certains providers (Bedetheque, LEGO, Playmobil) nécessitent FlareSolverr pour contourner les protections anti-bot. Temps de réponse plus élevé (~3-18s).
 

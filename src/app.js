@@ -175,6 +175,7 @@ import boardgamesRouter from './domains/boardgames/routes/index.js';
 import collectiblesRouter from './domains/collectibles/routes/index.js';
 import { router as tcgRouter } from './domains/tcg/index.js';
 import ecommerceRouter from './domains/ecommerce/index.js';
+import cacheRouter from './core/routes/cache.routes.js';
 
 app.use('/construction-toys', constructionToysRouter);
 app.use('/api/books', booksRouter);
@@ -187,6 +188,7 @@ app.use('/api/boardgames', boardgamesRouter);
 app.use('/api/collectibles', collectiblesRouter);
 app.use('/api/tcg', tcgRouter);
 app.use('/api/ecommerce', ecommerceRouter);
+app.use('/api/cache', cacheRouter);
 
 // ===========================================
 // Gestion d'erreurs (doit être en dernier)

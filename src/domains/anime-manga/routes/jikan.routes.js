@@ -66,6 +66,7 @@ import {
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
+import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const router = Router();
 const provider = new JikanProvider();
@@ -806,18 +807,29 @@ router.get('/top/anime', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
 
-  let result = await provider.getTopAnime({
-    page: parseInt(page),
-    type,
-    filter
-  });
+  const { data: result, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'top',
+    fetchFn: async () => {
+      let result = await provider.getTopAnime({
+        page: parseInt(page),
+        type,
+        filter
+      });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
-      enabled: true
-    });
-  }
+      if (autoTradEnabled && targetLang) {
+        result = await translateSearchResults(result, targetLang, {
+          fieldsToTranslate: ['synopsis'],
+          enabled: true
+        });
+      }
+      return result;
+    },
+    cacheOptions: {
+      category: 'anime',
+      ttl: getTTL('trending')
+    }
+  });
 
   res.json({
     success: true,
@@ -828,7 +840,9 @@ router.get('/top/anime', asyncHandler(async (req, res) => {
     meta: {
       lang,
       autoTrad: autoTradEnabled,
-      note: 'Contenu adulte NON filtré'
+      note: 'Contenu adulte NON filtré',
+      cached: fromCache,
+      cacheKey
     }
   });
 }));
@@ -843,18 +857,29 @@ router.get('/top/manga', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
 
-  let result = await provider.getTopManga({
-    page: parseInt(page),
-    type,
-    filter
-  });
+  const { data: result, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'top',
+    fetchFn: async () => {
+      let result = await provider.getTopManga({
+        page: parseInt(page),
+        type,
+        filter
+      });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
-      enabled: true
-    });
-  }
+      if (autoTradEnabled && targetLang) {
+        result = await translateSearchResults(result, targetLang, {
+          fieldsToTranslate: ['synopsis'],
+          enabled: true
+        });
+      }
+      return result;
+    },
+    cacheOptions: {
+      category: 'manga',
+      ttl: getTTL('trending')
+    }
+  });
 
   res.json({
     success: true,
@@ -865,7 +890,9 @@ router.get('/top/manga', asyncHandler(async (req, res) => {
     meta: {
       lang,
       autoTrad: autoTradEnabled,
-      note: 'Contenu adulte NON filtré'
+      note: 'Contenu adulte NON filtré',
+      cached: fromCache,
+      cacheKey
     }
   });
 }));
@@ -1097,6 +1124,412 @@ router.get('/producers/:id', asyncHandler(async (req, res) => {
     meta: {
       lang,
       autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOP / TRENDING
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /anime-manga/jikan/top
+ * Top anime ou manga par popularité/note/favoris
+ * 
+ * Query params:
+ * - type: anime | manga (défaut: anime)
+ * - filter: bypopularity | favorite | airing | publishing (défaut: bypopularity)
+ * - subtype: tv, movie, ova, special, etc. (optionnel)
+ * - limit: Nombre de résultats (défaut: 25, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction auto (1 ou true)
+ * 
+ * Exemples:
+ * - /anime-manga/jikan/top?type=anime&filter=bypopularity
+ * - /anime-manga/jikan/top?type=manga&filter=favorite&limit=10
+ */
+router.get('/top', asyncHandler(async (req, res) => {
+  const {
+    type = 'anime',
+    filter = 'bypopularity',
+    subtype = null,
+    limit = '25',
+    page = '1',
+    lang,
+    autoTrad
+  } = req.query;
+
+  // Validation
+  if (!['anime', 'manga'].includes(type)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid type',
+      message: 'type must be "anime" or "manga"',
+      hint: 'Example: /anime-manga/jikan/top?type=anime&filter=bypopularity'
+    });
+  }
+
+  const validFilters = ['bypopularity', 'favorite', 'airing', 'publishing'];
+  if (filter && !validFilters.includes(filter)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid filter',
+      message: `filter must be one of: ${validFilters.join(', ')}`,
+      hint: 'Example: /anime-manga/jikan/top?type=anime&filter=bypopularity'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 25, 25);
+  const pageNum = parseInt(page) || 1;
+
+  let results = await provider.getTop(type, {
+    limit: limitNum,
+    page: pageNum,
+    filter,
+    subtype
+  });
+
+  // Traduction automatique si activée
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'top',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      type,
+      filter,
+      subtype,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/trending
+ * Anime de la saison en cours (trending)
+ * 
+ * Query params:
+ * - filter: tv, movie, ova, special, ona, music (optionnel)
+ * - limit: Nombre de résultats (défaut: 25, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction auto (1 ou true)
+ * 
+ * Exemples:
+ * - /anime-manga/jikan/trending
+ * - /anime-manga/jikan/trending?filter=tv&limit=10
+ */
+router.get('/trending', asyncHandler(async (req, res) => {
+  const {
+    filter = null,
+    limit = '25',
+    page = '1',
+    lang,
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 25, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'trending',
+    fetchFn: async () => {
+      let results = await provider.getCurrentSeason({
+        limit: limitNum,
+        page: pageNum,
+        filter
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: filter || 'all',
+      ttl: getTTL('trending')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'trending',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      season: results.season,
+      year: results.year,
+      filter,
+      limit: limitNum,
+      page: pageNum,
+      cached: fromCache,
+      cacheKey,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/seasons/:year/:season
+ * Anime d'une saison spécifique
+ * 
+ * Path params:
+ * - year: Année (ex: 2024)
+ * - season: winter, spring, summer, fall
+ * 
+ * Query params:
+ * - filter: tv, movie, ova, special, ona, music (optionnel)
+ * - limit: Nombre de résultats (défaut: 25, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction auto (1 ou true)
+ * 
+ * Exemples:
+ * - /anime-manga/jikan/seasons/2024/winter
+ * - /anime-manga/jikan/seasons/2025/fall?filter=tv&limit=10
+ */
+router.get('/seasons/:year/:season', asyncHandler(async (req, res) => {
+  const { year, season } = req.params;
+  const {
+    filter = null,
+    limit = '25',
+    page = '1',
+    lang,
+    autoTrad
+  } = req.query;
+
+  // Validation
+  const validSeasons = ['winter', 'spring', 'summer', 'fall'];
+  if (!validSeasons.includes(season)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid season',
+      message: `season must be one of: ${validSeasons.join(', ')}`,
+      hint: 'Example: /anime-manga/jikan/seasons/2024/winter'
+    });
+  }
+
+  const yearNum = parseInt(year);
+  if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid year',
+      message: 'year must be a valid year between 1900 and 2100',
+      hint: 'Example: /anime-manga/jikan/seasons/2024/winter'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 25, 25);
+  const pageNum = parseInt(page) || 1;
+
+  let results = await provider.getSeason(yearNum, season, {
+    limit: limitNum,
+    page: pageNum,
+    filter
+  });
+
+  // Traduction automatique si activée
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'season',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      season: results.season,
+      year: results.year,
+      filter,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UPCOMING / À VENIR
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /anime-manga/jikan/upcoming
+ * Anime à venir (prochaine saison)
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 25, max: 25)
+ * - page: Page de résultats (défaut: 1)
+ * - filter: Filtre optionnel (tv, movie, ova, special, ona, music)
+ * - lang: Code langue cible (défaut: fr)
+ * - autoTrad: Activer traduction automatique (1 ou true)
+ */
+router.get('/upcoming', asyncHandler(async (req, res) => {
+  const {
+    limit = '25',
+    page = '1',
+    filter = null,
+    lang = 'fr',
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 25, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'upcoming',
+    fetchFn: async () => {
+      let results = await provider.getUpcoming({
+        limit: limitNum,
+        page: pageNum,
+        filter
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: filter || 'all',
+      ttl: getTTL('upcoming')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'upcoming',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      filter,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/schedule
+ * Planning de diffusion des anime
+ * 
+ * Query params:
+ * - day: Jour de la semaine (monday, tuesday, wednesday, thursday, friday, saturday, sunday, unknown, other)
+ * - limit: Nombre de résultats (défaut: 25, max: 25)
+ * - page: Page de résultats (défaut: 1)
+ * - lang: Code langue cible (défaut: fr)
+ * - autoTrad: Activer traduction automatique (1 ou true)
+ */
+router.get('/schedule', asyncHandler(async (req, res) => {
+  const {
+    day = null,
+    limit = '25',
+    page = '1',
+    lang = 'fr',
+    autoTrad
+  } = req.query;
+
+  // Validation
+  const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'unknown', 'other'];
+  if (day && !validDays.includes(day)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid day',
+      message: `day must be one of: ${validDays.join(', ')}`,
+      hint: 'Example: /anime-manga/jikan/schedule?day=monday'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 25, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'schedule',
+    fetchFn: async () => {
+      let results = await provider.getSchedule(day, {
+        limit: limitNum,
+        page: pageNum
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: day || 'all',
+      ttl: getTTL('schedule')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'schedule',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      day: results.day,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
     }
   });
 }));

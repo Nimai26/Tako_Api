@@ -10,6 +10,7 @@ import { Router } from 'express';
 import * as itunesProvider from '../providers/itunes.provider.js';
 import * as itunesNormalizer from '../normalizers/itunes.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const router = Router();
 const log = logger.create('iTunesRoutes');
@@ -415,6 +416,105 @@ router.get('/tracks/:id', async (req, res) => {
     });
   } catch (error) {
     log.error('Get track failed', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
+// CHARTS (🆕)
+// ============================================================================
+
+/**
+ * GET /charts
+ * Top charts iTunes par pays
+ */
+router.get('/charts', async (req, res) => {
+  try {
+    const { 
+      country = 'fr',
+      category = 'album', // album ou song
+      limit = 25 
+    } = req.query;
+    
+    // Validation de la catégorie
+    const validCategories = ['album', 'song'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        error: `Catégorie invalide. Valeurs acceptées: ${validCategories.join(', ')}`
+      });
+    }
+    
+    const { data: rawData, fromCache, cacheKey } = await withDiscoveryCache({
+      provider: 'itunes',
+      endpoint: 'charts',
+      fetchFn: async () => {
+        return await itunesProvider.getCharts({ 
+          country: country.toLowerCase(),
+          entity: category,
+          limit: parseInt(limit)
+        });
+      },
+      cacheOptions: {
+        category: `${country.toLowerCase()}-${category}`,
+        ttl: getTTL('charts')
+      }
+    });
+    
+    // L'API RSS iTunes retourne un format différent
+    const feed = rawData?.feed;
+    if (!feed || !feed.entry) {
+      return res.json({
+        success: true,
+        provider: 'itunes',
+        domain: 'music',
+        endpoint: 'charts',
+        data: [],
+        metadata: {
+          country: country.toUpperCase(),
+          category,
+          limit: parseInt(limit),
+          count: 0,
+          cached: fromCache,
+          cacheKey
+        }
+      });
+    }
+    
+    // Normalisation simplifiée
+    const results = feed.entry.map((item, index) => ({
+      position: index + 1,
+      id: item.id?.attributes?.['im:id'],
+      title: item['im:name']?.label || item.title?.label,
+      artist: item['im:artist']?.label,
+      cover: item['im:image']?.[2]?.label || item['im:image']?.[1]?.label,
+      genre: item.category?.attributes?.label,
+      releaseDate: item['im:releaseDate']?.label,
+      price: item['im:price']?.label,
+      url: item.link?.attributes?.href
+    }));
+    
+    res.json({
+      success: true,
+      provider: 'itunes',
+      domain: 'music',
+      endpoint: 'charts',
+      data: results,
+      metadata: {
+        country: country.toUpperCase(),
+        category,
+        limit: parseInt(limit),
+        count: results.length,
+        updated: feed.updated?.label,
+        cached: fromCache,
+        cacheKey
+      }
+    });
+  } catch (error) {
+    log.error('Get charts failed', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message

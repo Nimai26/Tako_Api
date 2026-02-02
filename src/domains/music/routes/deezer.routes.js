@@ -10,6 +10,7 @@ import { Router } from 'express';
 import * as deezerProvider from '../providers/deezer.provider.js';
 import * as deezerNormalizer from '../normalizers/deezer.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const router = Router();
 const log = logger.create('DeezerRoutes');
@@ -495,6 +496,60 @@ router.get('/chart/albums', async (req, res) => {
     });
   } catch (error) {
     log.error('Get chart albums failed', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /charts - Route générique pour charts (🆕)
+ * Charts Deezer (albums/tracks/artists)
+ */
+router.get('/charts', async (req, res) => {
+  try {
+    const { category = 'albums', limit = 25 } = req.query;
+    
+    // Validation de la catégorie
+    const validCategories = ['albums', 'tracks', 'artists'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        error: `Catégorie invalide. Valeurs acceptées: ${validCategories.join(', ')}`
+      });
+    }
+    
+    const { data: normalized, fromCache, cacheKey } = await withDiscoveryCache({
+      provider: 'deezer',
+      endpoint: 'charts',
+      fetchFn: async () => {
+        const data = await deezerProvider.getChart(category, { limit: parseInt(limit) });
+        return deezerNormalizer.normalizeChart(data, category);
+      },
+      cacheOptions: {
+        category,
+        ttl: getTTL('charts')
+      }
+    });
+    
+    res.json({
+      success: true,
+      provider: 'deezer',
+      domain: 'music',
+      endpoint: 'charts',
+      data: normalized.data || [],
+      metadata: {
+        category,
+        limit: parseInt(limit),
+        count: (normalized.data || []).length,
+        total: normalized.total || 0,
+        cached: fromCache,
+        cacheKey
+      }
+    });
+  } catch (error) {
+    log.error('Get charts failed', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message

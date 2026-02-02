@@ -435,6 +435,385 @@ export class TmdbProvider extends BaseProvider {
       imageBaseUrl: this.imageBaseUrl
     });
   }
+
+  /**
+   * Découvrir des séries selon critères
+   */
+  async discoverSeries(options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    const {
+      lang = 'fr-FR',
+      page = 1,
+      sortBy = 'popularity.desc',
+      year = null,
+      genre = null
+    } = options;
+
+    const params = {
+      language: lang,
+      page,
+      sort_by: sortBy
+    };
+
+    if (year) params.first_air_date_year = year;
+    if (genre) params.with_genres = genre;
+
+    const url = this.buildUrl('/discover/tv', params);
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError('Erreur TMDB discover series');
+    }
+
+    return this.normalizer.normalizeSearchResponse(data.results || [], {
+      query: 'discover',
+      searchType: 'series',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: data.results?.length || 0,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TRENDING / POPULAR
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Récupère les films/séries trending
+   * @param {string} mediaType - Type de media (movie ou tv)
+   * @param {string} timeWindow - Fenêtre temporelle (day ou week)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Résultats trending normalisés
+   */
+  async getTrending(mediaType = 'movie', timeWindow = 'week', options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    // Validation
+    if (!['movie', 'tv'].includes(mediaType)) {
+      throw new ValidationError('mediaType doit être "movie" ou "tv"');
+    }
+
+    if (!['day', 'week'].includes(timeWindow)) {
+      throw new ValidationError('timeWindow doit être "day" ou "week"');
+    }
+
+    const { 
+      limit = DEFAULT_MAX_RESULTS, 
+      lang = 'fr-FR',
+      page = 1 
+    } = options;
+
+    this.log.debug(`Trending ${mediaType} (${timeWindow}), limit: ${limit}`);
+
+    const url = this.buildUrl(`/trending/${mediaType}/${timeWindow}`, {
+      language: lang,
+      page
+    });
+
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError('Erreur TMDB trending');
+    }
+
+    // Limiter les résultats
+    const results = (data.results || []).slice(0, Math.min(limit, MAX_RESULTS_LIMIT));
+
+    return this.normalizer.normalizeSearchResponse(results, {
+      query: `trending-${mediaType}-${timeWindow}`,
+      searchType: mediaType === 'movie' ? 'movie' : 'tv',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: results.length,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
+
+  /**
+   * Récupère les films/séries populaires
+   * @param {string} mediaType - Type de media (movie ou tv)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Résultats populaires normalisés
+   */
+  async getPopular(mediaType = 'movie', options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    // Validation
+    if (!['movie', 'tv'].includes(mediaType)) {
+      throw new ValidationError('mediaType doit être "movie" ou "tv"');
+    }
+
+    const { 
+      limit = DEFAULT_MAX_RESULTS, 
+      lang = 'fr-FR',
+      page = 1 
+    } = options;
+
+    this.log.debug(`Popular ${mediaType}, limit: ${limit}`);
+
+    const url = this.buildUrl(`/${mediaType}/popular`, {
+      language: lang,
+      page
+    });
+
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError('Erreur TMDB popular');
+    }
+
+    // Limiter les résultats
+    const results = (data.results || []).slice(0, Math.min(limit, MAX_RESULTS_LIMIT));
+
+    return this.normalizer.normalizeSearchResponse(results, {
+      query: `popular-${mediaType}`,
+      searchType: mediaType === 'movie' ? 'movie' : 'tv',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: results.length,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
+
+  /**
+   * Récupère les films/séries top rated
+   * @param {string} mediaType - Type de media (movie ou tv)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Résultats top rated normalisés
+   */
+  async getTopRated(mediaType = 'movie', options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    // Validation
+    if (!['movie', 'tv'].includes(mediaType)) {
+      throw new ValidationError('mediaType doit être "movie" ou "tv"');
+    }
+
+    const { 
+      limit = DEFAULT_MAX_RESULTS, 
+      lang = 'fr-FR',
+      page = 1 
+    } = options;
+
+    this.log.debug(`Top rated ${mediaType}, limit: ${limit}`);
+
+    const url = this.buildUrl(`/${mediaType}/top_rated`, {
+      language: lang,
+      page
+    });
+
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError('Erreur TMDB top_rated');
+    }
+
+    // Limiter les résultats
+    const results = (data.results || []).slice(0, Math.min(limit, MAX_RESULTS_LIMIT));
+
+    return this.normalizer.normalizeSearchResponse(results, {
+      query: `top-rated-${mediaType}`,
+      searchType: mediaType === 'movie' ? 'movie' : 'tv',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: results.length,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
+
+  /**
+   * Récupère les contenus à venir (upcoming)
+   * Pour movies: API /movie/upcoming
+   * Pour TV: Discover avec first_air_date >= today
+   * @param {string} mediaType - Type de media (movie ou tv)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Résultats upcoming normalisés
+   */
+  async getUpcoming(mediaType = 'movie', options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    // Validation
+    if (!['movie', 'tv'].includes(mediaType)) {
+      throw new ValidationError('mediaType doit être "movie" ou "tv"');
+    }
+
+    const { 
+      limit = DEFAULT_MAX_RESULTS, 
+      lang = 'fr-FR',
+      page = 1 
+    } = options;
+
+    this.log.debug(`Upcoming ${mediaType}, limit: ${limit}`);
+
+    let url;
+    if (mediaType === 'movie') {
+      // Pour les films: endpoint dédié /movie/upcoming
+      url = this.buildUrl('/movie/upcoming', {
+        language: lang,
+        page
+      });
+    } else {
+      // Pour les séries: discover avec first_air_date >= aujourd'hui
+      const today = new Date().toISOString().split('T')[0];
+      url = this.buildUrl('/discover/tv', {
+        language: lang,
+        page,
+        'first_air_date.gte': today,
+        'sort_by': 'first_air_date.asc'
+      });
+    }
+
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError(`Erreur TMDB upcoming ${mediaType}`);
+    }
+
+    // Limiter les résultats
+    const results = (data.results || []).slice(0, Math.min(limit, MAX_RESULTS_LIMIT));
+
+    return this.normalizer.normalizeSearchResponse(results, {
+      query: `upcoming-${mediaType}`,
+      searchType: mediaType === 'movie' ? 'movie' : 'tv',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: results.length,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
+
+  /**
+   * Récupère les séries en cours de diffusion (7 prochains jours)
+   * API: /tv/on_the_air
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Résultats on the air normalisés
+   */
+  async getOnTheAir(options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    const { 
+      limit = DEFAULT_MAX_RESULTS, 
+      lang = 'fr-FR',
+      page = 1 
+    } = options;
+
+    this.log.debug(`On the air, limit: ${limit}`);
+
+    const url = this.buildUrl('/tv/on_the_air', {
+      language: lang,
+      page
+    });
+
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError('Erreur TMDB on_the_air');
+    }
+
+    // Limiter les résultats
+    const results = (data.results || []).slice(0, Math.min(limit, MAX_RESULTS_LIMIT));
+
+    return this.normalizer.normalizeSearchResponse(results, {
+      query: 'on-the-air',
+      searchType: 'tv',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: results.length,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
+
+  /**
+   * Récupère les séries diffusées aujourd'hui
+   * API: /tv/airing_today
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Résultats airing today normalisés
+   */
+  async getAiringToday(options = {}) {
+    if (!this.isConfigured()) {
+      throw new ValidationError('TMDB_API_KEY non configurée');
+    }
+
+    const { 
+      limit = DEFAULT_MAX_RESULTS, 
+      lang = 'fr-FR',
+      page = 1 
+    } = options;
+
+    this.log.debug(`Airing today, limit: ${limit}`);
+
+    const url = this.buildUrl('/tv/airing_today', {
+      language: lang,
+      page
+    });
+
+    const data = await this.fetchWithRetry(url);
+
+    if (!data) {
+      throw new BadGatewayError('Erreur TMDB airing_today');
+    }
+
+    // Limiter les résultats
+    const results = (data.results || []).slice(0, Math.min(limit, MAX_RESULTS_LIMIT));
+
+    return this.normalizer.normalizeSearchResponse(results, {
+      query: 'airing-today',
+      searchType: 'tv',
+      total: data.total_results,
+      pagination: {
+        page: data.page,
+        pageSize: results.length,
+        totalPages: data.total_pages,
+        totalResults: data.total_results,
+        hasMore: data.page < data.total_pages
+      },
+      imageBaseUrl: this.imageBaseUrl
+    });
+  }
 }
 
 // Export singleton

@@ -21,6 +21,7 @@ import {
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
+import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const log = logger.create('RAWGRoutes');
 const router = express.Router();
@@ -826,6 +827,137 @@ router.get('/recent', asyncHandler(async (req, res) => {
     },
     count: normalized.length,
     results: normalized
+  });
+}));
+
+/**
+ * Jeux populaires (bien notés)
+ * GET /api/videogames/rawg/popular?page=1&pageSize=20&platforms=4,187&genres=4&lang=fr&autoTrad=1
+ */
+router.get('/popular', asyncHandler(async (req, res) => {
+  const { 
+    page = 1, 
+    pageSize = 20,
+    platforms,
+    genres,
+    tags,
+    lang,
+    autoTrad
+  } = req.query;
+  
+  const limit = Math.min(parseInt(pageSize), 100);
+  
+  const { data: rawData, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'rawg',
+    endpoint: 'popular',
+    fetchFn: async () => {
+      const data = await rawgProvider.getPopular({ 
+        page: parseInt(page), 
+        pageSize: limit,
+        platforms,
+        genres,
+        tags
+      });
+      
+      let normalized = data.results?.map(g => rawgNormalizer.normalizeSearchResult(g)) || [];
+      
+      const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+      const targetLang = extractLangCode(lang);
+      if (autoTradEnabled && targetLang && normalized.length > 0) {
+        normalized = await translateGameGenres(normalized, autoTrad, lang);
+      }
+      
+      return {
+        normalized,
+        count: data.count
+      };
+    },
+    cacheOptions: {
+      category: platforms || 'all',
+      ttl: getTTL('popular')
+    }
+  });
+  
+  res.json({
+    success: true,
+    provider: 'rawg',
+    domain: 'videogames',
+    endpoint: 'popular',
+    data: rawData.normalized,
+    metadata: {
+      page: parseInt(page),
+      totalResults: rawData.count || 0,
+      platforms: platforms || 'all',
+      genres: genres || 'all',
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * Jeux trending (récemment ajoutés)
+ * GET /api/videogames/rawg/trending?page=1&pageSize=20&platforms=4&genres=2&lang=fr&autoTrad=1
+ */
+router.get('/trending', asyncHandler(async (req, res) => {
+  const { 
+    page = 1, 
+    pageSize = 20,
+    platforms,
+    genres,
+    tags,
+    lang,
+    autoTrad
+  } = req.query;
+  
+  const limit = Math.min(parseInt(pageSize), 100);
+  
+  const { data: rawData, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'rawg',
+    endpoint: 'trending',
+    fetchFn: async () => {
+      const data = await rawgProvider.getTrending({ 
+        page: parseInt(page), 
+        pageSize: limit,
+        platforms,
+        genres,
+        tags
+      });
+      
+      let normalized = data.results?.map(g => rawgNormalizer.normalizeSearchResult(g)) || [];
+      
+      const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+      const targetLang = extractLangCode(lang);
+      if (autoTradEnabled && targetLang && normalized.length > 0) {
+        normalized = await translateGameGenres(normalized, autoTrad, lang);
+      }
+      
+      return {
+        normalized,
+        count: data.count
+      };
+    },
+    cacheOptions: {
+      category: platforms || 'all',
+      ttl: getTTL('trending')
+    }
+  });
+  
+  res.json({
+    success: true,
+    provider: 'rawg',
+    domain: 'videogames',
+    endpoint: 'trending',
+    data: rawData.normalized,
+    metadata: {
+      page: parseInt(page),
+      totalResults: rawData.count || 0,
+      platforms: platforms || 'all',
+      genres: genres || 'all',
+      ordering: 'recently_added',
+      cached: fromCache,
+      cacheKey
+    }
   });
 }));
 

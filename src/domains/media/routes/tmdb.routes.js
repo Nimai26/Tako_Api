@@ -31,6 +31,7 @@ import {
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
+import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const router = Router();
 const provider = new TmdbProvider();
@@ -603,6 +604,493 @@ router.get('/discover/movies', asyncHandler(async (req, res) => {
   }
 
   res.json(results);
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRENDING / POPULAR / TOP RATED
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /media/tmdb/trending
+ * Films ou séries trending (populaires du moment)
+ * 
+ * Query params :
+ * - category : movie | tv (défaut movie)
+ * - period : day | week (défaut week)
+ * - limit : Nombre de résultats (défaut 20, max 100)
+ * - page : Page (défaut 1)
+ * - lang : Langue (défaut fr-FR)
+ * - autoTrad : Activer traduction auto (1 ou true)
+ * 
+ * Exemples :
+ * - /media/tmdb/trending?category=movie&period=week
+ * - /media/tmdb/trending?category=tv&period=day&limit=10
+ */
+router.get('/trending', asyncHandler(async (req, res) => {
+  const {
+    category = 'movie',
+    period = 'week',
+    limit = '20',
+    page = '1',
+    lang = 'fr-FR',
+    autoTrad
+  } = req.query;
+
+  // Validation
+  if (!['movie', 'tv'].includes(category)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid category',
+      message: 'category must be "movie" or "tv"',
+      hint: 'Example: /media/tmdb/trending?category=movie&period=week'
+    });
+  }
+
+  if (!['day', 'week'].includes(period)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid period',
+      message: 'period must be "day" or "week"',
+      hint: 'Example: /media/tmdb/trending?category=movie&period=week'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 100);
+  const pageNum = parseInt(page) || 1;
+
+  // === CACHE INTEGRATION ===
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'tmdb',
+    endpoint: 'trending',
+    fetchFn: async () => {
+      return await provider.getTrending(category, period, {
+        limit: limitNum,
+        lang,
+        page: pageNum
+      });
+    },
+    cacheOptions: {
+      category,
+      period,
+      ttl: getTTL('trending')
+    }
+  });
+
+  // Traduction automatique si activée
+  let translatedResults = results;
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    translatedResults = await translateSearchResults(results, targetLang, {
+      fields: ['description']
+    });
+  }
+
+  res.json({
+    success: true,
+    provider: 'tmdb',
+    domain: 'media',
+    endpoint: 'trending',
+    ...translatedResults,
+    metadata: {
+      category,
+      period,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * GET /media/tmdb/popular
+ * Films ou séries populaires
+ * 
+ * Query params :
+ * - category : movie | tv (défaut movie)
+ * - limit : Nombre de résultats (défaut 20, max 100)
+ * - page : Page (défaut 1)
+ * - lang : Langue (défaut fr-FR)
+ * - autoTrad : Activer traduction auto (1 ou true)
+ * 
+ * Exemples :
+ * - /media/tmdb/popular?category=movie
+ * - /media/tmdb/popular?category=tv&limit=50
+ */
+router.get('/popular', asyncHandler(async (req, res) => {
+  const {
+    category = 'movie',
+    limit = '20',
+    page = '1',
+    lang = 'fr-FR',
+    autoTrad
+  } = req.query;
+
+  // Validation
+  if (!['movie', 'tv'].includes(category)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid category',
+      message: 'category must be "movie" or "tv"',
+      hint: 'Example: /media/tmdb/popular?category=movie'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 100);
+  const pageNum = parseInt(page) || 1;
+
+  // === CACHE INTEGRATION ===
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'tmdb',
+    endpoint: 'popular',
+    fetchFn: async () => {
+      return await provider.getPopular(category, {
+        limit: limitNum,
+        lang,
+        page: pageNum
+      });
+    },
+    cacheOptions: {
+      category,
+      ttl: getTTL('popular')
+    }
+  });
+
+  // Traduction automatique si activée
+  let translatedResults = results;
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    translatedResults = await translateSearchResults(results, targetLang, {
+      fields: ['description']
+    });
+  }
+
+  res.json({
+    success: true,
+    provider: 'tmdb',
+    domain: 'media',
+    endpoint: 'popular',
+    ...translatedResults,
+    metadata: {
+      category,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * GET /media/tmdb/top-rated
+ * Films ou séries les mieux notés
+ * 
+ * Query params :
+ * - category : movie | tv (défaut movie)
+ * - limit : Nombre de résultats (défaut 20, max 100)
+ * - page : Page (défaut 1)
+ * - lang : Langue (défaut fr-FR)
+ * - autoTrad : Activer traduction auto (1 ou true)
+ * 
+ * Exemples :
+ * - /media/tmdb/top-rated?category=movie
+ * - /media/tmdb/top-rated?category=tv&limit=30
+ */
+router.get('/top-rated', asyncHandler(async (req, res) => {
+  const {
+    category = 'movie',
+    limit = '20',
+    page = '1',
+    lang = 'fr-FR',
+    autoTrad
+  } = req.query;
+
+  // Validation
+  if (!['movie', 'tv'].includes(category)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid category',
+      message: 'category must be "movie" or "tv"',
+      hint: 'Example: /media/tmdb/top-rated?category=movie'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 100);
+  const pageNum = parseInt(page) || 1;
+
+  // === CACHE INTEGRATION ===
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'tmdb',
+    endpoint: 'top-rated',
+    fetchFn: async () => {
+      return await provider.getTopRated(category, {
+        limit: limitNum,
+        lang,
+        page: pageNum
+      });
+    },
+    cacheOptions: {
+      category,
+      ttl: getTTL('top-rated')
+    }
+  });
+
+  // Traduction automatique si activée
+  let translatedResults = results;
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    translatedResults = await translateSearchResults(results, targetLang, {
+      fields: ['description']
+    });
+  }
+
+  res.json({
+    success: true,
+    provider: 'tmdb',
+    domain: 'media',
+    endpoint: 'top-rated',
+    ...translatedResults,
+    metadata: {
+      category,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UPCOMING / À VENIR
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /media/tmdb/upcoming
+ * Contenus à venir (upcoming)
+ * - Movies: Films à sortir au cinéma
+ * - TV: Séries jamais diffusées (first_air_date >= today)
+ * 
+ * Query params:
+ * - category: movie ou tv (défaut: movie)
+ * - limit: Nombre de résultats (défaut: 20, max: 100)
+ * - page: Page de résultats (défaut: 1)
+ * - lang: Code langue (défaut: fr-FR)
+ * - autoTrad: Activer traduction automatique (1 ou true)
+ */
+router.get('/upcoming', asyncHandler(async (req, res) => {
+  const {
+    category = 'movie',
+    limit = '20',
+    page = '1',
+    lang = 'fr-FR',
+    autoTrad
+  } = req.query;
+
+  // Validation
+  if (!['movie', 'tv'].includes(category)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid category',
+      message: 'category must be "movie" or "tv"',
+      hint: 'Example: /media/tmdb/upcoming?category=movie'
+    });
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 100);
+  const pageNum = parseInt(page) || 1;
+
+  // === CACHE INTEGRATION ===
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'tmdb',
+    endpoint: 'upcoming',
+    fetchFn: async () => {
+      return await provider.getUpcoming(category, {
+        limit: limitNum,
+        lang,
+        page: pageNum
+      });
+    },
+    cacheOptions: {
+      category,
+      ttl: getTTL('upcoming')
+    }
+  });
+
+  // Traduction automatique si activée
+  let translatedResults = results;
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    translatedResults = await translateSearchResults(results, targetLang, {
+      fields: ['description']
+    });
+  }
+
+  res.json({
+    success: true,
+    provider: 'tmdb',
+    domain: 'media',
+    endpoint: 'upcoming',
+    ...translatedResults,
+    metadata: {
+      category,
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * GET /media/tmdb/on-the-air
+ * Séries en cours de diffusion (7 prochains jours)
+ * Nouveaux épisodes qui seront diffusés dans les 7 prochains jours
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 100)
+ * - page: Page de résultats (défaut: 1)
+ * - lang: Code langue (défaut: fr-FR)
+ * - autoTrad: Activer traduction automatique (1 ou true)
+ */
+router.get('/on-the-air', asyncHandler(async (req, res) => {
+  const {
+    limit = '20',
+    page = '1',
+    lang = 'fr-FR',
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 100);
+  const pageNum = parseInt(page) || 1;
+
+  // === CACHE INTEGRATION ===
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'tmdb',
+    endpoint: 'upcoming',
+    fetchFn: async () => {
+      return await provider.getOnTheAir({
+        limit: limitNum,
+        lang,
+        page: pageNum
+      });
+    },
+    cacheOptions: {
+      category: 'tv',
+      period: 'on-the-air',
+      ttl: getTTL('upcoming')
+    }
+  });
+
+  // Traduction automatique si activée
+  let translatedResults = results;
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    translatedResults = await translateSearchResults(results, targetLang, {
+      fields: ['description']
+    });
+  }
+
+  res.json({
+    success: true,
+    provider: 'tmdb',
+    domain: 'media',
+    endpoint: 'on-the-air',
+    ...translatedResults,
+    metadata: {
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * GET /media/tmdb/airing-today
+ * Séries diffusées aujourd'hui
+ * Épisodes de séries TV diffusés aujourd'hui
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 100)
+ * - page: Page de résultats (défaut: 1)
+ * - lang: Code langue (défaut: fr-FR)
+ * - autoTrad: Activer traduction automatique (1 ou true)
+ */
+router.get('/airing-today', asyncHandler(async (req, res) => {
+  const {
+    limit = '20',
+    page = '1',
+    lang = 'fr-FR',
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 100);
+  const pageNum = parseInt(page) || 1;
+
+  // === CACHE INTEGRATION ===
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'tmdb',
+    endpoint: 'upcoming',
+    fetchFn: async () => {
+      return await provider.getAiringToday({
+        limit: limitNum,
+        lang,
+        page: pageNum
+      });
+    },
+    cacheOptions: {
+      category: 'tv',
+      period: 'airing-today',
+      ttl: getTTL('upcoming')
+    }
+  });
+
+  // Traduction automatique si activée
+  let translatedResults = results;
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    translatedResults = await translateSearchResults(results, targetLang, {
+      fields: ['description']
+    });
+  }
+
+  res.json({
+    success: true,
+    provider: 'tmdb',
+    domain: 'media',
+    endpoint: 'airing-today',
+    ...translatedResults,
+    metadata: {
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
 }));
 
 export default router;

@@ -802,6 +802,283 @@ export class JikanProvider extends BaseProvider {
 
     return this.normalizer.normalizeScheduleResponse(data, { day, page });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TOP / TRENDING
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Récupère le top anime ou manga
+   * @param {string} type - Type (anime ou manga)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Top anime/manga normalisés
+   */
+  async getTop(type = 'anime', options = {}) {
+    // Validation
+    if (!['anime', 'manga'].includes(type)) {
+      throw new ValidationError('type doit être "anime" ou "manga"');
+    }
+
+    const {
+      limit = DEFAULT_MAX_RESULTS,
+      page = 1,
+      filter = 'bypopularity',  // bypopularity, favorite, airing (anime), publishing (manga)
+      subtype = null            // tv, movie, ova, special (anime) / manga, novel, lightnovel, etc. (manga)
+    } = options;
+
+    this.log.debug(`Top ${type} (filter: ${filter}, limit: ${limit})`);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
+      sfw: 'false'  // Inclure tout le contenu
+    });
+
+    if (filter) params.append('filter', filter);
+    if (subtype) params.append('type', subtype);
+
+    const url = `${JIKAN_BASE_URL}/top/${type}?${params.toString()}`;
+    const data = await this.fetchWithRetry(url);
+
+    if (!data?.data) {
+      throw new BadGatewayError(`Erreur lors de la récupération du top ${type}`);
+    }
+
+    // Normaliser les résultats
+    const normalizedData = data.data.map(item =>
+      type === 'anime'
+        ? this.normalizer.normalizeAnimeItem(item)
+        : this.normalizer.normalizeMangaItem(item)
+    );
+
+    return {
+      data: normalizedData,
+      pagination: data.pagination || {
+        current_page: page,
+        has_next_page: data.pagination?.has_next_page || false,
+        items: {
+          count: normalizedData.length,
+          total: data.pagination?.items?.total || normalizedData.length,
+          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
+        }
+      },
+      type,
+      filter
+    };
+  }
+
+  /**
+   * Récupère les anime de la saison en cours (trending)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Anime de la saison actuelle normalisés
+   */
+  async getCurrentSeason(options = {}) {
+    const {
+      limit = DEFAULT_MAX_RESULTS,
+      page = 1,
+      filter = null  // tv, movie, ova, special, ona, music
+    } = options;
+
+    this.log.debug(`Saison actuelle (limit: ${limit})`);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
+      sfw: 'false'  // Inclure tout le contenu
+    });
+
+    if (filter) params.append('filter', filter);
+
+    const url = `${JIKAN_BASE_URL}/seasons/now?${params.toString()}`;
+    const data = await this.fetchWithRetry(url);
+
+    if (!data?.data) {
+      throw new BadGatewayError('Erreur lors de la récupération de la saison actuelle');
+    }
+
+    // Normaliser les résultats
+    const normalizedData = data.data.map(item =>
+      this.normalizer.normalizeAnimeItem(item)
+    );
+
+    return {
+      data: normalizedData,
+      pagination: data.pagination || {
+        current_page: page,
+        has_next_page: data.pagination?.has_next_page || false,
+        items: {
+          count: normalizedData.length,
+          total: data.pagination?.items?.total || normalizedData.length,
+          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
+        }
+      },
+      season: data.season || 'current',
+      year: data.year || new Date().getFullYear()
+    };
+  }
+
+  /**
+   * Récupère les anime d'une saison spécifique
+   * @param {number} year - Année
+   * @param {string} season - Saison (winter, spring, summer, fall)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Anime de la saison normalisés
+   */
+  async getSeason(year, season, options = {}) {
+    // Validation
+    const validSeasons = ['winter', 'spring', 'summer', 'fall'];
+    if (!validSeasons.includes(season)) {
+      throw new ValidationError(`season doit être l'une de: ${validSeasons.join(', ')}`);
+    }
+
+    const {
+      limit = DEFAULT_MAX_RESULTS,
+      page = 1,
+      filter = null
+    } = options;
+
+    this.log.debug(`Saison ${season} ${year} (limit: ${limit})`);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
+      sfw: 'false'
+    });
+
+    if (filter) params.append('filter', filter);
+
+    const url = `${JIKAN_BASE_URL}/seasons/${year}/${season}?${params.toString()}`;
+    const data = await this.fetchWithRetry(url);
+
+    if (!data?.data) {
+      throw new BadGatewayError(`Erreur lors de la récupération de la saison ${season} ${year}`);
+    }
+
+    // Normaliser les résultats
+    const normalizedData = data.data.map(item =>
+      this.normalizer.normalizeAnimeItem(item)
+    );
+
+    return {
+      data: normalizedData,
+      pagination: data.pagination || {
+        current_page: page,
+        has_next_page: data.pagination?.has_next_page || false,
+        items: {
+          count: normalizedData.length,
+          total: data.pagination?.items?.total || normalizedData.length,
+          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
+        }
+      },
+      season,
+      year
+    };
+  }
+
+  /**
+   * Récupère les anime à venir (prochaine saison)
+   * API: /seasons/upcoming
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Anime upcoming normalisés
+   */
+  async getUpcoming(options = {}) {
+    const {
+      limit = DEFAULT_MAX_RESULTS,
+      page = 1,
+      filter = null
+    } = options;
+
+    this.log.debug(`Upcoming anime (limit: ${limit})`);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
+      sfw: 'false'
+    });
+
+    if (filter) params.append('filter', filter);
+
+    const url = `${JIKAN_BASE_URL}/seasons/upcoming?${params.toString()}`;
+    const data = await this.fetchWithRetry(url);
+
+    if (!data?.data) {
+      throw new BadGatewayError('Erreur lors de la récupération des anime upcoming');
+    }
+
+    // Normaliser les résultats
+    const normalizedData = data.data.map(item =>
+      this.normalizer.normalizeAnimeItem(item)
+    );
+
+    return {
+      data: normalizedData,
+      pagination: data.pagination || {
+        current_page: page,
+        has_next_page: data.pagination?.has_next_page || false,
+        items: {
+          count: normalizedData.length,
+          total: data.pagination?.items?.total || normalizedData.length,
+          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
+        }
+      }
+    };
+  }
+
+  /**
+   * Récupère le planning de diffusion par jour
+   * API: /schedules?filter=day
+   * @param {string} day - Jour (monday, tuesday, wednesday, thursday, friday, saturday, sunday, unknown, other)
+   * @param {Object} options - Options
+   * @returns {Promise<Object>} Planning normalisé
+   */
+  async getSchedule(day = null, options = {}) {
+    const {
+      limit = DEFAULT_MAX_RESULTS,
+      page = 1
+    } = options;
+
+    // Validation
+    const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'unknown', 'other'];
+    if (day && !validDays.includes(day)) {
+      throw new ValidationError(`day doit être l'un de: ${validDays.join(', ')}`);
+    }
+
+    this.log.debug(`Schedule${day ? ` for ${day}` : ''} (limit: ${limit})`);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
+      sfw: 'false'
+    });
+
+    if (day) params.append('filter', day);
+
+    const url = `${JIKAN_BASE_URL}/schedules?${params.toString()}`;
+    const data = await this.fetchWithRetry(url);
+
+    if (!data?.data) {
+      throw new BadGatewayError('Erreur lors de la récupération du planning');
+    }
+
+    // Normaliser les résultats
+    const normalizedData = data.data.map(item =>
+      this.normalizer.normalizeAnimeItem(item)
+    );
+
+    return {
+      data: normalizedData,
+      pagination: data.pagination || {
+        current_page: page,
+        has_next_page: data.pagination?.has_next_page || false,
+        items: {
+          count: normalizedData.length,
+          total: data.pagination?.items?.total || normalizedData.length,
+          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
+        }
+      },
+      day: day || 'all'
+    };
+  }
 }
 
 // Export singleton

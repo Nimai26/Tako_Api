@@ -8,6 +8,7 @@ import { app } from './app.js';
 import { config } from './config/index.js';
 import { logger } from './shared/utils/logger.js';
 import { initDatabase, closeDatabase } from './infrastructure/database/index.js';
+import { startRefreshScheduler, stopRefreshScheduler } from './infrastructure/database/refresh-scheduler.js';
 
 const log = logger.create('Server');
 
@@ -24,6 +25,9 @@ async function start() {
     try {
       await initDatabase();
       log.info('✅ Database cache initialisé');
+      
+      // Démarrer le scheduler de refresh automatique
+      startRefreshScheduler();
     } catch (err) {
       log.error('⚠️  Erreur initialisation database', { error: err.message });
       log.warn('   Le serveur continuera sans cache persistant');
@@ -40,6 +44,16 @@ async function start() {
   // Graceful shutdown
   const shutdown = async (signal) => {
     log.warn(`${signal} reçu. Arrêt gracieux...`);
+    
+    // Arrêter le scheduler
+    if (config.cache.enabled) {
+      try {
+        stopRefreshScheduler();
+        log.info('✅ Scheduler arrêté');
+      } catch (err) {
+        log.error('Erreur arrêt scheduler', { error: err.message });
+      }
+    }
     
     // Fermer la connexion DB
     if (config.cache.enabled) {

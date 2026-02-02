@@ -195,6 +195,46 @@ export async function getArtistAlbums(artistId, options = {}) {
 }
 
 // ============================================================================
+// CHARTS
+// ============================================================================
+
+/**
+ * Récupère les top charts iTunes par pays
+ * @param {Object} options - Options
+ * @param {string} options.country - Code pays (fr, us, gb, de, etc.) - défaut: 'fr'
+ * @param {string} options.entity - Type (album, song) - défaut: 'album'
+ * @param {number} options.limit - Nombre de résultats (défaut: 25, max: 200)
+ * @returns {Promise<Object>} Top charts
+ */
+export async function getCharts(options = {}) {
+  const { 
+    country = 'fr',
+    entity = 'album', // album ou song
+    limit = 25
+  } = options;
+  
+  // L'API iTunes utilise le endpoint top via search avec ordering
+  // Alternative: utiliser l'ancienne API RSS ou un workaround via search
+  const feedType = entity === 'album' ? 'album' : 'song';
+  const url = `https://itunes.apple.com/${country}/rss/topalbums/limit=${Math.min(limit, 100)}/json`;
+  
+  log.debug(`Get charts ${entity} for ${country.toUpperCase()}`);
+  
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': USER_AGENT
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Erreur iTunes: ${response.status}`);
+  }
+  
+  return response.json();
+}
+
+// ============================================================================
 // HEALTH CHECK
 // ============================================================================
 
@@ -245,5 +285,6 @@ export default {
   getAlbum,
   getArtist,
   getArtistAlbums,
+  getCharts,
   healthCheck
 };

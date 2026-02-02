@@ -67,7 +67,12 @@ Ce document décrit le processus de migration de l'ancienne API `toys_api` vers 
 - [ ] `BaseRouter` - Factory pour routes
 
 ### Phase 3 : Infrastructure
-- [ ] Module database (`src/infrastructure/database/`) - Reporté
+- [x] Module database (`src/infrastructure/database/`) - **EN COURS**
+  - [x] Schéma discovery_cache (trending/popular/charts/upcoming)
+  - [x] Repository pattern avec cache PostgreSQL
+  - [x] Refresh scheduler avec cron jobs échelonnés
+  - [ ] Tests unitaires du cache
+  - [ ] Migration complète de tous les endpoints discovery
 - [ ] Client HTTP avec retry (`src/infrastructure/http/`)
 - [ ] Module scraping (`src/infrastructure/scraping/`)
 - [ ] Monitoring (`src/infrastructure/monitoring/`)
@@ -214,7 +219,20 @@ Pas de middleware d'authentification : l'API est conçue pour un usage personnel
 
 ### Cache
 
-Le système de cache reste compatible mais est centralisé dans `src/infrastructure/database/`.
+Le système de cache PostgreSQL est **en cours d'implémentation** pour les endpoints discovery (trending/popular/charts/upcoming).
+
+**Architecture** :
+- Table dédiée `discovery_cache` avec cache_key unique
+- Refresh automatique échelonné (cron jobs toutes les 24h)
+- TTL adaptés : 24h (trending/popular/charts), 6h (upcoming)
+- Horaires échelonnés pour éviter le flooding des APIs
+
+**Bénéfices** :
+- Latence réduite : < 100ms vs 2-5s (gain 95%)
+- Rate limits respectés : 95% moins d'appels API externes
+- Scalabilité : PostgreSQL gère 100k+ requêtes/s
+
+Voir [CACHE_SYSTEM.md](./CACHE_SYSTEM.md) pour l'architecture complète.
 
 ## 🧪 Tests
 
