@@ -51,20 +51,34 @@ const PROVIDER_FETCHERS = {
   },
   
   jikan: {
-    trending: async () => {
+    trending: async (options) => {
       const { JikanProvider } = await import('../../domains/anime-manga/providers/jikan.provider.js');
       const provider = new JikanProvider();
-      return await provider.getTrending({ limit: 20 });
+      // Gère les catégories tv/movie ou all par défaut
+      const filter = options.category && options.category !== 'all' ? options.category : null;
+      return await provider.getCurrentSeason({ 
+        limit: 20, 
+        filter 
+      });
     },
-    top: async () => {
+    top: async (options) => {
       const { JikanProvider } = await import('../../domains/anime-manga/providers/jikan.provider.js');
       const provider = new JikanProvider();
-      return await provider.getTop({ limit: 20 });
+      const subtype = options.category && options.category !== 'all' ? options.category : null;
+      return await provider.getTop('anime', { 
+        limit: 20, 
+        filter: 'bypopularity',
+        subtype 
+      });
     },
-    upcoming: async () => {
+    upcoming: async (options) => {
       const { JikanProvider } = await import('../../domains/anime-manga/providers/jikan.provider.js');
       const provider = new JikanProvider();
-      return await provider.getUpcoming({ limit: 20 });
+      const filter = options.category && options.category !== 'all' ? options.category : null;
+      return await provider.getUpcoming({ 
+        limit: 20, 
+        filter 
+      });
     },
     schedule: async (options) => {
       const { JikanProvider } = await import('../../domains/anime-manga/providers/jikan.provider.js');

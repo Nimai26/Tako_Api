@@ -823,16 +823,25 @@ export class JikanProvider extends BaseProvider {
       limit = DEFAULT_MAX_RESULTS,
       page = 1,
       filter = 'bypopularity',  // bypopularity, favorite, airing (anime), publishing (manga)
-      subtype = null            // tv, movie, ova, special (anime) / manga, novel, lightnovel, etc. (manga)
+      subtype = null,           // tv, movie, ova, special (anime) / manga, novel, lightnovel, etc. (manga)
+      sfw = 'all'               // all, sfw, nsfw
     } = options;
 
-    this.log.debug(`Top ${type} (filter: ${filter}, limit: ${limit})`);
+    this.log.debug(`Top ${type} (filter: ${filter}, sfw: ${sfw}, limit: ${limit})`);
 
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
-      sfw: 'false'  // Inclure tout le contenu
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT))
     });
+
+    // Gestion du filtre SFW
+    if (sfw === 'sfw') {
+      params.append('sfw', 'true');
+    } else if (sfw === 'nsfw') {
+      params.append('sfw', 'false');
+    } else {
+      params.append('sfw', 'false');  // Tout inclure (défaut)
+    }
 
     if (filter) params.append('filter', filter);
     if (subtype) params.append('type', subtype);
@@ -870,22 +879,33 @@ export class JikanProvider extends BaseProvider {
   /**
    * Récupère les anime de la saison en cours (trending)
    * @param {Object} options - Options
+   * @param {string} options.sfw - Filtre contenu: 'all' (défaut), 'sfw' (sans hentai), 'nsfw' (hentai uniquement)
    * @returns {Promise<Object>} Anime de la saison actuelle normalisés
    */
   async getCurrentSeason(options = {}) {
     const {
       limit = DEFAULT_MAX_RESULTS,
       page = 1,
-      filter = null  // tv, movie, ova, special, ona, music
+      filter = null,  // tv, movie, ova, special, ona, music
+      sfw = 'all'     // all, sfw, nsfw
     } = options;
 
-    this.log.debug(`Saison actuelle (limit: ${limit})`);
+    this.log.debug(`Saison actuelle (limit: ${limit}, sfw: ${sfw})`);
 
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
-      sfw: 'false'  // Inclure tout le contenu
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT))
     });
+
+    // Gestion du filtre SFW
+    if (sfw === 'sfw') {
+      params.append('sfw', 'true');  // Seulement contenu SFW
+    } else if (sfw === 'nsfw') {
+      params.append('sfw', 'false');
+      params.append('genres_exclude', ''); // NSFW uniquement (on va filtrer après)
+    } else {
+      params.append('sfw', 'false');  // Tout inclure (défaut)
+    }
 
     if (filter) params.append('filter', filter);
 
@@ -979,22 +999,32 @@ export class JikanProvider extends BaseProvider {
    * Récupère les anime à venir (prochaine saison)
    * API: /seasons/upcoming
    * @param {Object} options - Options
+   * @param {string} options.sfw - Filtre contenu: 'all' (défaut), 'sfw' (sans hentai), 'nsfw' (hentai uniquement)
    * @returns {Promise<Object>} Anime upcoming normalisés
    */
   async getUpcoming(options = {}) {
     const {
       limit = DEFAULT_MAX_RESULTS,
       page = 1,
-      filter = null
+      filter = null,
+      sfw = 'all'
     } = options;
 
-    this.log.debug(`Upcoming anime (limit: ${limit})`);
+    this.log.debug(`Upcoming anime (limit: ${limit}, sfw: ${sfw})`);
 
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
-      sfw: 'false'
+      limit: String(Math.min(limit, MAX_RESULTS_LIMIT))
     });
+
+    // Gestion du filtre SFW
+    if (sfw === 'sfw') {
+      params.append('sfw', 'true');
+    } else if (sfw === 'nsfw') {
+      params.append('sfw', 'false');
+    } else {
+      params.append('sfw', 'false');  // Tout inclure (défaut)
+    }
 
     if (filter) params.append('filter', filter);
 

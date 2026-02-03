@@ -1456,6 +1456,434 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /anime-manga/jikan/trending/tv
+ * Séries anime de la saison en cours (trending TV)
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - sfw: Filtre contenu - 'all' (tout), 'sfw' (sans hentai), 'nsfw' (hentai uniquement) - défaut: 'all'
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction (1 ou true)
+ */
+router.get('/trending/tv', asyncHandler(async (req, res) => {
+  const {
+    limit = '20',
+    page = '1',
+    sfw = 'all',
+    lang,
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'trending',
+    fetchFn: async () => {
+      let results = await provider.getCurrentSeason({
+        limit: limitNum,
+        page: pageNum,
+        filter: 'tv',
+        sfw
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: 'tv',
+      ttl: getTTL('trending')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'trending',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      season: results.season,
+      year: results.year,
+      category: 'tv',
+      sfw,
+      limit: limitNum,
+      page: pageNum,
+      cached: fromCache,
+      cacheKey,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/trending/movie
+ * Films anime de la saison en cours (trending movies)
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction (1 ou true)
+ */
+router.get('/trending/movie', asyncHandler(async (req, res) => {
+  const {
+    limit = '20',
+    page = '1',
+    sfw = 'all',
+    lang,
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'trending',
+    fetchFn: async () => {
+      let results = await provider.getCurrentSeason({
+        limit: limitNum,
+        page: pageNum,
+        filter: 'movie',
+        sfw
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: 'movie',
+      ttl: getTTL('trending')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'trending',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      season: results.season,
+      year: results.year,
+      category: 'movie',
+      limit: limitNum,
+      page: pageNum,
+      cached: fromCache,
+      cacheKey,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/top/tv
+ * Top séries anime
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - filter: bypopularity, favorite, airing (défaut: bypopularity)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction (1 ou true)
+ */
+router.get('/top/tv', asyncHandler(async (req, res) => {
+  const {
+    filter = 'bypopularity',
+    limit = '20',
+    page = '1',
+    sfw = 'all',
+    lang,
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'top',
+    fetchFn: async () => {
+      let results = await provider.getTop('anime', {
+        limit: limitNum,
+        page: pageNum,
+        filter,
+        subtype: 'tv',
+        sfw
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: 'tv',
+      ttl: getTTL('top')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'top',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      category: 'tv',
+      filter,
+      limit: limitNum,
+      page: pageNum,
+      cached: fromCache,
+      cacheKey,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/top/movie
+ * Top films anime
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - filter: bypopularity, favorite (défaut: bypopularity)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction (1 ou true)
+ */
+router.get('/top/movie', asyncHandler(async (req, res) => {
+  const {
+    filter = 'bypopularity',
+    limit = '20',
+    page = '1',
+    sfw = 'all',
+    lang,
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'top',
+    fetchFn: async () => {
+      let results = await provider.getTop('anime', {
+        limit: limitNum,
+        page: pageNum,
+        filter,
+        subtype: 'movie',
+        sfw
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: 'movie',
+      ttl: getTTL('top')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'top',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      category: 'movie',
+      filter,
+      limit: limitNum,
+      page: pageNum,
+      cached: fromCache,
+      cacheKey,
+      lang,
+      autoTrad: autoTradEnabled
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/upcoming/tv
+ * Séries anime à venir
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction (1 ou true)
+ */
+router.get('/upcoming/tv', asyncHandler(async (req, res) => {
+  const {
+    limit = '20',
+    page = '1',
+    sfw = 'all',
+    lang = 'fr',
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'upcoming',
+    fetchFn: async () => {
+      let results = await provider.getUpcoming({
+        limit: limitNum,
+        page: pageNum,
+        filter: 'tv',
+        sfw
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: 'tv',
+      ttl: getTTL('upcoming')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'upcoming',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      category: 'tv',
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
+ * GET /anime-manga/jikan/upcoming/movie
+ * Films anime à venir
+ * 
+ * Query params:
+ * - limit: Nombre de résultats (défaut: 20, max: 25)
+ * - page: Numéro de page (défaut: 1)
+ * - lang: Langue pour traduction
+ * - autoTrad: Activer traduction (1 ou true)
+ */
+router.get('/upcoming/movie', asyncHandler(async (req, res) => {
+  const {
+    limit = '20',
+    page = '1',
+    sfw = 'all',
+    lang = 'fr',
+    autoTrad
+  } = req.query;
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  const limitNum = Math.min(parseInt(limit) || 20, 25);
+  const pageNum = parseInt(page) || 1;
+
+  const { data: results, fromCache, cacheKey } = await withDiscoveryCache({
+    provider: 'jikan',
+    endpoint: 'upcoming',
+    fetchFn: async () => {
+      let results = await provider.getUpcoming({
+        limit: limitNum,
+        page: pageNum,
+        filter: 'movie',
+        sfw
+      });
+
+      // Traduction automatique si activée
+      if (autoTradEnabled && targetLang && results.data?.length > 0) {
+        results.data = await Promise.all(
+          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+        );
+      }
+      return results;
+    },
+    cacheOptions: {
+      category: 'movie',
+      ttl: getTTL('upcoming')
+    }
+  });
+
+  res.json({
+    success: true,
+    provider: 'jikan',
+    domain: 'anime-manga',
+    endpoint: 'upcoming',
+    data: results.data,
+    pagination: results.pagination,
+    metadata: {
+      category: 'movie',
+      limit: limitNum,
+      page: pageNum,
+      lang,
+      autoTrad: autoTradEnabled,
+      cached: fromCache,
+      cacheKey
+    }
+  });
+}));
+
+/**
  * GET /anime-manga/jikan/schedule
  * Planning de diffusion des anime
  * 

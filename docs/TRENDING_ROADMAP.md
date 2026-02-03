@@ -674,6 +674,140 @@ Total items   : 20
 
 ---
 
-**Dernière mise à jour** : 2 février 2026  
-**Version** : 1.0.0 (Post-fixes)  
-**Status** : ✅ Production-ready - Tous les problèmes résolus
+## 🚀 Améliorations Post-Production
+
+### Version 1.0.3 - Tri par popularité pour Upcoming (2 février 2026)
+**Objectif** : Améliorer la pertinence des résultats à venir
+
+**Modifications** :
+- ✅ **TMDB Upcoming** : Tri par popularité au lieu de date de sortie
+  - Fichier : `src/infrastructure/database/cache-refresher.js`
+  - Changement : `sortBy: 'popularity.desc'` au lieu de `sortBy: 'primary_release_date.asc'`
+  - Résultat : Les films/séries les plus attendus apparaissent en premier
+- ✅ **Jikan Upcoming** : Tri par popularité
+  - Changement : `filter: 'bypopularity'` dans `getUpcoming()`
+  - Résultat : Les animes les plus populaires en tête
+- ✅ Commit : eed5dcb
+- ✅ Déploiement : GitHub + DockerHub (nimai24/tako-api:1.0.3)
+
+**Impact** :
+- Meilleure pertinence des résultats upcoming
+- Utilisateurs voient d'abord les contenus les plus attendus
+
+---
+
+### Version 1.0.4 - Corrections du système de cache (3 février 2026)
+**Objectif** : Résoudre les bugs critiques du cache refresh
+
+**Bugs identifiés** :
+1. ❌ Route `/api/cache/refresh` retournait `{"success":0}` au lieu de `{"success":true}`
+2. ❌ Fonction `getUpcomingMovies()` n'existe pas (méthode manquante TMDB)
+3. ❌ Cache upcoming stockait seulement 5-10 items au lieu de 20
+
+**Corrections** :
+- ✅ **Bug #1 - Success Field** :
+  - Problème : `...result` écrasait `success: true` avec `success: 0`
+  - Solution : Inverser l'ordre → `{ ...result, success: result.total > 0 || result.success > 0 }`
+  - Fichier : `src/core/routes/cache.routes.js` (ligne 45)
+
+- ✅ **Bug #2 - getUpcomingMovies** :
+  - Problème : Appel `provider.getUpcomingMovies()` (méthode inexistante)
+  - Solution : Utiliser `provider.getUpcoming(options.category, { limit: 20 })`
+  - Fichier : `src/infrastructure/database/cache-refresher.js` (ligne 156)
+
+- ✅ **Bug #3 - Upcoming 20 items** :
+  - Problème : Cache ne stockait que 5-10 résultats
+  - Cause : Tests précédents avec `limit=5`
+  - Solution : Force refresh avec `limit=20` correct
+
+**Nouvelles fonctionnalités** :
+- ✅ **Force Refresh** : `POST /api/cache/refresh?force=true`
+  - Fonction : `forceRefreshAll()` dans `refresh-scheduler.js`
+  - Permet de rafraîchir TOUTES les entrées (même non expirées)
+- ✅ **getAllEntries()** : Nouvelle fonction repository
+  - Récupère toutes les entrées du cache pour refresh complet
+
+**Tests** :
+- ✅ Cache refresh retourne maintenant `{"success": false, "total": 0}` quand pas d'entrées expirées (correct)
+- ✅ Force refresh fonctionne sur les 12+ entrées
+- ✅ Toutes les entrées upcoming ont maintenant 20 items
+
+**Déploiement** :
+- ✅ Commit : 688b67b
+- ✅ Tag : v1.0.4
+- ✅ GitHub : nimai24/Tako_Api
+- ✅ DockerHub : nimai24/tako-api:1.0.4 + latest
+
+---
+
+### Version 1.0.5 - Séparation Jikan TV/Film + Filtres SFW (3 février 2026)
+**Objectif** : Endpoints séparés pour animes TV vs films + contrôle du contenu adulte
+
+**Nouveaux endpoints Jikan** :
+- ✅ `GET /api/anime-manga/jikan/trending/tv` - Séries de la saison actuelle
+- ✅ `GET /api/anime-manga/jikan/trending/movie` - Films de la saison actuelle
+- ✅ `GET /api/anime-manga/jikan/top/tv` - Top séries par popularité
+- ✅ `GET /api/anime-manga/jikan/top/movie` - Top films par popularité
+- ✅ `GET /api/anime-manga/jikan/upcoming/tv` - Séries à venir
+- ✅ `GET /api/anime-manga/jikan/upcoming/movie` - Films à venir
+
+**Paramètre SFW** (Safe For Work) :
+- ✅ `sfw=all` (défaut) : Tout le contenu (SFW + NSFW)
+- ✅ `sfw=sfw` : Contenu familial uniquement (exclut hentai)
+- ⚠️ `sfw=nsfw` : Mode NSFW-only (limitation API)
+  - **Issue** : L'API Jikan ne supporte pas le filtre "hentai uniquement"
+  - L'API permet uniquement `sfw=true` (exclut NSFW) ou `sfw=false` (inclut tout)
+  - Mode `nsfw=nsfw` retourne actuellement tout le contenu
+  - **Solution potentielle** : Filtrage client-side par genre (genre ID 12 = Hentai)
+
+**Modifications techniques** :
+- ✅ **Provider** (`jikan.provider.js`) :
+  ```javascript
+  // getCurrentSeason(), getTop(), getUpcoming()
+  if (sfw === 'sfw') params.append('sfw', 'true');      // Exclut NSFW
+  else if (sfw === 'nsfw') params.append('sfw', 'false'); // Inclut tout (limitation)
+  else params.append('sfw', 'false');                    // Défaut: tout
+  ```
+
+- ✅ **Routes** (`jikan.routes.js`) :
+  - 6 nouvelles routes avec pattern `/endpoint/{tv,movie}`
+  - Paramètres : `limit`, `page`, `sfw`, `lang`, `autoTrad`
+  - Cache configuré avec TTL appropriés (trending 3h, top 6h, upcoming 6h)
+
+- ✅ **Cache** (`cache-refresher.js`) :
+  - Support du paramètre `category` (tv/movie) pour Jikan
+  - Clés cache : `jikan:trending:tv`, `jikan:trending:movie`, etc.
+  - Chaque endpoint cache 20 items
+
+**Cache PostgreSQL** :
+```sql
+SELECT cache_key, total_results FROM discovery_cache WHERE provider='jikan';
+
+ cache_key              | total_results
+------------------------+---------------
+ jikan:top:movie        | 20
+ jikan:top:tv           | 20
+ jikan:trending:movie   | 20
+ jikan:trending:tv      | 20
+ jikan:upcoming:movie   | 20
+ jikan:upcoming:tv      | 20
+```
+
+**Tests de validation** :
+- ✅ Trending TV : Frieren, Jujutsu Kaisen, Jigokuraku (20 résultats)
+- ✅ Trending Movie : Tensei Slime Movie, Boku no Kokoro (20 résultats)
+- ✅ sfw=all : 20 résultats (tout contenu)
+- ✅ sfw=sfw : 20 résultats (contenu familial uniquement)
+- ❌ sfw=nsfw : 20 résultats (identique à 'all' - limitation API)
+
+**Déploiement** :
+- 🔄 **EN COURS** - Prêt pour déploiement
+- Tag prévu : v1.0.5
+- Endpoints : +6 nouveaux (total Jikan: 10 endpoints)
+
+---
+
+**Dernière mise à jour** : 3 février 2026  
+**Version actuelle** : 1.0.4 (déployé) | 1.0.5 (prêt)  
+**Status** : ✅ Production-ready  
+**Prochaine étape** : Déploiement v1.0.5 + mise à jour documentation
