@@ -25,6 +25,7 @@ export function generateCacheKey(provider, endpoint, options = {}) {
   if (options.type) parts.push(options.type);
   if (options.filter) parts.push(options.filter);
   if (options.day) parts.push(options.day);
+  if (options.sfw && options.sfw !== 'all') parts.push(options.sfw);  // Inclure sfw (sauf 'all' qui est le défaut)
   
   return parts.join(':');
 }

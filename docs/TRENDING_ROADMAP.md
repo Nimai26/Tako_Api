@@ -754,11 +754,10 @@ Total items   : 20
 **Paramètre SFW** (Safe For Work) :
 - ✅ `sfw=all` (défaut) : Tout le contenu (SFW + NSFW)
 - ✅ `sfw=sfw` : Contenu familial uniquement (exclut hentai)
-- ⚠️ `sfw=nsfw` : Mode NSFW-only (limitation API)
-  - **Issue** : L'API Jikan ne supporte pas le filtre "hentai uniquement"
-  - L'API permet uniquement `sfw=true` (exclut NSFW) ou `sfw=false` (inclut tout)
-  - Mode `nsfw=nsfw` retourne actuellement tout le contenu
-  - **Solution potentielle** : Filtrage client-side par genre (genre ID 12 = Hentai)
+- ✅ `sfw=nsfw` : Hentai uniquement (mode NSFW-only)
+  - **Implémentation** : Filtrage client-side par genre Hentai (genre ID 12)
+  - L'API Jikan retourne tout le contenu (`sfw=false`), puis Tako API filtre pour ne garder que les animes/mangas avec le genre "Hentai"
+  - Chaque mode (all/sfw/nsfw) a sa propre clé de cache pour éviter les collisions
 
 **Modifications techniques** :
 - ✅ **Provider** (`jikan.provider.js`) :
@@ -798,16 +797,87 @@ SELECT cache_key, total_results FROM discovery_cache WHERE provider='jikan';
 - ✅ Trending Movie : Tensei Slime Movie, Boku no Kokoro (20 résultats)
 - ✅ sfw=all : 20 résultats (tout contenu)
 - ✅ sfw=sfw : 20 résultats (contenu familial uniquement)
-- ❌ sfw=nsfw : 20 résultats (identique à 'all' - limitation API)
+- ✅ sfw=nsfw : 0-N résultats (hentai uniquement, selon disponibilité)
 
 **Déploiement** :
-- 🔄 **EN COURS** - Prêt pour déploiement
-- Tag prévu : v1.0.5
-- Endpoints : +6 nouveaux (total Jikan: 10 endpoints)
+- ✅ Commit : c03046a
+- ✅ Tag : v1.0.5
+- ✅ GitHub : nimai24/Tako_Api
+- ✅ DockerHub : nimai24/tako-api:1.0.5 + latest
+
+---
+
+### Version 1.0.6 - Filtrage NSFW fonctionnel (3 février 2026)
+**Objectif** : Corriger le mode `sfw=nsfw` pour retourner uniquement les hentai
+
+**Problème v1.0.5** :
+- Le mode `sfw=nsfw` retournait tout le contenu au lieu de filtrer uniquement les hentai
+- Raison : L'API Jikan ne supporte que `sfw=true` (exclut NSFW) ou `sfw=false` (inclut tout)
+- Pas de support natif pour "hentai uniquement"
+
+**Solution implémentée** :
+- ✅ **Filtrage client-side par genre** :
+  ```javascript
+  function filterBySfw(data, sfw) {
+    if (sfw === 'nsfw') {
+      // Ne garder que les items avec genre Hentai (mal_id: 12)
+      return data.filter(item => 
+        item.genres?.some(g => g.mal_id === 12 || g.name.toLowerCase().includes('hentai'))
+      );
+    }
+    return data;  // 'all' et 'sfw' gérés par l'API
+  }
+  ```
+
+- ✅ **Clés de cache séparées** :
+  - Ajout du paramètre `sfw` dans `generateCacheKey()` si différent de 'all'
+  - Clés résultantes :
+    - `jikan:trending:tv` (sfw=all, par défaut)
+    - `jikan:trending:tv:sfw` (sfw=sfw)
+    - `jikan:trending:tv:nsfw` (sfw=nsfw)
+
+- ✅ **Modifications de code** :
+  - `src/domains/anime-manga/routes/jikan.routes.js` :
+    - Fonction `filterBySfw()` ajoutée
+    - Filtrage appliqué aux 6 routes (trending/top/upcoming × tv/movie)
+    - `sfw` ajouté dans `cacheOptions` de chaque route
+  - `src/infrastructure/database/discovery-cache.repository.js` :
+    - `generateCacheKey()` modifié pour inclure `sfw`
+
+**Tests de validation** :
+```bash
+# Mode ALL
+curl "localhost:3000/api/anime-manga/jikan/trending/tv?sfw=all&limit=5"
+→ 5 résultats (tout le contenu)
+
+# Mode SFW
+curl "localhost:3000/api/anime-manga/jikan/trending/tv?sfw=sfw&limit=5"
+→ 5 résultats (contenu familial, sans hentai)
+
+# Mode NSFW
+curl "localhost:3000/api/anime-manga/jikan/trending/tv?sfw=nsfw&limit=5"
+→ 0 résultats (aucun hentai dans la saison actuelle - filtrage fonctionnel)
+```
+
+**Cache PostgreSQL** :
+```sql
+SELECT cache_key, total_results FROM discovery_cache WHERE provider='jikan';
+
+ cache_key              | total_results
+------------------------+---------------
+ jikan:trending:tv      | 5
+ jikan:trending:tv:sfw  | 5
+ jikan:trending:tv:nsfw | 0
+```
+
+**Déploiement** :
+- ✅ Commit : (en cours)
+- ✅ Tag prévu : v1.0.6
+- ✅ Endpoints : 6 routes Jikan avec filtrage NSFW fonctionnel
 
 ---
 
 **Dernière mise à jour** : 3 février 2026  
-**Version actuelle** : 1.0.4 (déployé) | 1.0.5 (prêt)  
+**Version actuelle** : 1.0.5 (déployé) | 1.0.6 (prêt)  
 **Status** : ✅ Production-ready  
 **Prochaine étape** : Déploiement v1.0.5 + mise à jour documentation

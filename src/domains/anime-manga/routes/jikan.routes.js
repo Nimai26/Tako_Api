@@ -76,6 +76,30 @@ const provider = new JikanProvider();
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
+ * Filtre les résultats selon le paramètre SFW
+ * @param {Array} data - Tableau de résultats
+ * @param {string} sfw - Mode: 'all', 'sfw', 'nsfw'
+ * @returns {Array} - Résultats filtrés
+ */
+function filterBySfw(data, sfw) {
+  if (!data || !Array.isArray(data)) return data;
+  
+  if (sfw === 'nsfw') {
+    // Filtrer pour ne garder que les hentai (genre ID 12 ou nom contenant 'Hentai')
+    return data.filter(item => {
+      if (!item.genres || !Array.isArray(item.genres)) return false;
+      return item.genres.some(genre => 
+        genre.mal_id === 12 || 
+        (genre.name && genre.name.toLowerCase().includes('hentai'))
+      );
+    });
+  }
+  
+  // Pour 'all' et 'sfw', l'API Jikan fait déjà le filtrage
+  return data;
+}
+
+/**
  * Traduit les champs synopsis d'un résultat détaillé
  */
 async function translateDetailResult(result, targetLang, autoTradEnabled) {
@@ -1492,6 +1516,11 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
         sfw
       });
 
+      // Filtrage client-side pour mode nsfw
+      if (sfw === 'nsfw') {
+        results.data = filterBySfw(results.data, sfw);
+      }
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1502,6 +1531,7 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
     },
     cacheOptions: {
       category: 'tv',
+      sfw,  // Inclure sfw dans la clé de cache
       ttl: getTTL('trending')
     }
   });
@@ -1564,6 +1594,11 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
         sfw
       });
 
+      // Filtrage client-side pour mode nsfw
+      if (sfw === 'nsfw') {
+        results.data = filterBySfw(results.data, sfw);
+      }
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1574,6 +1609,7 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
     },
     cacheOptions: {
       category: 'movie',
+      sfw,  // Inclure sfw dans la clé de cache
       ttl: getTTL('trending')
     }
   });
@@ -1638,6 +1674,11 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
         sfw
       });
 
+      // Filtrage client-side pour mode nsfw
+      if (sfw === 'nsfw') {
+        results.data = filterBySfw(results.data, sfw);
+      }
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1648,6 +1689,7 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
     },
     cacheOptions: {
       category: 'tv',
+      sfw,  // Inclure sfw dans la clé de cache
       ttl: getTTL('top')
     }
   });
@@ -1711,6 +1753,11 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
         sfw
       });
 
+      // Filtrage client-side pour mode nsfw
+      if (sfw === 'nsfw') {
+        results.data = filterBySfw(results.data, sfw);
+      }
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1721,6 +1768,7 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
     },
     cacheOptions: {
       category: 'movie',
+      sfw,  // Inclure sfw dans la clé de cache
       ttl: getTTL('top')
     }
   });
@@ -1781,6 +1829,11 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
         sfw
       });
 
+      // Filtrage client-side pour mode nsfw
+      if (sfw === 'nsfw') {
+        results.data = filterBySfw(results.data, sfw);
+      }
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1791,6 +1844,7 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
     },
     cacheOptions: {
       category: 'tv',
+      sfw,  // Inclure sfw dans la clé de cache
       ttl: getTTL('upcoming')
     }
   });
@@ -1850,6 +1904,11 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
         sfw
       });
 
+      // Filtrage client-side pour mode nsfw
+      if (sfw === 'nsfw') {
+        results.data = filterBySfw(results.data, sfw);
+      }
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1860,6 +1919,7 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
     },
     cacheOptions: {
       category: 'movie',
+      sfw,  // Inclure sfw dans la clé de cache
       ttl: getTTL('upcoming')
     }
   });
