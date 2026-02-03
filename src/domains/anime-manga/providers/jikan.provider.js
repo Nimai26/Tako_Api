@@ -69,6 +69,76 @@ export class JikanProvider extends BaseProvider {
   }
 
   /**
+   * Récupère les images/artworks d'un anime (pour backdrop)
+   * @param {number} malId - ID MyAnimeList
+   * @returns {Promise<Array>} Liste des images
+   */
+  async getAnimePictures(malId) {
+    try {
+      const url = `${this.baseUrl}/anime/${malId}/pictures`;
+      const response = await this.fetchWithRetry(url);
+      return response.data || [];
+    } catch (error) {
+      this.log.warn(`Impossible de récupérer pictures pour anime ${malId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Sélectionne le meilleur backdrop depuis les pictures
+   * Priorité: artwork paysage > première image > null
+   * @param {Array} pictures - Tableau de pictures Jikan
+   * @returns {string|null} URL du backdrop
+   */
+  selectBackdrop(pictures) {
+    if (!pictures || pictures.length === 0) return null;
+    
+    // Prendre la première image large disponible (key visual)
+    const firstPicture = pictures[0];
+    return firstPicture?.jpg?.large_image_url || 
+           firstPicture?.jpg?.image_url || 
+           firstPicture?.webp?.large_image_url ||
+           firstPicture?.webp?.image_url || 
+           null;
+  }
+
+  /**
+   * Enrichit un tableau d'anime avec des backdrops
+   * @param {Array} animeList - Liste d'items anime normalisés
+   * @returns {Promise<Array>} - Liste enrichie
+   */
+  async enrichAnimeWithBackdrops(animeList) {
+    if (!animeList || !Array.isArray(animeList) || animeList.length === 0) {
+      this.log.debug('enrichAnimeWithBackdrops: no data to enrich');
+      return animeList;
+    }
+
+    this.log.debug(`enrichAnimeWithBackdrops: processing ${animeList.length} items`);
+
+    // Enrichir en parallèle (limite 3 req/sec respectée par getAnimePictures)
+    const enriched = await Promise.all(
+      animeList.map(async (anime) => {
+        if (!anime.malId) {
+          this.log.warn(`enrichAnimeWithBackdrops: item has no malId`, anime.id);
+          return anime;
+        }
+        
+        try {
+          const pictures = await this.getAnimePictures(anime.malId);
+          const backdrop = this.selectBackdrop(pictures);
+          this.log.debug(`Backdrop for ${anime.malId}: ${backdrop ? 'found' : 'null'}`);
+          return { ...anime, backdrop };
+        } catch (error) {
+          this.log.warn(`Backdrop unavailable for ${anime.malId}:`, error.message);
+          return anime;
+        }
+      })
+    );
+
+    return enriched;
+  }
+
+  /**
    * Vérifie si le provider est configuré (toujours OK, pas de clé requise)
    */
   isConfigured() {
@@ -839,6 +909,7 @@ export class JikanProvider extends BaseProvider {
       params.append('sfw', 'true');
     } else if (sfw === 'nsfw') {
       params.append('sfw', 'false');
+      params.append('rating', 'rx');  // Hentai uniquement (Rx - Hentai)
     } else {
       params.append('sfw', 'false');  // Tout inclure (défaut)
     }
@@ -902,7 +973,7 @@ export class JikanProvider extends BaseProvider {
       params.append('sfw', 'true');  // Seulement contenu SFW
     } else if (sfw === 'nsfw') {
       params.append('sfw', 'false');
-      params.append('genres_exclude', ''); // NSFW uniquement (on va filtrer après)
+      params.append('rating', 'rx');  // Hentai uniquement (Rx - Hentai)
     } else {
       params.append('sfw', 'false');  // Tout inclure (défaut)
     }
@@ -1022,6 +1093,7 @@ export class JikanProvider extends BaseProvider {
       params.append('sfw', 'true');
     } else if (sfw === 'nsfw') {
       params.append('sfw', 'false');
+      params.append('rating', 'rx');  // Hentai uniquement (Rx - Hentai)
     } else {
       params.append('sfw', 'false');  // Tout inclure (défaut)
     }

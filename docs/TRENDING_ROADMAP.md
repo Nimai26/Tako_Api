@@ -870,14 +870,58 @@ SELECT cache_key, total_results FROM discovery_cache WHERE provider='jikan';
  jikan:trending:tv:nsfw | 0
 ```
 
+**⚠️ Limitation importante** :
+- Les endpoints `/top/tv?sfw=nsfw` et `/top/movie?sfw=nsfw` retournent **les mêmes résultats**
+- Raison : Le filtre de type (tv/movie) est **désactivé** en mode NSFW car les hentai sont principalement des **OVA** et **ONA**, pas des TV/Movie
+- Code : `filter: sfw === 'nsfw' ? null : 'tv'` (lignes 1502, 1583, 1656, 1733, 1827, 1905)
+- Impact : Les 6 endpoints NSFW (trending/top/upcoming × tv/movie) retournent tous le même pool de hentai (principalement OVA/ONA)
+- Clés de cache séparées maintenues pour cohérence de l'API, mais données identiques
+
+**Tests de validation** :
+```bash
+# Mode ALL
+curl "localhost:3000/api/anime-manga/jikan/trending/tv?sfw=all&limit=5"
+→ 5 résultats (tout le contenu)
+
+# Mode SFW
+curl "localhost:3000/api/anime-manga/jikan/trending/tv?sfw=sfw&limit=5"
+→ 5 résultats (contenu familial, sans hentai)
+
+# Mode NSFW
+curl "localhost:3000/api/anime-manga/jikan/trending/tv?sfw=nsfw&limit=5"
+→ 5 résultats hentai (principalement OVA/ONA, pas de distinction TV/Movie)
+```
+
+**Cache PostgreSQL** :
+```sql
+SELECT cache_key, total_results FROM discovery_cache WHERE provider='jikan';
+
+ cache_key              | total_results
+------------------------+---------------
+ jikan:top:movie        | 20
+ jikan:top:movie:nsfw   | 20  (mêmes données que top:tv:nsfw)
+ jikan:top:tv           | 20
+ jikan:top:tv:nsfw      | 20  (mêmes données que top:movie:nsfw)
+ jikan:trending:movie   | 20
+ jikan:trending:movie:nsfw | 20
+ jikan:trending:tv      | 20
+ jikan:trending:tv:nsfw | 20
+ jikan:upcoming:movie   | 20
+ jikan:upcoming:movie:nsfw | 20
+ jikan:upcoming:tv      | 20
+ jikan:upcoming:tv:nsfw | 20
+(12 rows, 240 items total)
+```
+
 **Déploiement** :
 - ✅ Commit : (en cours)
-- ✅ Tag prévu : v1.0.6
+- ✅ Tag : v1.0.6
 - ✅ Endpoints : 6 routes Jikan avec filtrage NSFW fonctionnel
+- ✅ Cache : 12 entrées × 20 items = 240 animes en cache
 
 ---
 
 **Dernière mise à jour** : 3 février 2026  
-**Version actuelle** : 1.0.5 (déployé) | 1.0.6 (prêt)  
+**Version actuelle** : 1.0.6 (en cours de déploiement)  
 **Status** : ✅ Production-ready  
-**Prochaine étape** : Déploiement v1.0.5 + mise à jour documentation
+**Prochaine étape** : Push GitHub + DockerHub v1.0.6

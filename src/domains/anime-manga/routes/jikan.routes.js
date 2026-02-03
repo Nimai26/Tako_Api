@@ -76,27 +76,12 @@ const provider = new JikanProvider();
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Filtre les résultats selon le paramètre SFW
- * @param {Array} data - Tableau de résultats
- * @param {string} sfw - Mode: 'all', 'sfw', 'nsfw'
- * @returns {Array} - Résultats filtrés
+ * Enrichit les résultats anime avec des backdrops depuis /pictures
+ * @param {Array} data - Tableau de résultats anime
+ * @returns {Promise<Array>} - Résultats enrichis avec backdrop
  */
-function filterBySfw(data, sfw) {
-  if (!data || !Array.isArray(data)) return data;
-  
-  if (sfw === 'nsfw') {
-    // Filtrer pour ne garder que les hentai (genre ID 12 ou nom contenant 'Hentai')
-    return data.filter(item => {
-      if (!item.genres || !Array.isArray(item.genres)) return false;
-      return item.genres.some(genre => 
-        genre.mal_id === 12 || 
-        (genre.name && genre.name.toLowerCase().includes('hentai'))
-      );
-    });
-  }
-  
-  // Pour 'all' et 'sfw', l'API Jikan fait déjà le filtrage
-  return data;
+async function enrichWithBackdrops(data) {
+  return await provider.enrichAnimeWithBackdrops(data);
 }
 
 /**
@@ -1512,14 +1497,13 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
       let results = await provider.getCurrentSeason({
         limit: limitNum,
         page: pageNum,
-        filter: 'tv',
+        filter: sfw === 'nsfw' ? null : 'tv',  // Pas de filtre type pour NSFW (hentai = OVA/ONA)
         sfw
       });
 
-      // Filtrage client-side pour mode nsfw
-      if (sfw === 'nsfw') {
-        results.data = filterBySfw(results.data, sfw);
-      }
+
+      // Enrichir avec backdrops depuis /pictures
+      results.data = await enrichWithBackdrops(results.data);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
@@ -1590,14 +1574,13 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
       let results = await provider.getCurrentSeason({
         limit: limitNum,
         page: pageNum,
-        filter: 'movie',
+        filter: sfw === 'nsfw' ? null : 'movie',  // Pas de filtre type pour NSFW
         sfw
       });
 
-      // Filtrage client-side pour mode nsfw
-      if (sfw === 'nsfw') {
-        results.data = filterBySfw(results.data, sfw);
-      }
+
+      // Enrichir avec backdrops depuis /pictures
+      results.data = await enrichWithBackdrops(results.data);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
@@ -1670,14 +1653,12 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
         limit: limitNum,
         page: pageNum,
         filter,
-        subtype: 'tv',
+        subtype: sfw === 'nsfw' ? null : 'tv',  // Pas de subtype pour NSFW (hentai = OVA/ONA)
         sfw
       });
 
-      // Filtrage client-side pour mode nsfw
-      if (sfw === 'nsfw') {
-        results.data = filterBySfw(results.data, sfw);
-      }
+      // Enrichir avec backdrops depuis /pictures
+      results.data = await enrichWithBackdrops(results.data);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
@@ -1749,14 +1730,12 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
         limit: limitNum,
         page: pageNum,
         filter,
-        subtype: 'movie',
+        subtype: sfw === 'nsfw' ? null : 'movie',  // Pas de subtype pour NSFW
         sfw
       });
 
-      // Filtrage client-side pour mode nsfw
-      if (sfw === 'nsfw') {
-        results.data = filterBySfw(results.data, sfw);
-      }
+      // Enrichir avec backdrops depuis /pictures
+      results.data = await enrichWithBackdrops(results.data);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
@@ -1825,14 +1804,13 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
       let results = await provider.getUpcoming({
         limit: limitNum,
         page: pageNum,
-        filter: 'tv',
+        filter: sfw === 'nsfw' ? null : 'tv',  // Pas de filtre pour NSFW
         sfw
       });
 
-      // Filtrage client-side pour mode nsfw
-      if (sfw === 'nsfw') {
-        results.data = filterBySfw(results.data, sfw);
-      }
+
+      // Enrichir avec backdrops depuis /pictures
+      results.data = await enrichWithBackdrops(results.data);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
@@ -1900,14 +1878,13 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
       let results = await provider.getUpcoming({
         limit: limitNum,
         page: pageNum,
-        filter: 'movie',
+        filter: sfw === 'nsfw' ? null : 'movie',  // Pas de filtre pour NSFW
         sfw
       });
 
-      // Filtrage client-side pour mode nsfw
-      if (sfw === 'nsfw') {
-        results.data = filterBySfw(results.data, sfw);
-      }
+
+      // Enrichir avec backdrops depuis /pictures
+      results.data = await enrichWithBackdrops(results.data);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
