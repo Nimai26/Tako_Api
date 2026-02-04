@@ -122,18 +122,21 @@ const PROVIDER_FETCHERS = {
   },
   
   deezer: {
-    charts: async () => {
-      const { DeezerProvider } = await import('../../domains/music/providers/deezer.provider.js');
-      const provider = new DeezerProvider();
-      return await provider.getCharts({ limit: 20 });
+    charts: async (options) => {
+      const { getChart } = await import('../../domains/music/providers/deezer.provider.js');
+      // Deezer getChart attend un type (albums, tracks, artists)
+      const type = options.category || 'albums';
+      const response = await getChart(type, { limit: 20 });
+      return response;
     }
   },
   
   itunes: {
-    charts: async () => {
-      const { ItunesProvider } = await import('../../domains/music/providers/itunes.provider.js');
-      const provider = new ItunesProvider();
-      return await provider.getCharts({ limit: 20 });
+    charts: async (options) => {
+      const { getCharts } = await import('../../domains/music/providers/itunes.provider.js');
+      // iTunes getCharts attend country et category
+      const response = await getCharts(options);
+      return response;
     }
   }
 };

@@ -1,6 +1,6 @@
 services:
   tako-api:
-    build: .
+    image: nimai24/tako-api:1.0.8
     container_name: tako_api
     restart: unless-stopped
     ports:
