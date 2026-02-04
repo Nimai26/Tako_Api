@@ -49,7 +49,8 @@ export class BedethequeNormalizer extends BaseNormalizer {
       resourceType: itemType,
       
       src_url: item.url,
-      src_image_url: item.image || item.coverUrl || item.flag,
+      // Ne pas utiliser le drapeau (item.flag) comme image par défaut
+      src_image_url: item.image || item.coverUrl || null,
 
       metadata: {
         position,
