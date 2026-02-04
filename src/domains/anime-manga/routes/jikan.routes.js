@@ -85,6 +85,23 @@ async function enrichWithBackdrops(data) {
 }
 
 /**
+ * Filtre les résultats selon le paramètre SFW
+ * @param {Array} data - Tableau de résultats anime/manga
+ * @param {string} sfw - Mode SFW ('all', 'sfw', 'nsfw')
+ * @returns {Array} - Résultats filtrés
+ */
+function filterBySfw(data, sfw) {
+  if (sfw === 'nsfw') {
+    // Mode NSFW: ne garder que les hentai (genre ID 12 ou nom contenant 'hentai')
+    return data.filter(item => 
+      item.genres?.some(g => g.mal_id === 12 || g.name?.toLowerCase().includes('hentai'))
+    );
+  }
+  // Modes 'all' et 'sfw' gérés par l'API Jikan directement
+  return data;
+}
+
+/**
  * Traduit les champs synopsis d'un résultat détaillé
  */
 async function translateDetailResult(result, targetLang, autoTradEnabled) {
@@ -1505,6 +1522,9 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
       // Enrichir avec backdrops depuis /pictures
       results.data = await enrichWithBackdrops(results.data);
 
+      // Filtrage SFW (client-side pour NSFW)
+      results.data = filterBySfw(results.data, sfw);
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1581,6 +1601,9 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
 
       // Enrichir avec backdrops depuis /pictures
       results.data = await enrichWithBackdrops(results.data);
+
+      // Filtrage SFW (client-side pour NSFW)
+      results.data = filterBySfw(results.data, sfw);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
@@ -1660,6 +1683,9 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
       // Enrichir avec backdrops depuis /pictures
       results.data = await enrichWithBackdrops(results.data);
 
+      // Filtrage SFW (client-side pour NSFW)
+      results.data = filterBySfw(results.data, sfw);
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1737,6 +1763,9 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
       // Enrichir avec backdrops depuis /pictures
       results.data = await enrichWithBackdrops(results.data);
 
+      // Filtrage SFW (client-side pour NSFW)
+      results.data = filterBySfw(results.data, sfw);
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1812,6 +1841,9 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
       // Enrichir avec backdrops depuis /pictures
       results.data = await enrichWithBackdrops(results.data);
 
+      // Filtrage SFW (client-side pour NSFW)
+      results.data = filterBySfw(results.data, sfw);
+
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
         results.data = await Promise.all(
@@ -1885,6 +1917,9 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
 
       // Enrichir avec backdrops depuis /pictures
       results.data = await enrichWithBackdrops(results.data);
+
+      // Filtrage SFW (client-side pour NSFW)
+      results.data = filterBySfw(results.data, sfw);
 
       // Traduction automatique si activée
       if (autoTradEnabled && targetLang && results.data?.length > 0) {
