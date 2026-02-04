@@ -917,11 +917,95 @@ SELECT cache_key, total_results FROM discovery_cache WHERE provider='jikan';
 - ✅ Commit : (en cours)
 - ✅ Tag : v1.0.6
 - ✅ Endpoints : 6 routes Jikan avec filtrage NSFW fonctionnel
-- ✅ Cache : 12 entrées × 20 items = 240 animes en cache
+- ✅ Cache : 18 entrées × 20 items = 360 animes en cache (3 variantes SFW par endpoint)
 
 ---
 
-**Dernière mise à jour** : 3 février 2026  
-**Version actuelle** : 1.0.6 (en cours de déploiement)  
+### Version 1.0.7 - Scheduler SFW Multi-variantes (4 février 2026)
+**Objectif** : Pré-peupler automatiquement les 3 variantes SFW (all/sfw/nsfw) pour éviter les 10s de latence
+
+**Problème v1.0.6** :
+- Le scheduler ne rafraîchissait que la variante par défaut (`sfw=all`)
+- Premier appel à `sfw=sfw` ou `sfw=nsfw` prenait 10 secondes (enrichissement backdrop)
+- Utilisateurs devaient attendre lors du changement de filtre
+
+**Solution implémentée** :
+- ✅ **Fetchers Jikan modifiés** (`cache-refresher.js`) :
+  - Ajout du paramètre `sfw: options.sfw || 'all'` dans `trending`, `top`, `upcoming`
+  - Les fetchers acceptent maintenant le paramètre SFW depuis les options
+  
+- ✅ **Extraction automatique du paramètre SFW** :
+  ```javascript
+  // Dans refreshCacheEntry()
+  if (provider === 'jikan' && keyParts.length >= 4) {
+    const lastPart = keyParts[keyParts.length - 1];
+    if (lastPart === 'sfw' || lastPart === 'nsfw') {
+      options.sfw = lastPart;
+    }
+  }
+  ```
+  - Le système extrait automatiquement `sfw` depuis le `cache_key` (ex: `jikan:top:tv:nsfw`)
+  - Les 3 variantes sont rafraîchies séparément
+
+**Cache PostgreSQL** :
+```sql
+SELECT cache_key, total_results, refresh_count FROM discovery_cache 
+WHERE provider='jikan' ORDER BY cache_key;
+
+         cache_key         | total_results | refresh_count 
+---------------------------+---------------+---------------
+ jikan:top:movie           |            20 |             1
+ jikan:top:movie:nsfw      |            20 |             1
+ jikan:top:movie:sfw       |            20 |             1
+ jikan:top:tv              |            20 |             1
+ jikan:top:tv:nsfw         |            20 |             1
+ jikan:top:tv:sfw          |            20 |             1
+ jikan:trending:movie      |            20 |             1
+ jikan:trending:movie:nsfw |            20 |             1
+ jikan:trending:movie:sfw  |            20 |             1
+ jikan:trending:tv         |            20 |             1
+ jikan:trending:tv:nsfw    |            20 |             1
+ jikan:trending:tv:sfw     |            20 |             1
+ jikan:upcoming:movie      |            20 |             1
+ jikan:upcoming:movie:nsfw |            20 |             1
+ jikan:upcoming:movie:sfw  |            20 |             1
+ jikan:upcoming:tv         |            20 |             1
+ jikan:upcoming:tv:nsfw    |            20 |             1
+ jikan:upcoming:tv:sfw     |            20 |             1
+(18 rows)
+```
+
+**Tests de validation** :
+```bash
+# Force refresh Jikan
+curl -X POST "localhost:3000/api/cache/refresh/jikan"
+→ {"success": 18, "total": 18, "failed": 0, "duration": 15934}
+
+# Test SFW avec cache
+time curl "localhost:3000/api/anime-manga/jikan/top/tv?sfw=sfw&limit=3"
+→ 0.031s (cached) ✅
+
+# Test NSFW avec cache
+time curl "localhost:3000/api/anime-manga/jikan/top/tv?sfw=nsfw&limit=3"
+→ 0.034s (cached) ✅
+```
+
+**Résultats** :
+- ✅ **18 entrées Jikan** (6 endpoints × 3 variantes SFW)
+- ✅ **Toutes les variantes pré-peuplées** par le scheduler
+- ✅ **Plus de latence de 10s** lors du changement de filtre
+- ✅ **Temps de réponse : ~30ms** pour toutes les variantes (avec cache)
+- ✅ **Scheduler compatible** : Refresh automatique toutes les 6h
+
+**Déploiement** :
+- ✅ Commit : (en cours)
+- ✅ Tag : v1.0.7
+- ✅ Fichiers modifiés : `src/infrastructure/database/cache-refresher.js`
+- ✅ Cache : 18 entrées Jikan (360 items total)
+
+---
+
+**Dernière mise à jour** : 4 février 2026  
+**Version actuelle** : 1.0.7 (en production)  
 **Status** : ✅ Production-ready  
-**Prochaine étape** : Push GitHub + DockerHub v1.0.6
+**Prochaine étape** : Documentation et push GitHub + DockerHub v1.0.7

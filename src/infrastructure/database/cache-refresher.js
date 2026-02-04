@@ -58,7 +58,8 @@ const PROVIDER_FETCHERS = {
       const filter = options.category && options.category !== 'all' ? options.category : null;
       return await provider.getCurrentSeason({ 
         limit: 20, 
-        filter 
+        filter,
+        sfw: options.sfw || 'all' 
       });
     },
     top: async (options) => {
@@ -68,7 +69,8 @@ const PROVIDER_FETCHERS = {
       return await provider.getTop('anime', { 
         limit: 20, 
         filter: 'bypopularity',
-        subtype 
+        subtype,
+        sfw: options.sfw || 'all' 
       });
     },
     upcoming: async (options) => {
@@ -77,7 +79,8 @@ const PROVIDER_FETCHERS = {
       const filter = options.category && options.category !== 'all' ? options.category : null;
       return await provider.getUpcoming({ 
         limit: 20, 
-        filter 
+        filter,
+        sfw: options.sfw || 'all' 
       });
     },
     schedule: async (options) => {
@@ -176,6 +179,13 @@ export async function refreshCacheEntry(entry) {
     }
     if (keyParts.length >= 5 && endpoint === 'upcoming' && provider === 'tmdb') {
       options.variant = keyParts[4]; // tmdb:upcoming:tv::on-the-air
+    }
+    // Extraction du paramètre sfw pour Jikan (format: jikan:endpoint:category:sfw)
+    if (provider === 'jikan' && keyParts.length >= 4) {
+      const lastPart = keyParts[keyParts.length - 1];
+      if (lastPart === 'sfw' || lastPart === 'nsfw') {
+        options.sfw = lastPart;
+      }
     }
     
     // Appeler le provider
