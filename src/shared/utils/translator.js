@@ -560,6 +560,15 @@ export async function translateSearchResults(items, autoTrad, lang) {
         }
       }
       
+      // Traduire le synopsis si présent (anime/manga)
+      if (item.synopsis) {
+        const synopsisResult = await translateText(item.synopsis, destLang, { enabled: true, sourceLang: 'en' });
+        if (synopsisResult.translated) {
+          result.synopsis = synopsisResult.text;
+          result.synopsis_translated = synopsisResult.text;
+        }
+      }
+      
       return result;
     })
   );

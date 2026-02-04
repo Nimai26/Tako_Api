@@ -893,12 +893,6 @@ router.get('/top/manga', asyncHandler(async (req, res) => {
         filter
       });
 
-      if (autoTradEnabled && targetLang) {
-        result = await translateSearchResults(result, targetLang, {
-          fieldsToTranslate: ['synopsis'],
-          enabled: true
-        });
-      }
       return result;
     },
     cacheOptions: {
@@ -906,6 +900,11 @@ router.get('/top/manga', asyncHandler(async (req, res) => {
       ttl: getTTL('trending')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && result.data) {
+    result.data = await translateSearchResults(result.data, true, targetLang);
+  }
 
   res.json({
     success: true,
@@ -1525,12 +1524,6 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
       // Filtrage SFW (client-side pour NSFW)
       results.data = filterBySfw(results.data, sfw);
 
-      // Traduction automatique si activée
-      if (autoTradEnabled && targetLang && results.data?.length > 0) {
-        results.data = await Promise.all(
-          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
-        );
-      }
       return results;
     },
     cacheOptions: {
@@ -1539,6 +1532,13 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
       ttl: getTTL('trending')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
 
   res.json({
     success: true,
@@ -1605,12 +1605,6 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
       // Filtrage SFW (client-side pour NSFW)
       results.data = filterBySfw(results.data, sfw);
 
-      // Traduction automatique si activée
-      if (autoTradEnabled && targetLang && results.data?.length > 0) {
-        results.data = await Promise.all(
-          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
-        );
-      }
       return results;
     },
     cacheOptions: {
@@ -1619,6 +1613,13 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
       ttl: getTTL('trending')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
 
   res.json({
     success: true,
@@ -1686,12 +1687,6 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
       // Filtrage SFW (client-side pour NSFW)
       results.data = filterBySfw(results.data, sfw);
 
-      // Traduction automatique si activée
-      if (autoTradEnabled && targetLang && results.data?.length > 0) {
-        results.data = await Promise.all(
-          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
-        );
-      }
       return results;
     },
     cacheOptions: {
@@ -1700,6 +1695,13 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
       ttl: getTTL('top')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
 
   res.json({
     success: true,
@@ -1766,12 +1768,6 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
       // Filtrage SFW (client-side pour NSFW)
       results.data = filterBySfw(results.data, sfw);
 
-      // Traduction automatique si activée
-      if (autoTradEnabled && targetLang && results.data?.length > 0) {
-        results.data = await Promise.all(
-          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
-        );
-      }
       return results;
     },
     cacheOptions: {
@@ -1780,6 +1776,13 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
       ttl: getTTL('top')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
 
   res.json({
     success: true,
@@ -1844,12 +1847,6 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
       // Filtrage SFW (client-side pour NSFW)
       results.data = filterBySfw(results.data, sfw);
 
-      // Traduction automatique si activée
-      if (autoTradEnabled && targetLang && results.data?.length > 0) {
-        results.data = await Promise.all(
-          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
-        );
-      }
       return results;
     },
     cacheOptions: {
@@ -1858,6 +1855,13 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
       ttl: getTTL('upcoming')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
 
   res.json({
     success: true,
@@ -1921,12 +1925,6 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
       // Filtrage SFW (client-side pour NSFW)
       results.data = filterBySfw(results.data, sfw);
 
-      // Traduction automatique si activée
-      if (autoTradEnabled && targetLang && results.data?.length > 0) {
-        results.data = await Promise.all(
-          results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
-        );
-      }
       return results;
     },
     cacheOptions: {
@@ -1935,6 +1933,13 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
       ttl: getTTL('upcoming')
     }
   });
+
+  // Traduction automatique appliquée APRÈS récupération cache (pour multi-langues)
+  if (autoTradEnabled && targetLang && results.data?.length > 0) {
+    results.data = await Promise.all(
+      results.data.map(item => translateDetailResult(item, targetLang, autoTradEnabled))
+    );
+  }
 
   res.json({
     success: true,
