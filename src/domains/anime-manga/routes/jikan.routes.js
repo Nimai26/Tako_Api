@@ -258,11 +258,9 @@ router.get('/search/anime', asyncHandler(async (req, res) => {
     sort
   });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
-      enabled: true
-    });
+  // Traduction automatique appliquée sur les résultats (multi-langues)
+  if (autoTradEnabled && targetLang && result.data) {
+    result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
   res.json({
@@ -315,11 +313,9 @@ router.get('/search/manga', asyncHandler(async (req, res) => {
     sort
   });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
-      enabled: true
-    });
+  // Traduction automatique appliquée sur les résultats (multi-langues)
+  if (autoTradEnabled && targetLang && result.data) {
+    result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
   res.json({
@@ -354,11 +350,9 @@ router.get('/search/characters', asyncHandler(async (req, res) => {
     maxResults: parseInt(maxResults)
   });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['about'],
-      enabled: true
-    });
+  // Traduction automatique appliquée sur les résultats (multi-langues)
+  if (autoTradEnabled && targetLang && result.data) {
+    result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
   res.json({
@@ -389,11 +383,9 @@ router.get('/search/people', asyncHandler(async (req, res) => {
     maxResults: parseInt(maxResults)
   });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['about'],
-      enabled: true
-    });
+  // Traduction automatique appliquée sur les résultats (multi-langues)
+  if (autoTradEnabled && targetLang && result.data) {
+    result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
   res.json({
@@ -424,11 +416,9 @@ router.get('/search/producers', asyncHandler(async (req, res) => {
     maxResults: parseInt(maxResults)
   });
 
-  if (autoTradEnabled && targetLang) {
-    result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['about'],
-      enabled: true
-    });
+  // Traduction automatique appliquée sur les résultats (multi-langues)
+  if (autoTradEnabled && targetLang && result.data) {
+    result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
   res.json({

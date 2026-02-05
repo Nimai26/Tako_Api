@@ -569,6 +569,17 @@ export async function translateSearchResults(items, autoTrad, lang) {
         }
       }
       
+      // Traduire le champ about si présent (personnages)
+      if (item.about) {
+        log.debug(`[Translator] Tentative traduction about (length: ${item.about.length}): "${item.about.substring(0, 50)}..."`);
+        const aboutResult = await translateText(item.about, destLang, { enabled: true, sourceLang: 'en' });
+        log.debug(`[Translator] Résultat traduction about: translated=${aboutResult.translated}`);
+        if (aboutResult.translated) {
+          result.about = aboutResult.text;
+          result.about_translated = aboutResult.text;
+        }
+      }
+      
       return result;
     })
   );
