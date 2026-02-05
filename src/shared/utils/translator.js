@@ -532,8 +532,8 @@ export async function translateSearchResults(items, autoTrad, lang) {
     return items;
   }
   
-  // Limiter la traduction aux 10 premiers résultats pour éviter les timeouts
-  const MAX_TRANSLATIONS = 10;
+  // Limiter la traduction aux 25 premiers résultats (limite API standard)
+  const MAX_TRANSLATIONS = 25;
   const toTranslate = items.slice(0, MAX_TRANSLATIONS);
   const remaining = items.slice(MAX_TRANSLATIONS);
   
