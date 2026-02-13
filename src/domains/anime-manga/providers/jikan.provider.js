@@ -245,17 +245,27 @@ export class JikanProvider extends BaseProvider {
       season = null,      // winter, spring, summer, fall
       genres = null,      // IDs de genres
       orderBy = null,     // mal_id, title, score, episodes, etc.
-      sort = 'desc'
+      sort = 'desc',
+      sfw = 'all'         // all (défaut), sfw (sans hentai), nsfw (hentai uniquement)
     } = options;
 
-    this.log.debug(`Recherche anime: "${query}" (page: ${page})`);
+    this.log.debug(`Recherche anime: "${query}" (page: ${page}, sfw: ${sfw})`);
 
     const params = new URLSearchParams({
       q: query,
       page: String(page),
-      limit: String(Math.min(maxResults, MAX_RESULTS_LIMIT)),
-      sfw: 'false'  // IMPORTANT: Inclure TOUT le contenu (hentai compris)
+      limit: String(Math.min(maxResults, MAX_RESULTS_LIMIT))
     });
+
+    // Gestion du filtrage SFW/NSFW
+    if (sfw === 'sfw') {
+      params.append('sfw', 'true');   // API filtre le hentai
+    } else if (sfw === 'nsfw') {
+      params.append('sfw', 'false');  // Tout inclure
+      params.append('rating', 'rx');  // Mais filtrer sur rating Hentai uniquement
+    } else {
+      params.append('sfw', 'false');  // Défaut: tout inclure
+    }
 
     if (type) params.append('type', type);
     if (status) params.append('status', status);
@@ -298,17 +308,27 @@ export class JikanProvider extends BaseProvider {
       minScore = null,
       genres = null,
       orderBy = null,
-      sort = 'desc'
+      sort = 'desc',
+      sfw = 'all'         // all (défaut), sfw (sans hentai), nsfw (hentai uniquement)
     } = options;
 
-    this.log.debug(`Recherche manga: "${query}" (page: ${page})`);
+    this.log.debug(`Recherche manga: "${query}" (page: ${page}, sfw: ${sfw})`);
 
     const params = new URLSearchParams({
       q: query,
       page: String(page),
-      limit: String(Math.min(maxResults, MAX_RESULTS_LIMIT)),
-      sfw: 'false'  // IMPORTANT: Inclure TOUT le contenu (hentai compris)
+      limit: String(Math.min(maxResults, MAX_RESULTS_LIMIT))
     });
+
+    // Gestion du filtrage SFW/NSFW
+    if (sfw === 'sfw') {
+      params.append('sfw', 'true');   // API filtre le hentai
+    } else if (sfw === 'nsfw') {
+      params.append('sfw', 'false');  // Tout inclure
+      params.append('rating', 'rx');  // Mais filtrer sur rating Hentai uniquement
+    } else {
+      params.append('sfw', 'false');  // Défaut: tout inclure
+    }
 
     if (type) params.append('type', type);
     if (status) params.append('status', status);
@@ -968,14 +988,14 @@ export class JikanProvider extends BaseProvider {
       limit: String(Math.min(limit, MAX_RESULTS_LIMIT))
     });
 
-    // Gestion du filtre SFW
+    // Gestion du filtrage SFW/NSFW
     if (sfw === 'sfw') {
-      params.append('sfw', 'true');  // Seulement contenu SFW
+      params.append('sfw', 'true');   // API filtre le hentai
     } else if (sfw === 'nsfw') {
-      params.append('sfw', 'false');
-      params.append('rating', 'rx');  // Hentai uniquement (Rx - Hentai)
+      params.append('sfw', 'false');  // Tout inclure
+      params.append('rating', 'rx');  // Mais filtrer sur rating Hentai uniquement
     } else {
-      params.append('sfw', 'false');  // Tout inclure (défaut)
+      params.append('sfw', 'false');  // Défaut: tout inclure
     }
 
     if (filter) params.append('filter', filter);
@@ -1088,14 +1108,14 @@ export class JikanProvider extends BaseProvider {
       limit: String(Math.min(limit, MAX_RESULTS_LIMIT))
     });
 
-    // Gestion du filtre SFW
+    // Gestion du filtrage SFW/NSFW
     if (sfw === 'sfw') {
-      params.append('sfw', 'true');
+      params.append('sfw', 'true');   // API filtre le hentai
     } else if (sfw === 'nsfw') {
-      params.append('sfw', 'false');
-      params.append('rating', 'rx');  // Hentai uniquement (Rx - Hentai)
+      params.append('sfw', 'false');  // Tout inclure
+      params.append('rating', 'rx');  // Mais filtrer sur rating Hentai uniquement
     } else {
-      params.append('sfw', 'false');  // Tout inclure (défaut)
+      params.append('sfw', 'false');  // Défaut: tout inclure
     }
 
     if (filter) params.append('filter', filter);
@@ -1150,7 +1170,7 @@ export class JikanProvider extends BaseProvider {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(Math.min(limit, MAX_RESULTS_LIMIT)),
-      sfw: 'false'
+      sfw: 'false'  // Schedule inclut tout le contenu par défaut
     });
 
     if (day) params.append('filter', day);

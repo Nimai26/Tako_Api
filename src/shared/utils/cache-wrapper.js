@@ -5,27 +5,41 @@
 
 import { getCached, saveCached, generateCacheKey } from '../../infrastructure/database/discovery-cache.repository.js';
 import { createLogger } from './logger.js';
+import { env } from '../../config/env.js';
 
 const log = createLogger('CacheWrapper');
 
 /**
  * Wrapper pour les endpoints discovery avec cache automatique
  * 
+ * STRATÉGIE DE CACHE ET TRADUCTION :
+ * - Le cache stocke TOUJOURS les données dans DEFAULT_LOCALE (fr-FR par défaut)
+ * - La traduction vers DEFAULT_LOCALE est faite AVANT la mise en cache
+ * - Les requêtes dans DEFAULT_LOCALE bénéficient du cache sans traduction (performance max)
+ * - Les requêtes dans d'autres langues sont traduites APRÈS récupération du cache
+ * 
  * @param {Object} options - Options du wrapper
  * @param {string} options.provider - Nom du provider (tmdb, jikan, etc.)
  * @param {string} options.endpoint - Nom de l'endpoint (trending, popular, etc.)
- * @param {Function} options.fetchFn - Fonction async qui appelle le provider
+ * @param {Function} options.fetchFn - Fonction async qui appelle le provider (doit retourner données en DEFAULT_LOCALE)
  * @param {Object} options.cacheOptions - Options du cache (category, period, ttl)
  * @returns {Promise<{data: Object, fromCache: boolean, cacheKey: string}>}
  */
 export async function withDiscoveryCache({ provider, endpoint, fetchFn, cacheOptions = {} }) {
   const { ttl = 24 * 60 * 60, ...keyOptions } = cacheOptions;
-  const cacheKey = generateCacheKey(provider, endpoint, keyOptions);
+  
+  // IMPORTANT : La clé de cache n'inclut PAS la langue
+  // Car on cache toujours dans DEFAULT_LOCALE
+  const cacheKeyOptions = { ...keyOptions };
+  delete cacheKeyOptions.lang;  // Supprimer lang si présent
+  
+  const cacheKey = generateCacheKey(provider, endpoint, cacheKeyOptions);
   
   // Essayer le cache d'abord
   const cached = await getCached(cacheKey);
   
   if (cached) {
+    log.debug(`Cache HIT: ${provider}/${endpoint} (stored in ${env.defaultLocale})`);
     return {
       data: cached,
       fromCache: true,
@@ -34,12 +48,13 @@ export async function withDiscoveryCache({ provider, endpoint, fetchFn, cacheOpt
   }
   
   // Cache MISS : appeler le provider
-  log.debug(`Fetching from API: ${provider}/${endpoint}`);
+  log.debug(`Cache MISS: ${provider}/${endpoint} - Fetching from API in ${env.defaultLocale}`);
   const data = await fetchFn();
   
   // Sauvegarder en cache (async, non-bloquant)
+  // Les données sont déjà dans DEFAULT_LOCALE grâce à fetchFn
   saveCached(cacheKey, provider, endpoint, data, {
-    ...keyOptions,
+    ...cacheKeyOptions,
     ttl
   }).catch(err => {
     log.error(`Erreur sauvegarde cache: ${err.message}`, { cacheKey });

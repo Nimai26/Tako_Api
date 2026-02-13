@@ -5,6 +5,7 @@ npm-debug.log*
 # Environment files (variables injectées par Docker)
 .env
 .env.*
+.credentials
 !.env.example
 
 # Git

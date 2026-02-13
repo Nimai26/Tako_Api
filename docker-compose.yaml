@@ -1,14 +1,20 @@
 services:
   tako-api:
-    image: nimai24/tako-api:1.0.9
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: tako_api
     restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
       - .env
+    # Mount source code for live development
+    volumes:
+      - ./src:/app/src
+      - ./docs:/app/docs
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3000
       - DEFAULT_LOCALE=fr-FR
       # Database

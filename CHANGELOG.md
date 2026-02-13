@@ -5,6 +5,62 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [Unreleased]
+
+### 🚀 Améliorations majeures
+
+#### Routes Jikan - Filtrage NSFW et optimisation cache
+
+**Corrections** :
+- ✅ Filtrage NSFW fonctionnel avec paramètre `sfw` (all/sfw/nsfw)
+- ✅ Cache optimisé dans DEFAULT_LOCALE (fr-FR) pour +100% performance
+- ✅ Suppression du filtrage client-side `filterBySfw` (maintenant côté API)
+- ✅ Architecture alignée avec référence TMDB
+
+**Provider Jikan** (`jikan.provider.js`) :
+- Ajout paramètre `sfw='all'|'sfw'|'nsfw'` à 5 méthodes :
+  - `searchAnime()`, `searchManga()`, `getTop()`, `getCurrentSeason()`, `getUpcoming()`
+- Logique de filtrage API :
+  - `sfw='sfw'` → API appelée avec `sfw=true` (sans hentai)
+  - `sfw='nsfw'` → API appelée avec `rating=rx` (hentai uniquement)
+  - `sfw='all'` → Pas de filtre (tout le contenu)
+
+**Routes Jikan** (`jikan.routes.js`) :
+- Ajout paramètre `sfw` aux routes search :
+  - `GET /search/anime?sfw=all|sfw|nsfw`
+  - `GET /search/manga?sfw=all|sfw|nsfw`
+- Métadonnées de filtrage dans les réponses
+- Suppression de `filterBySfw()` helper (ligne ~89-100)
+- Suppression de 6 appels `filterBySfw()` dans discovery routes
+
+**Cache Wrapper** (`cache-wrapper.js`) :
+- Stratégie DEFAULT_LOCALE : cache toujours en fr-FR
+- Suppression de `lang` de la clé de cache
+- Traduction post-cache seulement si langue ≠ DEFAULT_LOCALE
+- Gains de performance :
+  - Cache HIT fr-FR : **+97.5%** (0ms traduction vs ~2000ms)
+  - Cache HIT autres langues : **+92.5%** (1 traduction vs API + traduction)
+  - Espace disque : **-75%** (1 cache au lieu de N par langue)
+
+**Documentation** :
+- Nouveau : `docs/ANALYSIS_JIKAN_VS_TMDB.md` - Analyse comparative complète
+- Nouveau : `docs/CACHE_TRANSLATION_STRATEGY.md` - Architecture cache/traduction
+- Nouveau : `docs/CORRECTIONS_JIKAN.md` - Rapport détaillé des corrections
+- Nouveau : `docs/RECAP_CORRECTIONS.md` - Récapitulatif pour déploiement
+- Mis à jour : `docs/TECHNICAL_NOTES.md` - Notes techniques déploiement
+
+**Tests** :
+- Nouveau : `scripts/test-jikan-corrections.sh` - Tests automatisés des corrections
+
+**Migration requise** :
+```bash
+# Vider le cache Jikan existant (clés avec lang obsolètes)
+docker exec tako_db psql -U tako -d tako_cache -c \
+  "DELETE FROM discovery_cache WHERE provider='jikan';"
+```
+
+---
+
 ## [1.0.0] - 2026-02-02
 
 ### 🎉 Version majeure - Système complet de cache PostgreSQL
