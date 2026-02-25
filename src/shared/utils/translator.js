@@ -96,15 +96,30 @@ export function extractLangCode(lang) {
 // ============================================================================
 
 /**
+ * Extrait le nom d'un genre (gère string ou objet)
+ * @param {string|object} genre - Genre (string ou {name: "Action"})
+ * @returns {string|null} - Nom du genre ou null
+ */
+function extractGenreName(genre) {
+  if (!genre) return null;
+  if (typeof genre === 'string') return genre;
+  if (typeof genre === 'object') {
+    return genre.name || genre.label || genre.title || null;
+  }
+  return null;
+}
+
+/**
  * Traduit un genre en utilisant le dictionnaire local
- * @param {string} genre - Genre en anglais
+ * @param {string|object} genre - Genre en anglais (string ou objet avec name)
  * @param {string} lang - Code langue cible (fr, de, es, it, pt)
  * @returns {string|null} - Genre traduit ou null si non trouvé dans le dictionnaire
  */
 function translateGenreFromDict(genre, lang) {
-  if (!genre || !lang || lang === 'en') return genre;
+  const genreName = extractGenreName(genre);
+  if (!genreName || !lang || lang === 'en') return genreName || genre;
   
-  const key = genre.toLowerCase().trim();
+  const key = genreName.toLowerCase().trim();
   const translations = GENRE_TRANSLATIONS[key];
   
   if (translations && translations[lang]) {
@@ -116,56 +131,58 @@ function translateGenreFromDict(genre, lang) {
 
 /**
  * Traduit un genre via le service de traduction intégré (fallback)
- * @param {string} genre - Genre en anglais
+ * @param {string|object} genre - Genre en anglais (string ou objet avec name)
  * @param {string} lang - Code langue cible
  * @returns {Promise<string>} - Genre traduit ou original si échec
  */
 async function translateGenreViaService(genre, lang) {
-  if (!TRANSLATION_ENABLED) {
-    return genre;
+  const genreName = extractGenreName(genre);
+  if (!genreName || !TRANSLATION_ENABLED) {
+    return genreName || genre;
   }
   
   // Vérifier le cache
-  const cacheKey = `${genre.toLowerCase()}_${lang}`;
+  const cacheKey = `${genreName.toLowerCase()}_${lang}`;
   if (genreApiCache.has(cacheKey)) {
     return genreApiCache.get(cacheKey);
   }
   
   try {
-    const result = await translateViaService(genre, lang);
+    const result = await translateViaService(genreName, lang);
     
-    if (result && result.translated && result.translated !== genre) {
+    if (result && result.translated && result.translated !== genreName) {
       const translated = result.translated;
       // Mettre en cache pour les prochaines fois
       genreApiCache.set(cacheKey, translated);
-      log.debug(`Genre traduit: ${genre} → ${translated} (${lang})`);
+      log.debug(`Genre traduit: ${genreName} → ${translated} (${lang})`);
       return translated;
     }
     
-    return genre;
+    return genreName;
   } catch (err) {
-    log.debug(`Échec traduction genre: ${genre} (${err.message})`);
-    return genre;
+    log.debug(`Échec traduction genre: ${genreName} (${err.message})`);
+    return genreName;
   }
 }
 
 /**
  * Traduit un genre avec approche hybride : dictionnaire d'abord, puis service si non trouvé
- * @param {string} genre - Genre à traduire
+ * @param {string|object} genre - Genre à traduire (string ou objet avec name)
  * @param {string} lang - Code langue cible
  * @returns {Promise<string>} - Genre traduit
  */
 export async function translateGenre(genre, lang) {
-  if (!genre || !lang) return genre;
+  const genreName = extractGenreName(genre);
+  if (!genreName || !lang) return genreName || genre;
   
   // 1. Essayer le dictionnaire local (rapide)
-  const fromDict = translateGenreFromDict(genre, lang);
+  const fromDict = translateGenreFromDict(genreName, lang);
   if (fromDict !== null) {
     return fromDict;
   }
   
   // 2. Fallback sur le service de traduction intégré
-  return await translateGenreViaService(genre, lang);
+  return await translateGenreViaService(genreName, lang);
 }
 
 /**
