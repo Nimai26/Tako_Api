@@ -66,9 +66,9 @@ export function normalizeGame(rawGame) {
     // Genres (preserve French names for translation)
     genres: rawGame.genres || [],
     
-    // Companies
-    developer: rawGame.developer,
-    publisher: rawGame.publisher,
+    // Companies (normalized to arrays for consistency with other providers)
+    developers: rawGame.developer ? [rawGame.developer] : [],
+    publishers: rawGame.publisher ? [rawGame.publisher] : [],
     
     // Age rating
     pegi: rawGame.pegi,
