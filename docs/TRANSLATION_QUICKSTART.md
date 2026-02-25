@@ -1,5 +1,10 @@
 # 🚀 Quick Start - API Tako en Français
 
+**Version requise** : Tako API 1.0.12+ ✅  
+**Bug corrigé** : L'erreur 500 avec `autoTrad=true&lang=fr` est résolue
+
+---
+
 ## 🎯 Le Problème
 
 Vous recevez les données en anglais au lieu du français.
@@ -144,4 +149,15 @@ Sans `autoTrad`, même avec `lang=fr`, **aucune traduction ne sera effectuée**.
 
 Documentation complète : [TRANSLATION_GUIDE.md](TRANSLATION_GUIDE.md)
 
-**Version Tako API requise** : 1.0.11+
+**Version Tako API requise** : 1.0.12+
+
+---
+
+## ✅ Changelog
+
+**v1.0.12** (25 février 2026)
+- 🐛 **Bug corrigé** : Erreur 500 avec `autoTrad=true&lang=fr`
+  - Problème : `genre.toLowerCase is not a function`
+  - Cause : RAWG retourne des objets `{name: "Action"}` au lieu de strings
+  - Solution : Extraction automatique du nom du genre depuis les objets
+- ✅ L'endpoint fonctionne maintenant correctement avec la traduction française
