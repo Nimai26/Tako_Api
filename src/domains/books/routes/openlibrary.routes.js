@@ -295,25 +295,37 @@ router.get('/:olId', asyncHandler(async (req, res) => {
   });
 
   // Traduction automatique si activée
-  if (autoTradEnabled && result) {
+  if (autoTradEnabled && result && result.data) {
+    // Traduire le titre
+    if (result.data.title) {
+      const titleResult = await translateText(result.data.title, targetLang, { 
+        enabled: true, 
+        sourceLang: 'en' 
+      });
+      if (titleResult.translated) {
+        result.data.titleOriginal = result.data.title;
+        result.data.title = titleResult.text;
+      }
+    }
+    
     // Traduire la description
-    if (result.description) {
-      const descResult = await translateText(result.description, targetLang, { 
+    if (result.data.description) {
+      const descResult = await translateText(result.data.description, targetLang, { 
         enabled: true, 
         sourceLang: 'en' 
       });
       if (descResult.translated) {
-        result.descriptionOriginal = result.description;
-        result.description = descResult.text;
+        result.data.descriptionOriginal = result.data.description;
+        result.data.description = descResult.text;
       }
     }
     
-    // Traduire les sujets
-    if (result.subjects && result.subjects.length > 0) {
-      const translated = await translateBookGenres(result.subjects, targetLang);
+    // Traduire les sujets/catégories
+    if (result.data.categories && result.data.categories.length > 0) {
+      const translated = await translateBookGenres(result.data.categories, targetLang);
       if (translated.termsTranslated) {
-        result.subjectsOriginal = translated.termsOriginal;
-        result.subjects = translated.terms;
+        result.data.categoriesOriginal = translated.termsOriginal;
+        result.data.categories = translated.terms;
       }
     }
   }

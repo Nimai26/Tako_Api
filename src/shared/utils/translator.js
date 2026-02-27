@@ -568,6 +568,16 @@ export async function translateSearchResults(items, autoTrad, lang) {
         }
       }
       
+      // Traduire le titre si présent (livres, albums, etc.)
+      if (item.title) {
+        const titleResult = await translateText(item.title, destLang, { enabled: true, sourceLang: 'en' });
+        if (titleResult.translated) {
+          result.titleOriginal = item.title;
+          result.title = titleResult.text;
+          result.title_translated = titleResult.text;
+        }
+      }
+      
       // Traduire la description si présente
       if (item.description) {
         const descResult = await translateText(item.description, destLang, { enabled: true, sourceLang: 'en' });

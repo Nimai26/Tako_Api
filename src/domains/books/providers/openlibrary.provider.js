@@ -325,11 +325,13 @@ export class OpenLibraryProvider extends BaseProvider {
 
     const images = [];
     if (doc.cover_i) {
-      images.push(this.buildCoverUrl(doc.cover_i, 'L'));
-      images.push(this.buildCoverUrl(doc.cover_i, 'M'));
-      images.push(this.buildCoverUrl(doc.cover_i, 'S'));
+      images.push(this.buildCoverUrl(doc.cover_i, 'L'));  // Large
+      images.push(this.buildCoverUrl(doc.cover_i, 'M'));  // Medium
+      images.push(this.buildCoverUrl(doc.cover_i, 'S'));  // Small
     } else if (isbn) {
-      images.push(this.buildCoverUrlByIsbn(isbn, 'L'));
+      images.push(this.buildCoverUrlByIsbn(isbn, 'L'));  // Large
+      images.push(this.buildCoverUrlByIsbn(isbn, 'M'));  // Medium
+      images.push(this.buildCoverUrlByIsbn(isbn, 'S'));  // Small
     }
 
     const olKey = doc.key || null;
@@ -406,9 +408,12 @@ export class OpenLibraryProvider extends BaseProvider {
   }
 
   async parseWorkDetails(data, olId) {
-    const images = data.covers ? data.covers.slice(0, 5).map(id => this.buildCoverUrl(id, 'L')) : [];
-    if (data.covers?.[0]) {
-      images.push(this.buildCoverUrl(data.covers[0], 'M'));
+    const images = [];
+    if (data.covers && data.covers.length > 0) {
+      const firstCover = data.covers[0];
+      images.push(this.buildCoverUrl(firstCover, 'L'));  // Large
+      images.push(this.buildCoverUrl(firstCover, 'M'));  // Medium
+      images.push(this.buildCoverUrl(firstCover, 'S'));  // Small
     }
 
     const subjects = data.subjects || [];
@@ -498,9 +503,12 @@ export class OpenLibraryProvider extends BaseProvider {
   }
 
   async parseEditionDetails(data, olId) {
-    const images = data.covers ? data.covers.slice(0, 3).map(id => this.buildCoverUrl(id, 'L')) : [];
-    if (data.covers?.[0]) {
-      images.push(this.buildCoverUrl(data.covers[0], 'M'));
+    const images = [];
+    if (data.covers && data.covers.length > 0) {
+      const firstCover = data.covers[0];
+      images.push(this.buildCoverUrl(firstCover, 'L'));  // Large
+      images.push(this.buildCoverUrl(firstCover, 'M'));  // Medium
+      images.push(this.buildCoverUrl(firstCover, 'S'));  // Small
     }
 
     const isbn = data.isbn_13?.[0] || data.isbn_10?.[0] || null;
