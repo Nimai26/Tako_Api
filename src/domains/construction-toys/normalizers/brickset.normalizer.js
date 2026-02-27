@@ -44,6 +44,77 @@ export class BricksetNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // NORMALISATION AVEC STRUCTURE PLATE (v2.0.0)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Normaliser un item Brickset en format Tako avec structure plate
+   * @override BaseNormalizer.normalize()
+   */
+  normalize(raw) {
+    if (!raw) {
+      throw new Error('normalize() : données brutes manquantes');
+    }
+
+    try {
+      const sourceId = this.extractSourceId(raw);
+      const title = this.extractTitle(raw);
+      
+      if (!sourceId) {
+        throw new Error('sourceId manquant dans les données');
+      }
+      if (!title) {
+        throw new Error('title manquant dans les données');
+      }
+
+      // Construire l'objet de base avec le tronc commun
+      const base = {
+        // Identification
+        id: `${this.source}:${sourceId}`,
+        type: this.type,
+        source: this.source,
+        sourceId: String(sourceId),
+        
+        // Titres
+        title: this.cleanString(title),
+        titleOriginal: this.cleanString(this.extractTitleOriginal(raw)),
+        
+        // Description et année
+        description: this.cleanString(this.extractDescription(raw)),
+        year: this.parseYear(this.extractYear(raw)),
+        
+        // Images
+        images: this.normalizeImages(this.extractImages(raw)),
+        
+        // URLs
+        urls: {
+          source: this.parseUrl(this.extractSourceUrl(raw)),
+          detail: this.buildDetailUrl(sourceId)
+        }
+      };
+
+      // Extraire les détails spécifiques et les aplatir directement
+      const details = this.extractDetails(raw);
+
+      // Fusionner base + details en structure plate
+      const normalized = {
+        ...base,
+        ...details  // ✅ Aplatissement : tous les champs de details au même niveau
+      };
+
+      // Ajouter les données brutes si demandé (debug)
+      if (this.includeRaw) {
+        normalized._raw = raw;
+      }
+
+      return normalized;
+
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // EXTRACTION DU NOYAU COMMUN
   // ═══════════════════════════════════════════════════════════════════════════
 
