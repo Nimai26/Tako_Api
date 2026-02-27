@@ -177,7 +177,7 @@ import { router as tcgRouter } from './domains/tcg/index.js';
 import ecommerceRouter from './domains/ecommerce/index.js';
 import cacheRouter from './core/routes/cache.routes.js';
 
-app.use('/construction-toys', constructionToysRouter);
+app.use('/api/construction-toys', constructionToysRouter);
 app.use('/api/books', booksRouter);
 app.use('/api/comics', comicsRouter);
 app.use('/api/anime-manga', animeMangaRouter);
