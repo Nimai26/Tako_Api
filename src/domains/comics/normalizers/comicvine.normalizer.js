@@ -88,11 +88,13 @@ export class ComicVineNormalizer extends BaseNormalizer {
     };
   }
 
-  normalizeVolumeDetail(volume) {
+  normalizeVolumeDetail(volume, options = {}) {
     const base = this.normalizeVolumeItem(volume);
 
-    return {
+    const data = {
       ...base,
+      id: `${this.source}:${base.sourceId}`,
+      source: this.source,
       description: this.cleanHtml(volume.description) || base.description,
       aliases: this.parseAliases(volume.aliases),
       
@@ -114,9 +116,28 @@ export class ComicVineNormalizer extends BaseNormalizer {
         issueNumber: issue.issue_number
       })) || [],
 
+      urls: {
+        source: base.src_url,
+        detail: `/api/${this.domain}/${this.source}/${base.sourceId}`
+      },
+
       metadata: {
         ...base.metadata,
         detailLevel: 'full'
+      }
+    };
+
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
@@ -156,11 +177,13 @@ export class ComicVineNormalizer extends BaseNormalizer {
     };
   }
 
-  normalizeIssueDetail(issue) {
+  normalizeIssueDetail(issue, options = {}) {
     const base = this.normalizeIssueItem(issue);
 
-    return {
+    const data = {
       ...base,
+      id: `${this.source}:${base.sourceId}`,
+      source: this.source,
       description: this.cleanHtml(issue.description) || base.description,
 
       characters: issue.character_credits?.map(c => ({
@@ -184,9 +207,28 @@ export class ComicVineNormalizer extends BaseNormalizer {
         name: sa.name
       })) || [],
 
+      urls: {
+        source: base.src_url,
+        detail: `/api/${this.domain}/${this.source}/${base.sourceId}`
+      },
+
       metadata: {
         ...base.metadata,
         detailLevel: 'full'
+      }
+    };
+
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

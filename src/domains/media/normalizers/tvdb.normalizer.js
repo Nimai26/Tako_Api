@@ -97,8 +97,10 @@ export class TvdbNormalizer extends BaseNormalizer {
     // Détermine l'overview à utiliser
     const overview = translations?.overview || baseOverview || null;
 
-    return {
+    const data = {
+      id: `${this.source}:${movie.id}`,
       sourceId: String(movie.id),
+      source: this.source,
       provider: 'tvdb',
       type: 'movie',
       mediaType: 'movie',
@@ -224,11 +226,30 @@ export class TvdbNormalizer extends BaseNormalizer {
       remoteIds: movie.remoteIds || [],
 
       // URLs
+      urls: {
+        source: `https://thetvdb.com/movies/${movie.slug}`,
+        detail: `/api/${this.domain}/${this.source}/${movie.id}`
+      },
       src_url: `https://thetvdb.com/movies/${movie.slug}`,
 
       metadata: {
         lastUpdated: movie.lastUpdated,
         source: 'tvdb'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
@@ -241,8 +262,10 @@ export class TvdbNormalizer extends BaseNormalizer {
     const { translations } = options;
     const genres = Array.isArray(series.genres) ? series.genres.map(g => g.name) : [];
 
-    return {
+    const data = {
+      id: `${this.source}:${series.id}`,
       sourceId: String(series.id),
+      source: this.source,
       provider: 'tvdb',
       type: 'series',
       mediaType: 'tv',
@@ -372,12 +395,31 @@ export class TvdbNormalizer extends BaseNormalizer {
       remoteIds: series.remoteIds || [],
 
       // URLs
+      urls: {
+        source: `https://thetvdb.com/series/${series.slug}`,
+        detail: `/api/${this.domain}/${this.source}/${series.id}`
+      },
       src_url: `https://thetvdb.com/series/${series.slug}`,
 
       metadata: {
         defaultSeasonType: series.defaultSeasonType,
         lastUpdated: series.lastUpdated,
         source: 'tvdb'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

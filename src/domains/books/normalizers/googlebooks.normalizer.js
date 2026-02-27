@@ -80,8 +80,10 @@ export class GoogleBooksNormalizer extends BaseNormalizer {
   normalizeDetailResponse(book, options = {}) {
     const { lang } = options;
 
-    return {
+    const data = {
+      id: `${this.source}:${book.id}`,
       sourceId: book.id,
+      source: this.source,
       provider: 'googlebooks',
       type: 'book',
 
@@ -117,6 +119,10 @@ export class GoogleBooksNormalizer extends BaseNormalizer {
       images: this.normalizeImages(book),
 
       // URLs
+      urls: {
+        source: book.infoLink,
+        detail: `/api/${this.domain}/${this.source}/${book.id}`
+      },
       src_url: book.infoLink,
       googlebooks_url: book.infoLink,
       previewLink: book.previewLink,
@@ -127,13 +133,28 @@ export class GoogleBooksNormalizer extends BaseNormalizer {
         count: book.ratingsCount || 0
       } : null,
 
-      // Métadonnées
+      // Métadonnées internes
       printType: book.printType,
       maturityRating: book.maturityRating,
 
       metadata: {
         source: 'googlebooks',
         lang
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

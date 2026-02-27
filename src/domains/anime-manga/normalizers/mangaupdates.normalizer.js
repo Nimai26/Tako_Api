@@ -121,12 +121,13 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
   /**
    * Normalise les détails complets d'une série
    */
-  normalizeSeriesDetails(series) {
+  normalizeSeriesDetails(series, options = {}) {
     const sourceId = String(series.series_id);
 
-    return {
+    const data = {
       id: `mangaupdates:${sourceId}`,
       sourceId,
+      source: this.source,
       provider: 'mangaupdates',
       type: 'manga',
       resourceType: 'series',
@@ -200,7 +201,24 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       },
 
       lastUpdated: series.last_updated?.as_rfc3339 || null,
-      source: 'mangaupdates'
+      metadata: {
+        source: 'mangaupdates'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
+      }
     };
   }
 

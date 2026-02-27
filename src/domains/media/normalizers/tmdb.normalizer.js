@@ -190,8 +190,10 @@ export class TmdbNormalizer extends BaseNormalizer {
   normalizeMovieDetail(movie, options = {}) {
     const genres = movie.genres?.map(g => g.name) || [];
 
-    return {
+    const data = {
+      id: `${this.source}:${movie.id}`,
       sourceId: String(movie.id),
+      source: this.source,
       provider: 'tmdb',
       type: 'movie',
       mediaType: 'movie',
@@ -335,11 +337,30 @@ export class TmdbNormalizer extends BaseNormalizer {
 
       // URLs
       homepage: movie.homepage || null,
+      urls: {
+        source: `https://www.themoviedb.org/movie/${movie.id}`,
+        detail: `/api/${this.domain}/${this.source}/${movie.id}`
+      },
       src_url: `https://www.themoviedb.org/movie/${movie.id}`,
 
       metadata: {
         imdbId: movie.imdb_id,
         source: 'tmdb'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
@@ -351,8 +372,10 @@ export class TmdbNormalizer extends BaseNormalizer {
   normalizeSeriesDetail(series, options = {}) {
     const genres = series.genres?.map(g => g.name) || [];
 
-    return {
+    const data = {
+      id: `${this.source}:${series.id}`,
       sourceId: String(series.id),
+      source: this.source,
       provider: 'tmdb',
       type: 'series',
       mediaType: 'tv',
@@ -534,10 +557,29 @@ export class TmdbNormalizer extends BaseNormalizer {
 
       // URLs
       homepage: series.homepage || null,
+      urls: {
+        source: `https://www.themoviedb.org/tv/${series.id}`,
+        detail: `/api/${this.domain}/${this.source}/${series.id}`
+      },
       src_url: `https://www.themoviedb.org/tv/${series.id}`,
 
       metadata: {
         source: 'tmdb'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
@@ -753,12 +795,15 @@ export class TmdbNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizePersonDetail(person, options = {}) {
-    return {
+    const data = {
+      id: `${this.source}:${person.id}`,
       sourceId: String(person.id),
+      source: this.source,
       provider: 'tmdb',
       type: 'person',
       
       name: person.name,
+      title: person.name,  // Pour cohérence avec autres providers
       alsoKnownAs: person.also_known_as || [],
       
       biography: person.biography || null,
@@ -835,10 +880,29 @@ export class TmdbNormalizer extends BaseNormalizer {
       },
 
       homepage: person.homepage || null,
+      urls: {
+        source: `https://www.themoviedb.org/person/${person.id}`,
+        detail: `/api/${this.domain}/${this.source}/${person.id}`
+      },
       src_url: `https://www.themoviedb.org/person/${person.id}`,
 
       metadata: {
         source: 'tmdb'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

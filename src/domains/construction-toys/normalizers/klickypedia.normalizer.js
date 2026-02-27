@@ -91,13 +91,17 @@ export class KlickypediaNormalizer extends BaseNormalizer {
   normalizeDetailResponse(product, options = {}) {
     const { lang = 'fr' } = options;
 
-    return {
+    const data = {
       // Identifiants
-      sourceId: product.id || product.productCode,
+      id: `${this.source}:${product.id || product.productCode}`,
+      type: this.type,
+      source: this.source,
+      sourceId: String(product.id || product.productCode),
       provider: 'klickypedia',
       brand: 'Playmobil',
       
       // Nom et description
+      title: this.getName(product, lang),
       name: this.getName(product, lang),
       localizedName: product.translations?.[lang] || product.name,
       translations: product.translations || {},
@@ -109,6 +113,10 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       ean: null, // Non disponible sur Klickypedia
       
       // URLs
+      urls: {
+        source: product.url || product.src_url,
+        detail: `/api/${this.domain}/${this.source}/${product.id || product.productCode}`
+      },
       src_url: product.url || product.src_url,
       klickypedia_url: product.url || product.src_url,
       
@@ -130,11 +138,26 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       // Instructions
       instructions: product.instructions || null,
       
-      // Métadonnées
+      // Métadonnées internes
       metadata: {
         source: 'klickypedia',
         type: 'encyclopedia',
         note: 'Données encyclopédiques - pas de prix disponible'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: lang || 'fr',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

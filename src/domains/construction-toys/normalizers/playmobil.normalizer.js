@@ -93,13 +93,17 @@ export class PlaymobilNormalizer extends BaseNormalizer {
   normalizeDetailResponse(product, options = {}) {
     const { lang = 'fr-fr' } = options;
 
-    return {
+    const data = {
       // Identifiants
-      sourceId: product.id || product.productCode,
+      id: `${this.source}:${product.id || product.productCode}`,
+      type: this.type,
+      source: this.source,
+      sourceId: String(product.id || product.productCode),
       provider: 'playmobil',
       brand: 'Playmobil',
 
       // Nom et description
+      title: product.name || `Playmobil ${product.id}`,
       name: product.name || `Playmobil ${product.id}`,
       description: product.description || null,
 
@@ -108,6 +112,10 @@ export class PlaymobilNormalizer extends BaseNormalizer {
       slug: this.generateSlug(product.name || product.id),
 
       // URLs
+      urls: {
+        source: product.url,
+        detail: `/api/${this.domain}/${this.source}/${product.id || product.productCode}`
+      },
       src_url: product.url,
       playmobil_url: product.url,
 
@@ -132,12 +140,27 @@ export class PlaymobilNormalizer extends BaseNormalizer {
       // Instructions
       instructions: product.instructions || null,
 
-      // Métadonnées
+      // Métadonnées internes
       metadata: {
         source: 'playmobil',
         type: 'official',
         lang,
         note: 'Données officielles Playmobil'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: lang || 'fr-fr',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

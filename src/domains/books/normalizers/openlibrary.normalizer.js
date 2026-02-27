@@ -160,9 +160,11 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
       additionalMetadata.availableLanguages = book.allLanguages;
     }
 
-    // Construire la réponse
-    const result = {
-      id: book.id,
+    // Construire l'objet data
+    const data = {
+      id: `${this.source}:${book.id}`,
+      sourceId: book.id,
+      source: this.source,
       type: book.type || 'book',
       title: book.title,
       subtitle: null,
@@ -177,24 +179,32 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
       covers,
       description: book.synopsis || null,
       pageCount: book.pageCount || null,
+      urls: {
+        source: book.url,
+        detail: `/api/${this.domain}/${this.source}/${book.id}`
+      },
       url: book.url,
-      source: 'openlibrary'
+      provider: 'openlibrary'
     };
 
     // Ajouter les métadonnées si présentes
     if (Object.keys(additionalMetadata).length > 0) {
-      result.metadata = additionalMetadata;
+      data.metadata = additionalMetadata;
     }
 
+    // Wrapper standardisé
     return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
       meta: {
-        source: 'openlibrary',
-        id: book.id,
-        type: book.type,
-        language: lang,
-        timestamp: new Date().toISOString()
-      },
-      data: result
+        fetchedAt: new Date().toISOString(),
+        lang: lang,
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
+      }
     };
   }
 }

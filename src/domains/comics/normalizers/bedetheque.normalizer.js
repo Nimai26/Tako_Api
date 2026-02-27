@@ -75,7 +75,7 @@ export class BedethequeNormalizer extends BaseNormalizer {
   // NORMALISATION DE DÉTAILS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  normalizeAlbumDetail(album) {
+  normalizeAlbumDetail(album, options = {}) {
     // Construire la liste des auteurs
     const authors = [];
     if (album.scenariste) {
@@ -91,8 +91,10 @@ export class BedethequeNormalizer extends BaseNormalizer {
     // Extraire l'année
     const year = this.extractYear(album.dateParution);
 
-    return {
+    const data = {
+      id: `${this.source}:${album.id}`,
       sourceId: String(album.id),
+      source: this.source,
       provider: 'bedetheque',
       type: 'album',
       resourceType: 'album',
@@ -111,6 +113,10 @@ export class BedethequeNormalizer extends BaseNormalizer {
       pages: album.pages,
       format: album.format,
 
+      urls: {
+        source: album.url,
+        detail: `/api/${this.domain}/${this.source}/${album.id}`
+      },
       src_url: album.url,
       src_image_url: album.coverUrl,
 
@@ -118,6 +124,20 @@ export class BedethequeNormalizer extends BaseNormalizer {
         detailLevel: 'full',
         source: 'bedetheque',
         language: 'fr'
+      }
+    };
+
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'fr',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
@@ -140,9 +160,11 @@ export class BedethequeNormalizer extends BaseNormalizer {
   // NORMALISATION DES SÉRIES
   // ═══════════════════════════════════════════════════════════════════════════
 
-  normalizeSerieDetail(serie) {
-    return {
+  normalizeSerieDetail(serie, options = {}) {
+    const data = {
+      id: `${this.source}:${serie.id}`,
       sourceId: String(serie.id),
+      source: this.source,
       provider: 'bedetheque',
       type: 'serie',
       resourceType: 'serie',
@@ -161,6 +183,10 @@ export class BedethequeNormalizer extends BaseNormalizer {
       publisher: serie.publisher,
       authors: serie.authors || [],
       
+      urls: {
+        source: serie.url,
+        detail: `/api/${this.domain}/${this.source}/${serie.id}`
+      },
       src_url: serie.url,
       src_image_url: serie.coverUrl,
       
@@ -172,25 +198,46 @@ export class BedethequeNormalizer extends BaseNormalizer {
         language: 'fr'
       }
     };
+
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'fr',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
+      }
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // NORMALISATION DES AUTEURS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  normalizeAuthorDetail(author) {
-    return {
+  normalizeAuthorDetail(author, options = {}) {
+    const data = {
+      id: `${this.source}:${author.id}`,
       sourceId: String(author.id),
+      source: this.source,
       provider: 'bedetheque',
       type: 'author',
       resourceType: 'author',
 
       name: author.name,
+      title: author.name,  // Pour cohérence avec autres providers
       biography: author.biography,
       
       birthDate: author.birthDate,
       nationality: author.nationality,
       
+      urls: {
+        source: author.url || `https://www.bedetheque.com/auteur/index/a/${author.id}`,
+        detail: `/api/${this.domain}/${this.source}/${author.id}`
+      },
       src_url: author.url || `https://www.bedetheque.com/auteur/index/a/${author.id}`,
       src_image_url: author.photoUrl,
 
@@ -198,6 +245,20 @@ export class BedethequeNormalizer extends BaseNormalizer {
         detailLevel: 'full',
         source: 'bedetheque',
         language: 'fr'
+      }
+    };
+
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'fr',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }

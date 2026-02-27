@@ -323,11 +323,12 @@ export class JikanNormalizer extends BaseNormalizer {
   // DÉTAILS ANIME
   // ═══════════════════════════════════════════════════════════════════════════
 
-  normalizeAnimeDetail(anime) {
+  normalizeAnimeDetail(anime, options = {}) {
     const base = this.normalizeAnimeItem(anime);
     
-    return {
+    const data = {
       ...base,
+      source: this.source,
       
       // Informations supplémentaires du /full
       background: anime.background,
@@ -364,17 +365,33 @@ export class JikanNormalizer extends BaseNormalizer {
         detailLevel: 'full'
       }
     };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
+      }
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // DÉTAILS MANGA
   // ═══════════════════════════════════════════════════════════════════════════
 
-  normalizeMangaDetail(manga) {
+  normalizeMangaDetail(manga, options = {}) {
     const base = this.normalizeMangaItem(manga);
     
-    return {
+    const data = {
       ...base,
+      source: this.source,
       
       // Informations supplémentaires du /full
       background: manga.background,
@@ -399,6 +416,21 @@ export class JikanNormalizer extends BaseNormalizer {
       metadata: {
         ...base.metadata,
         detailLevel: 'full'
+      }
+    };
+
+    // Wrapper standardisé
+    return {
+      success: true,
+      provider: this.source,
+      domain: this.domain,
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
