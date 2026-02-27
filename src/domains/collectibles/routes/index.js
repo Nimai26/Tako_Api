@@ -10,7 +10,6 @@ import express from 'express';
 import colekaRoutes from './coleka.routes.js';
 import luluberluRoutes from './luluberlu.routes.js';
 import transformerlandRoutes from './transformerland.routes.js';
-import paninimaniaRoutes from './paninimania.routes.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 const router = express.Router();
@@ -19,7 +18,6 @@ const router = express.Router();
 router.use('/coleka', colekaRoutes);
 router.use('/luluberlu', luluberluRoutes);
 router.use('/transformerland', transformerlandRoutes);
-router.use('/paninimania', paninimaniaRoutes);
 
 // Route d'information sur le domaine
 router.get('/', (req, res) => {
@@ -72,22 +70,6 @@ router.get('/', (req, res) => {
           ],
           requiresAuth: false,
           rateLimit: 'FlareSolverr dependent (~3-5s per request)'
-        },
-        {
-          name: 'paninimania',
-          description: 'Base de données d\'albums Panini et stickers',
-          baseUrl: '/api/collectibles/paninimania',
-          features: [
-            'search',
-            'album-details',
-            'translation',
-            'complex-checklists',
-            'special-stickers',
-            'additional-images',
-            'barcode-lookup'
-          ],
-          requiresAuth: false,
-          rateLimit: 'FlareSolverr dependent (~3-5s per request)'
         }
       ],
       endpoints: {
@@ -109,12 +91,6 @@ router.get('/', (req, res) => {
           'GET /transformerland/details?id={toyId}&lang={fr}&autoTrad={1}',
           'GET /transformerland/item/{toyId}?lang={fr}&autoTrad={1}',
           'GET /transformerland/health'
-        ],
-        paninimania: [
-          'GET /paninimania/search?q={query}&max={24}&lang={fr}&autoTrad={1}',
-          'GET /paninimania/details?id={albumId}&lang={fr}&autoTrad={1}',
-          'GET /paninimania/album/{albumId}?lang={fr}&autoTrad={1}',
-          'GET /paninimania/health'
         ]
       }
     }
@@ -127,12 +103,11 @@ router.get('/health', async (req, res) => {
     const healthChecks = await Promise.allSettled([
       import('../providers/coleka.provider.js').then(m => m.healthCheck()),
       import('../providers/luluberlu.provider.js').then(m => m.healthCheck()),
-      import('../providers/transformerland.provider.js').then(m => m.healthCheck()),
-      import('../providers/paninimania.provider.js').then(m => m.healthCheck())
+      import('../providers/transformerland.provider.js').then(m => m.healthCheck())
     ]);
     
     const results = healthChecks.map((result, index) => {
-      const providerNames = ['coleka', 'lulu-berlu', 'transformerland', 'paninimania'];
+      const providerNames = ['coleka', 'lulu-berlu', 'transformerland'];
       return {
         provider: providerNames[index],
         status: result.status === 'fulfilled' ? result.value.status : 'unhealthy',

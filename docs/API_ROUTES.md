@@ -1326,7 +1326,7 @@ GET /api/collectibles/transformerland/health
 
 ### Paninimania
 
-> **Base URL** : `/api/collectibles/paninimania`  
+> **Base URL** : `/api/sticker-albums/paninimania`  
 > **Source** : [paninimania.com](https://www.paninimania.com)  
 > **API Key** : ❌ Non requise (scraping)  
 > **Rate Limit** : Dépend de FlareSolverr (~3-5s par requête)  
@@ -1437,22 +1437,22 @@ Types supportés : Fluorescentes, Brillantes, Hologrammes, Métallisées, Paille
 **Exemples** :
 ```bash
 # Recherche albums foot
-GET /api/collectibles/paninimania/search?q=football&max=10
+GET /api/sticker-albums/paninimania/search?q=football&max=10
 
 # Recherche Star Wars
-GET /api/collectibles/paninimania/search?q=star+wars
+GET /api/sticker-albums/paninimania/search?q=star+wars
 
 # Détails album par ID
-GET /api/collectibles/paninimania/details?id=7523
+GET /api/sticker-albums/paninimania/details?id=7523
 
 # Détails via /album/:id
-GET /api/collectibles/paninimania/album/7523
+GET /api/sticker-albums/paninimania/album/7523
 
 # Avec traduction anglaise
-GET /api/collectibles/paninimania/album/7523?lang=en&autoTrad=1
+GET /api/sticker-albums/paninimania/album/7523?lang=en&autoTrad=1
 
 # Health check
-GET /api/collectibles/paninimania/health
+GET /api/sticker-albums/paninimania/health
 ```
 
 **Exemple de réponse complète** :

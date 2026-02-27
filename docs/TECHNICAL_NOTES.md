@@ -76,7 +76,8 @@ src/config/     : Configuration centralisée (env, sources, cache)
 | media | TMDB, TVDB, IMDB | - |
 | videogames | IGDB, RAWG, JVC, ConsoleVariations | JVC |
 | boardgames | BoardGameGeek | - |
-| collectibles | Coleka, LuluBerlu, ConsoleVariations, Transformerland, Paninimania | ConsoleVariations |
+| collectibles | Coleka, LuluBerlu, Transformerland | - |
+| sticker-albums | Paninimania | Paninimania |
 | tcg | Pokémon, MTG, Yu-Gi-Oh!, Lorcana, Digimon, One Piece | One Piece |
 | music | Discogs, Deezer, MusicBrainz, iTunes | - |
 | ecommerce | Amazon (8 marketplaces) | Tous |

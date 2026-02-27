@@ -3,7 +3,7 @@
  * 
  * API routes for Paninimania sticker albums provider
  * 
- * @module domains/collectibles/routes/paninimania
+ * @module domains/sticker-albums/routes/paninimania
  */
 
 import express from 'express';

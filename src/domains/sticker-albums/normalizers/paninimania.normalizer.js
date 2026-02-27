@@ -4,7 +4,7 @@
  * Normalizes Paninimania data to Tako_Api standard format
  * Preserves ALL complex data: specialStickers, additionalImages, articles, checklist
  * 
- * @module domains/collectibles/normalizers/paninimania
+ * @module domains/sticker-albums/normalizers/paninimania
  */
 
 /**

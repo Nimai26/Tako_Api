@@ -5,7 +5,7 @@
  * Requires FlareSolverr for scraping
  * Complex parsing: checklists, special stickers, multiple image types
  * 
- * @module domains/collectibles/providers/paninimania
+ * @module domains/sticker-albums/providers/paninimania
  */
 
 import FlareSolverrClient from '../../../infrastructure/scraping/FlareSolverrClient.js';

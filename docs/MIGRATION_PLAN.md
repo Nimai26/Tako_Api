@@ -53,7 +53,7 @@
 | collectibles | LuluBerlu | Functional | ✅ OK |
 | collectibles | Coleka | Functional | ✅ OK |
 | collectibles | Transformerland | Functional | ✅ OK |
-| collectibles | Paninimania | Functional | ✅ OK |
+| sticker-albums | Paninimania | Functional | ✅ OK |
 | ecommerce | Amazon | Functional | ✅ OK |
 | tcg | Pokemon | TCG Specific | ✅ OK |
 | tcg | MTG | TCG Specific | ✅ OK |
