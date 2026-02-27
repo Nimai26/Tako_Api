@@ -53,11 +53,8 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
       if (match) year = parseInt(match[1], 10);
     }
 
-    // Formater les auteurs
-    const authors = (book.authors || []).map(name => ({
-      name,
-      role: 'author'
-    }));
+    // Formater les auteurs (tableau de strings pour cohérence avec GoogleBooks)
+    const authors = book.authors || [];
 
     // Formater les couvertures
     const covers = {
@@ -110,11 +107,8 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
       if (match) year = parseInt(match[1], 10);
     }
 
-    // Formater les auteurs
-    const authors = (book.authors || []).map(name => ({
-      name,
-      role: 'author'
-    }));
+    // Formater les auteurs (tableau de strings pour cohérence avec GoogleBooks)
+    const authors = book.authors || [];
 
     // Formater les couvertures
     const covers = {
