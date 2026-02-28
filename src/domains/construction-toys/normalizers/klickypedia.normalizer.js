@@ -141,10 +141,13 @@ export class KlickypediaNormalizer extends BaseNormalizer {
   }
 
   /**
-   * Extraire le nombre de pièces (figureCount → pieceCount)
+   * Extraire le nombre de pièces
+   * NOTE: Klickypedia ne fournit PAS pieceCount (nombre de pièces à assembler)
+   * Ne PAS confondre avec figureCount (nombre de personnages) !
    */
   extractPieceCount(raw) {
-    return raw.figureCount || null;
+    // Klickypedia n'a pas cette information - seul figureCount est disponible
+    return null;
   }
 
   /**
@@ -244,8 +247,8 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       released: raw.released || null,
       discontinued: raw.discontinued || null,
 
-      // Contenu détaillé
-      figureCount: raw.figureCount || null, // Conservé en plus de pieceCount
+      // Contenu détaillé (spécifique Playmobil)
+      figureCount: raw.figureCount || null, // Nombre de personnages (≠ pieceCount qui est le nombre de pièces)
 
       // URLs spécifiques
       klickypedia_url: raw.url || raw.src_url,
