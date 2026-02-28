@@ -216,9 +216,15 @@ export class PlaymobilNormalizer extends BaseNormalizer {
       category: raw.category || null,
       theme: raw.theme || null,
 
-      // Codes produit
+      // Spécifications standardisées
+      set_number: raw.productCode || raw.id || null,
+      pieces: this.parseInt(raw.pieceCount),
+      minifigs: this.parseInt(raw.figureCount),
+
+      // Codes produit (spécifiques Playmobil)
       productCode: raw.productCode || raw.id || null,
       slug: this.generateSlug(raw.name || raw.id),
+      figureCount: this.parseInt(raw.figureCount),
 
       // Prix
       price: this.normalizePrice(raw.price, raw.currency),
@@ -228,8 +234,7 @@ export class PlaymobilNormalizer extends BaseNormalizer {
       currency: raw.currency || 'EUR',
       onSale: Boolean(raw.discountPrice && raw.price && raw.discountPrice < raw.price),
 
-      // Spécifications
-      pieceCount: this.parseInt(raw.pieceCount),
+      // Âge
       ageRange: this.parseAgeRange(raw.ageRange),
 
       // Disponibilité

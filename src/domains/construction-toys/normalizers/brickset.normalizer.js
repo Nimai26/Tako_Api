@@ -185,10 +185,10 @@ export class BricksetNormalizer extends BaseNormalizer {
       subtheme: this.cleanString(raw.subtheme),
       category: this.cleanString(raw.category),
       
-      // Spécifications
-      setNumber: this.cleanString(raw.number),
-      pieceCount: this.parseInt(raw.pieces),
-      minifigCount: this.parseInt(raw.minifigs),
+      // Spécifications standardisées
+      set_number: this.cleanString(raw.number),
+      pieces: this.parseInt(raw.pieces),
+      minifigs: this.parseInt(raw.minifigs),
       
       // Âge
       ageRange: this.extractAgeRange(raw),

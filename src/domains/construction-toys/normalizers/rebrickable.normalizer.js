@@ -218,10 +218,10 @@ export class RebrickableNormalizer extends BaseNormalizer {
       subtheme: null,  // Rebrickable n'a pas de sous-thème dans l'API sets
       category: null,
       
-      // Spécifications
-      setNumber: raw.set_num ? raw.set_num.replace(/-\d+$/, '') : null,
-      pieceCount: this.parseInt(raw.num_parts),
-      minifigCount: this.extractMinifigCount(raw),
+      // Spécifications standardisées
+      set_number: raw.set_num ? raw.set_num.replace(/-\d+$/, '') : null,
+      pieces: this.parseInt(raw.num_parts),
+      minifigs: this.extractMinifigCount(raw),
       
       // Âge (non disponible via Rebrickable)
       ageRange: null,

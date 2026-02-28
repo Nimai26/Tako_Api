@@ -171,16 +171,19 @@ export class MegaNormalizer extends BaseNormalizer {
     const enrichedData = context.enrichedData || {};
     
     return {
-      // Marque
+      // Marque et classification
       brand: raw.brand || 'MEGA',
       theme: null, // MEGA n'a pas de thèmes comme LEGO
+      category: enrichedData.category || null,
+
+      // Spécifications standardisées
+      set_number: this.extractSourceId(raw),
+      pieces: this.extractPieceCount(raw),
+      minifigs: null, // MEGA n'a pas de concept de minifigs
       
       // SKU/UPC
       sku: raw.sku || null,
       upc: enrichedData.upc || null,
-      
-      // Nombre de pièces
-      pieceCount: this.extractPieceCount(raw),
       
       // Tranche d'âge
       ageRange: this.parseAgeRange(enrichedData.ageRange),

@@ -50,14 +50,8 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       titleOriginal: this.cleanString(this.extractTitleOriginal(raw)),
       description: this.cleanString(this.extractDescription(raw)),
       
-      // Classification
-      brand: 'Playmobil',
-      theme: this.cleanString(raw.theme),
-      category: this.extractCategory(raw),
-      
       // Dates & métriques
       year: this.parseYear(this.extractYear(raw)),
-      pieceCount: this.parseInt(this.extractPieceCount(raw)),
       ageRange: this.extractAgeRange(raw),
       
       // Visuels
@@ -230,7 +224,17 @@ export class KlickypediaNormalizer extends BaseNormalizer {
    */
   extractDetails(raw) {
     return {
-      // Codes
+      // Marque et classification (depuis base)
+      brand: 'Playmobil',
+      theme: this.cleanString(raw.theme),
+      category: raw.format || null,
+
+      // Spécifications standardisées
+      set_number: raw.productCode || raw.id,
+      pieces: null, // Klickypedia ne fournit pas le nombre de pièces
+      minifigs: this.parseInt(raw.figureCount),
+
+      // Codes (spécifiques Klickypedia)
       productCode: raw.productCode || raw.id,
       slug: raw.slug || this.generateSlug(raw.name),
       ean: raw.ean || null,
@@ -248,7 +252,7 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       discontinued: raw.discontinued || null,
 
       // Contenu détaillé (spécifique Playmobil)
-      figureCount: raw.figureCount || null, // Nombre de personnages (≠ pieceCount qui est le nombre de pièces)
+      figureCount: raw.figureCount || null, // Nombre de personnages (gardé pour compatibilité)
 
       // URLs spécifiques
       klickypedia_url: raw.url || raw.src_url,

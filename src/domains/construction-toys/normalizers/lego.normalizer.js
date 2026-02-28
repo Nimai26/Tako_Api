@@ -257,10 +257,10 @@ export class LegoNormalizer extends BaseNormalizer {
       subtheme: raw.subtheme || null,
       category: raw.category || null,
 
-      // Spécifications
-      setNumber: this.extractSourceId(raw),
-      pieceCount: this.parseInt(pieceCount),
-      minifigCount: this.parseInt(minifigCount),
+      // Spécifications standardisées
+      set_number: this.extractSourceId(raw),
+      pieces: this.parseInt(pieceCount),
+      minifigs: this.parseInt(minifigCount),
 
       // Âge
       ageRange: this.parseAgeRange(ageRange),
