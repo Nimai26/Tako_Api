@@ -120,17 +120,18 @@ export class MegaNormalizer extends BaseNormalizer {
     return raw.sku || raw.uid || raw.id || null;
   }
 
-  extractName(raw, context = {}) {
-    // Utiliser le nom localisé si disponible
-    if (raw.localizedName) {
-      return raw.localizedName;
-    }
-    // Sinon nettoyer le nom original (enlever les infos de pièces)
+  extractTitle(raw) {
+    // Nettoyer le nom original (enlever les infos de pièces)
     return this.cleanProductName(raw.name);
   }
 
-  extractNameOriginal(raw) {
+  extractTitleOriginal(raw) {
     return raw.name || null;
+  }
+
+  extractPieceCount(raw) {
+    // Extraire le nombre de pièces du nom
+    return this.extractPieces(raw);
   }
 
   extractDescription(raw) {
@@ -172,13 +173,14 @@ export class MegaNormalizer extends BaseNormalizer {
     return {
       // Marque
       brand: raw.brand || 'MEGA',
+      theme: null, // MEGA n'a pas de thèmes comme LEGO
       
       // SKU/UPC
       sku: raw.sku || null,
       upc: enrichedData.upc || null,
       
       // Nombre de pièces
-      pieces: this.extractPieces(raw),
+      pieceCount: this.extractPieceCount(raw),
       
       // Tranche d'âge
       ageRange: this.parseAgeRange(enrichedData.ageRange),
@@ -188,7 +190,9 @@ export class MegaNormalizer extends BaseNormalizer {
       category: enrichedData.category || null,
       
       // Prix
-      price: this.extractPrice(raw, context),
+      price: this.extractPrice(raw),
+      listPrice: null,
+      onSale: false,
       
       // Disponibilité
       availability: this.extractAvailability(raw),
@@ -196,11 +200,18 @@ export class MegaNormalizer extends BaseNormalizer {
       // Note et avis
       rating: this.extractRating(raw),
       
-      // Images multiples
-      images: this.extractImages(raw, context),
+      // Instructions
+      instructions: null, // MEGA n'a pas d'instructions dans l'API
+      instructionsUrl: null,
       
-      // Caractéristiques
-      features: enrichedData.features || null
+      // Caractéristiques MEGA-spécifiques
+      features: enrichedData.features || null,
+      
+      // Métadonnées
+      metadata: {
+        source: 'mega',
+        type: 'construction_toy'
+      }
     };
   }
 
@@ -316,122 +327,55 @@ export class MegaNormalizer extends BaseNormalizer {
   /**
    * Extraire toutes les images
    */
-  extractImages(raw, context = {}) {
-    const baseUrl = context.baseUrl || 'https://shop.mattel.com';
+  extractImages(raw) {
+    const baseUrl = 'https://shop.mattel.com';
     const images = [];
 
     // Images array
     if (raw.images && Array.isArray(raw.images)) {
       for (const img of raw.images) {
         const url = img.startsWith('http') ? img : `${baseUrl}${img}`;
-        images.push({
-          url,
-          type: images.length === 0 ? 'primary' : 'secondary'
-        });
+        images.push(url);
       }
     }
 
     // Image principale si pas dans l'array
-    if (images.length === 0) {
-      if (raw.imageUrl) {
-        const url = raw.imageUrl.startsWith('http') ? raw.imageUrl : `${baseUrl}${raw.imageUrl}`;
-        images.push({ url, type: 'primary' });
-      } else if (raw.thumbnailImageUrl) {
-        const url = raw.thumbnailImageUrl.startsWith('http') ? raw.thumbnailImageUrl : `${baseUrl}${raw.thumbnailImageUrl}`;
-        images.push({ url, type: 'thumbnail' });
-      }
+    if (images.length === 0 && raw.imageUrl) {
+      const url = raw.imageUrl.startsWith('http') ? raw.imageUrl : `${baseUrl}${raw.imageUrl}`;
+      images.push(url);
     }
 
-    return images.length > 0 ? images : null;
+    // Thumbnail en fallback
+    if (images.length === 0 && raw.thumbnailImageUrl) {
+      const url = raw.thumbnailImageUrl.startsWith('http') ? raw.thumbnailImageUrl : `${baseUrl}${raw.thumbnailImageUrl}`;
+      images.push(url);
+    }
+
+    return images.length > 0 ? images : [];
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // MÉTHODES DE NORMALISATION PRINCIPALES
+  // MÉTHODES DE NORMALISATION DE LA RECHERCHE
   // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Normaliser un item de recherche
-   */
-  normalizeSearchItem(raw, context = {}) {
-    const sourceId = this.extractSourceId(raw);
-    const baseUrl = context.baseUrl || 'https://shop.mattel.com';
-
-    return {
-      // Noyau commun
-      type: 'construct_toy',
-      source: 'mega',
-      sourceId,
-      name: this.extractName(raw, context),
-      name_original: this.extractNameOriginal(raw),
-      description: this.extractDescription(raw),
-      year: this.extractYear(raw),
-      image: this.extractImage(raw, context),
-      src_url: this.extractSourceUrl(raw, context),
-      detailUrl: `/construction-toys/mega/${sourceId}`,
-
-      // Détails spécifiques (résumés pour la recherche)
-      brand: raw.brand || 'MEGA',
-      sku: raw.sku || null,
-      pieces: this.extractPieces(raw),
-      franchise: this.detectFranchise(raw.name),
-      price: this.extractPrice(raw, context),
-      availability: this.extractAvailability(raw),
-      rating: this.extractRating(raw)
-    };
-  }
 
   /**
    * Normaliser la réponse de recherche complète
+   * @override BaseNormalizer.normalizeSearchResponse()
    */
   normalizeSearchResponse(results, context = {}) {
     return {
       success: true,
-      provider: 'mega',
-      domain: 'construction-toys',
+      provider: this.source,
+      domain: this.domain,
       query: context.query || '',
       total: context.total || results.length,
       count: results.length,
-      data: results.map(item => this.normalizeSearchItem(item, context)),
+      data: results.map(item => this.normalize(item)),
       pagination: context.pagination || {
         page: 1,
         pageSize: results.length,
         totalResults: context.total || results.length,
         hasMore: false
-      },
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: context.lang || 'en-US',
-        currency: context.currency || 'USD'
-      }
-    };
-  }
-
-  /**
-   * Normaliser les détails d'un produit
-   */
-  normalizeDetailResponse(raw, context = {}) {
-    const sourceId = this.extractSourceId(raw);
-
-    return {
-      success: true,
-      provider: 'mega',
-      domain: 'construction-toys',
-      data: {
-        // Noyau commun
-        type: 'construct_toy',
-        source: 'mega',
-        sourceId,
-        name: context.localizedName || this.cleanProductName(raw.name),
-        name_original: raw.name,
-        name_localized: context.localizedName || null,
-        description: this.extractDescription(raw),
-        year: this.extractYear(raw),
-        image: this.extractImage(raw, context),
-        src_url: this.extractSourceUrl(raw, context),
-        detailUrl: `/construction-toys/mega/${sourceId}`,
-
-        // Détails complets
-        ...this.extractDetails(raw, context)
       },
       meta: {
         fetchedAt: new Date().toISOString(),

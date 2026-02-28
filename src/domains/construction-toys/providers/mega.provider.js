@@ -201,24 +201,36 @@ export class MegaProvider extends BaseProvider {
     // Enrichir avec les données metafields
     const enrichedData = this.parseMetafields(item.metafields);
 
-    // Localisation du nom
+    // Localisation du nom (optionnel)
     const langCode = this.extractLangCode(lang);
-    let localizedName = null;
     if (langCode && langCode !== 'en') {
       const localizedNames = await this.getLocalizedNames(langCode);
       const sku = item.sku?.toUpperCase();
       if (sku && localizedNames.has(sku)) {
-        localizedName = localizedNames.get(sku);
+        item.localizedName = localizedNames.get(sku);
       }
     }
 
-    return this.normalizer.normalizeDetailResponse(item, {
-      lang,
-      enrichedData,
-      localizedName,
-      currency: config.currency,
-      baseUrl: config.baseUrl
-    });
+    // Ajouter les données enrichies directement dans l'item
+    if (enrichedData) {
+      item.enrichedData = enrichedData;
+    }
+
+    // Normaliser avec la méthode v2.0.0
+    const normalized = this.normalizer.normalize(item);
+
+    // Retourner avec wrapper de réponse
+    return {
+      success: true,
+      provider: 'mega',
+      domain: 'construction-toys',
+      data: normalized,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang,
+        currency: config.currency
+      }
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
