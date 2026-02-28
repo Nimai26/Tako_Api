@@ -135,8 +135,8 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       // Contenu
       figureCount: product.figureCount,
       
-      // Instructions
-      instructions: product.instructions || null,
+      // Instructions (format unifié avec LEGO)
+      instructions: this.extractInstructions(product),
       
       // Métadonnées internes
       metadata: {
@@ -165,6 +165,43 @@ export class KlickypediaNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS
   // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extraire les instructions/manuels (format unifié avec LEGO)
+   * @private
+   */
+  extractInstructions(product) {
+    if (!product.instructions) {
+      return null;
+    }
+
+    const instructions = product.instructions;
+
+    // Si c'est déjà au format unifié LEGO (avec manuals[])
+    if (instructions.manuals && Array.isArray(instructions.manuals)) {
+      return instructions;
+    }
+
+    // Convertir le format Playmobil/Klickypedia simple vers le format unifié
+    if (instructions.available && instructions.url) {
+      const productId = instructions.productId || product.id || product.productCode;
+      return {
+        count: 1,
+        manuals: [
+          {
+            id: productId,
+            description: `Notice de montage ${productId}`,
+            pdfUrl: instructions.url,
+            sequence: null
+          }
+        ],
+        url: instructions.url
+      };
+    }
+
+    // Si pas disponible
+    return null;
+  }
 
   /**
    * Obtenir le nom selon la langue

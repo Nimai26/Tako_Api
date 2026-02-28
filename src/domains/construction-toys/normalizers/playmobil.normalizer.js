@@ -237,8 +237,8 @@ export class PlaymobilNormalizer extends BaseNormalizer {
       canAddToBag: Boolean(raw.canAddToBag ?? true),
       inStock: Boolean(raw.inStock ?? true),
 
-      // Instructions
-      instructions: raw.instructions || null,
+      // Instructions (format unifié avec LEGO)
+      instructions: this.extractInstructions(raw),
       instructionsUrl: raw.instructionsUrl || null,
 
       // Métadonnées additionnelles
@@ -255,6 +255,43 @@ export class PlaymobilNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS
   // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extraire les instructions/manuels (format unifié avec LEGO)
+   * @private
+   */
+  extractInstructions(raw) {
+    if (!raw.instructions) {
+      return null;
+    }
+
+    const instructions = raw.instructions;
+
+    // Si c'est déjà au format unifié LEGO (avec manuals[])
+    if (instructions.manuals && Array.isArray(instructions.manuals)) {
+      return instructions;
+    }
+
+    // Convertir le format Playmobil simple vers le format unifié
+    if (instructions.available && instructions.url) {
+      const productId = instructions.productId || raw.id || raw.productCode;
+      return {
+        count: 1,
+        manuals: [
+          {
+            id: productId,
+            description: `Notice de montage ${productId}`,
+            pdfUrl: instructions.url,
+            sequence: null
+          }
+        ],
+        url: instructions.url
+      };
+    }
+
+    // Si pas disponible
+    return null;
+  }
 
   /**
    * Normaliser le prix
