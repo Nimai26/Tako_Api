@@ -1,9 +1,15 @@
 /**
  * Playmobil Normalizer
  * 
- * Transforme les données du site officiel Playmobil vers le format Tako.
+ * Transforme les données du site officiel Playmobil vers le format Tako unifié.
  * 
- * Particularités :
+ * FORMAT V2.0.6 (complet) :
+ * - Structure plate héritée de BaseNormalizer
+ * - Méthodes d'extraction standard (extractSourceId, extractTitle, etc.)
+ * - Utilise normalize() pour un format cohérent avec tous les providers
+ * 
+ * SOURCES DE DONNÉES :
+ * - Scraping HTML via FlareSolverr
  * - Données commerciales avec prix
  * - Images haute résolution
  * - Support multi-locales
@@ -23,145 +29,226 @@ export class PlaymobilNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE RECHERCHE
+  // MÉTHODES D'EXTRACTION STANDARD (Pattern BaseNormalizer)
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Normaliser la réponse de recherche Playmobil
-   * @param {Array} products - Liste des produits
-   * @param {Object} metadata - Métadonnées
+   * Normaliser un item Playmobil en format Tako avec structure plate
+   * @override BaseNormalizer.normalize()
    */
-  normalizeSearchResponse(products, metadata = {}) {
-    const { query, total = products.length, pagination, lang = 'fr-fr' } = metadata;
+  normalize(raw) {
+    if (!raw) {
+      throw new Error('normalize() : données brutes manquantes');
+    }
 
-    return {
-      query,
-      total,
-      pagination: pagination || {
-        page: 1,
-        pageSize: products.length,
-        totalResults: total,
-        hasMore: false
-      },
-      lang,
-      data: products.map((product, index) => this.normalizeSearchItem(product, index + 1, lang)),
-      source: 'playmobil',
-      note: 'Site officiel Playmobil - données commerciales'
-    };
-  }
-
-  /**
-   * Normaliser un item de recherche
-   * @private
-   */
-  normalizeSearchItem(product, position, lang) {
-    return {
-      sourceId: product.id || product.productCode,
-      provider: 'playmobil',
-      brand: 'Playmobil',
-
-      name: product.name || `Playmobil ${product.id}`,
-      productCode: product.productCode || product.id,
-      slug: this.generateSlug(product.name || product.id),
-
-      src_url: product.url || null,
-      src_image_url: product.thumb || product.baseImgUrl,
-
-      price: this.normalizePrice(product.price, product.currency),
-      discountPrice: product.discountPrice ? this.normalizePrice(product.discountPrice, product.currency) : null,
-      discount: product.discount,
-
-      category: product.category,
-
-      metadata: {
-        position: product.position || position,
-        source: 'playmobil',
-        lang
+    try {
+      const sourceId = this.extractSourceId(raw);
+      const title = this.extractTitle(raw);
+      
+      if (!sourceId) {
+        throw new Error('sourceId manquant dans les données');
       }
+      if (!title) {
+        throw new Error('title manquant dans les données');
+      }
+
+      // Construire l'objet de base avec le tronc commun
+      const base = {
+        // Identification
+        id: `${this.source}:${sourceId}`,
+        type: this.type,
+        source: this.source,
+        sourceId: String(sourceId),
+        
+        // Titres
+        title: this.cleanString(title),
+        titleOriginal: this.cleanString(this.extractTitleOriginal(raw)),
+        
+        // Description et année
+        description: this.cleanString(this.extractDescription(raw)),
+        year: this.parseYear(this.extractYear(raw)),
+        
+        // Images
+        images: this.normalizeImages(this.extractImages(raw)),
+        
+        // URLs
+        urls: {
+          source: this.parseUrl(this.extractSourceUrl(raw)),
+          detail: this.buildDetailUrl(sourceId)
+        }
+      };
+
+      // Extraire les détails spécifiques et les aplatir directement
+      const details = this.extractDetails(raw);
+
+      // Fusionner base + details en structure plate
+      const normalized = {
+        ...base,
+        ...details  // ✅ Aplatissement : tous les champs de details au même niveau
+      };
+
+      // Ajouter les données brutes si demandé (debug)
+      if (this.includeRaw) {
+        normalized._raw = raw;
+      }
+
+      return normalized;
+
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Extraire l'ID source du produit
+   * @override
+   */
+  extractSourceId(raw) {
+    return String(raw.id || raw.productCode || '').trim();
+  }
+
+  /**
+   * Extraire le titre
+   * @override
+   */
+  extractTitle(raw) {
+    const id = this.extractSourceId(raw);
+    const name = raw.name || `Playmobil ${id}`;
+    
+    // Ajouter l'ID au début si pas déjà présent
+    if (id && !name.startsWith(id)) {
+      return `${id} ${name}`;
+    }
+    return name;
+  }
+
+  /**
+   * Extraire le titre original (même que title pour Playmobil)
+   * @override
+   */
+  extractTitleOriginal(raw) {
+    return raw.name || null;
+  }
+
+  /**
+   * Extraire la description
+   * @override
+   */
+  extractDescription(raw) {
+    return this.cleanString(raw.description);
+  }
+
+  /**
+   * Extraire l'année (non disponible dans les données Playmobil)
+   * @override
+   */
+  extractYear(raw) {
+    return raw.year || null;
+  }
+
+  /**
+   * Extraire les images
+   * @override
+   */
+  extractImages(raw) {
+    const images = {
+      primary: null,
+      thumbnail: null,
+      gallery: []
     };
+
+    // Images depuis le tableau images
+    if (Array.isArray(raw.images) && raw.images.length > 0) {
+      images.gallery = raw.images;
+      images.primary = raw.images[0];
+      images.thumbnail = raw.images[0];
+    }
+
+    // Thumb
+    if (raw.thumb) {
+      if (!images.thumbnail) images.thumbnail = raw.thumb;
+      if (!images.primary) images.primary = raw.thumb;
+      if (!images.gallery.includes(raw.thumb)) {
+        images.gallery.unshift(raw.thumb);
+      }
+    }
+
+    // Base image URL
+    if (raw.baseImgUrl) {
+      if (!images.primary) images.primary = raw.baseImgUrl;
+      if (!images.gallery.includes(raw.baseImgUrl)) {
+        images.gallery.push(raw.baseImgUrl);
+      }
+    }
+
+    // Image de recherche
+    if (raw.src_image_url) {
+      if (!images.thumbnail) images.thumbnail = raw.src_image_url;
+      if (!images.primary) images.primary = raw.src_image_url;
+      if (!images.gallery.includes(raw.src_image_url)) {
+        images.gallery.push(raw.src_image_url);
+      }
+    }
+
+    return images;
+  }
+
+  /**
+   * Extraire l'URL source
+   * @override
+   */
+  extractSourceUrl(raw) {
+    return raw.url || raw.src_url || null;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE DÉTAILS
+  // EXTRACTION DES DÉTAILS SPÉCIFIQUES PLAYMOBIL
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Normaliser la réponse de détails
-   * @param {Object} product - Produit avec détails
-   * @param {Object} options
+   * Extraire les détails spécifiques à Playmobil
+   * @override
    */
-  normalizeDetailResponse(product, options = {}) {
-    const { lang = 'fr-fr' } = options;
-
-    const data = {
-      // Identifiants
-      id: `${this.source}:${product.id || product.productCode}`,
-      type: this.type,
-      source: this.source,
-      sourceId: String(product.id || product.productCode),
-      provider: 'playmobil',
+  extractDetails(raw) {
+    return {
+      // Marque et classification
       brand: 'Playmobil',
+      category: raw.category || null,
+      theme: raw.theme || null,
 
-      // Nom et description
-      title: product.name || `Playmobil ${product.id}`,
-      name: product.name || `Playmobil ${product.id}`,
-      description: product.description || null,
-
-      // Codes
-      productCode: product.productCode || product.id,
-      slug: this.generateSlug(product.name || product.id),
-
-      // URLs
-      urls: {
-        source: product.url,
-        detail: `/api/${this.domain}/${this.source}/${product.id || product.productCode}`
-      },
-      src_url: product.url,
-      playmobil_url: product.url,
-
-      // Images
-      images: this.normalizeImages(product),
+      // Codes produit
+      productCode: raw.productCode || raw.id || null,
+      slug: this.generateSlug(raw.name || raw.id),
 
       // Prix
-      price: this.normalizePrice(product.price, product.currency),
-      discountPrice: product.discountPrice ? this.normalizePrice(product.discountPrice, product.currency) : null,
-      currency: product.currency || 'EUR',
+      price: this.normalizePrice(raw.price, raw.currency),
+      listPrice: raw.listPrice ? this.normalizePrice(raw.listPrice, raw.currency) : null,
+      discountPrice: raw.discountPrice ? this.normalizePrice(raw.discountPrice, raw.currency) : null,
+      discount: raw.discount || null,
+      currency: raw.currency || 'EUR',
+      onSale: Boolean(raw.discountPrice && raw.price && raw.discountPrice < raw.price),
 
-      // Classification
-      category: product.category,
+      // Spécifications
+      pieceCount: this.parseInt(raw.pieceCount),
+      ageRange: this.parseAgeRange(raw.ageRange),
 
-      // Attributs
-      attributes: {
-        pieceCount: product.pieceCount,
-        ageRange: product.ageRange,
-        canAddToBag: true
-      },
+      // Disponibilité
+      availability: raw.availability || 'unknown',
+      canAddToBag: Boolean(raw.canAddToBag ?? true),
+      inStock: Boolean(raw.inStock ?? true),
 
       // Instructions
-      instructions: product.instructions || null,
+      instructions: raw.instructions || null,
+      instructionsUrl: raw.instructionsUrl || null,
 
-      // Métadonnées internes
-      metadata: {
-        source: 'playmobil',
-        type: 'official',
-        lang,
-        note: 'Données officielles Playmobil'
-      }
-    };
+      // Métadonnées additionnelles
+      attributes: raw.attributes || null,
 
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: lang || 'fr-fr',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
+      // URLs supplémentaires (compatibilité)
+      playmobil_url: raw.url || raw.src_url || null,
+      
+      // Métadonnées de position (pour recherche)
+      position: raw.position || null
     };
   }
 
@@ -181,50 +268,47 @@ export class PlaymobilNormalizer extends BaseNormalizer {
     return {
       amount: numPrice,
       currency: currency || 'EUR',
-      formatted: `${numPrice.toFixed(2)} ${currency || '€'}`
+      formatted: `${numPrice.toFixed(2)} ${currency || 'EUR'}`
     };
   }
 
   /**
-   * Normaliser les images
+   * Parser une tranche d'âge Playmobil
    * @private
    */
-  normalizeImages(product) {
-    const images = [];
-
-    // Images depuis le produit
-    if (product.images && Array.isArray(product.images)) {
-      product.images.forEach((img, index) => {
-        images.push({
-          url: img,
-          type: index === 0 ? 'primary' : 'gallery',
-          width: null,
-          height: null
-        });
-      });
+  parseAgeRange(ageRange) {
+    if (!ageRange) return null;
+    
+    const str = String(ageRange).trim();
+    
+    // Format "4+" ou "6+"
+    const plusMatch = str.match(/(\d+)\s*\+/);
+    if (plusMatch) {
+      return {
+        min: parseInt(plusMatch[1], 10),
+        max: null
+      };
     }
-
-    // Thumbnail
-    if (product.thumb && !images.some(i => i.url === product.thumb)) {
-      images.push({
-        url: product.thumb,
-        type: images.length === 0 ? 'primary' : 'thumbnail',
-        width: 200,
-        height: 200
-      });
+    
+    // Format "4-10"
+    const rangeMatch = str.match(/(\d+)\s*[-–]\s*(\d+)/);
+    if (rangeMatch) {
+      return {
+        min: parseInt(rangeMatch[1], 10),
+        max: parseInt(rangeMatch[2], 10)
+      };
     }
-
-    // Base image
-    if (product.baseImgUrl && !images.some(i => i.url === product.baseImgUrl)) {
-      images.push({
-        url: product.baseImgUrl,
-        type: images.length === 0 ? 'primary' : 'gallery',
-        width: 512,
-        height: null
-      });
+    
+    // Format "4 ans et +"
+    const ageMatch = str.match(/(\d+)\s*ans?\s*et\s*\+/i);
+    if (ageMatch) {
+      return {
+        min: parseInt(ageMatch[1], 10),
+        max: null
+      };
     }
-
-    return images;
+    
+    return null;
   }
 
   /**

@@ -19,14 +19,12 @@ import { BaseProvider } from '../../../core/providers/index.js';
 import { PlaymobilNormalizer } from '../normalizers/playmobil.normalizer.js';
 import { NotFoundError, BadGatewayError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { env } from '../../../config/env.js';
 
 // Configuration Playmobil
 const PLAYMOBIL_BASE_URL = 'https://www.playmobil.com';
 const PLAYMOBIL_MEDIA_URL = 'https://media.playmobil.com/i/playmobil';
 const PLAYMOBIL_INSTRUCTIONS_CDN = 'https://playmobil.a.bigcontent.io/v1/static';
-
-// FlareSolverr (pour Cloudflare bypass)
-const FLARESOLVERR_URL = process.env.FLARESOLVERR_URL || 'http://flaresolverr:8191/v1';
 
 // Mapping des locales
 const LOCALE_MAP = {
@@ -55,6 +53,7 @@ export class PlaymobilProvider extends BaseProvider {
     this.normalizer = new PlaymobilNormalizer();
     this.log = logger.create('PlaymobilProvider');
     this.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    this.fsrUrl = env.fsr?.url || 'http://flaresolverr:8191/v1';
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -193,7 +192,7 @@ export class PlaymobilProvider extends BaseProvider {
       maxTimeout: 60000
     };
 
-    const response = await fetch(FLARESOLVERR_URL, {
+    const response = await fetch(this.fsrUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -564,7 +563,7 @@ export class PlaymobilProvider extends BaseProvider {
       // Test FlareSolverr
       let flaresolverrOk = false;
       try {
-        const fsResponse = await fetch(FLARESOLVERR_URL.replace('/v1', ''), {
+        const fsResponse = await fetch(this.fsrUrl.replace('/v1', ''), {
           method: 'GET',
           signal: AbortSignal.timeout(3000)
         });
