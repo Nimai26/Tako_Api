@@ -1,13 +1,15 @@
 /**
  * Klickypedia Normalizer
  * 
- * Transforme les données scrappées de Klickypedia vers le format Tako.
+ * Transforme les données scrappées de Klickypedia vers le format Tako unifié.
+ * Format aplati avec extractDetails() pour données spécifiques.
  * 
- * Particularités :
+ * Particularités Klickypedia (conservées dans extractDetails):
  * - Source communautaire (encyclopédie)
- * - Données multilingues (fr, es, de, en)
- * - Pas de prix (ce n'est pas un site de vente)
- * - Informations sur le thème, format, année
+ * - Données multilingues (fr, es, de, en) → translations
+ * - Pas de prix (source encyclopédique)
+ * - Format, tags, figureCount
+ * - Dates released/discontinued
  * - Lien vers instructions Playmobil officielles
  */
 
@@ -24,13 +26,246 @@ export class KlickypediaNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // OVERRIDE NORMALIZE - Structure aplatie comme LEGO/Playmobil
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Override normalize() pour structure aplatie
+   * Combine champs communs + détails spécifiques Klickypedia
+   */
+  normalize(raw) {
+    // Extraction des champs communs
+    const sourceId = this.extractSourceId(raw);
+    const title = this.extractTitle(raw);
+
+    // Construction base standardisée
+    const base = {
+      id: `${this.source}:${sourceId}`,
+      type: this.type,
+      source: this.source,
+      sourceId: String(sourceId),
+      
+      // Textes
+      title: this.cleanString(title),
+      titleOriginal: this.cleanString(this.extractTitleOriginal(raw)),
+      description: this.cleanString(this.extractDescription(raw)),
+      
+      // Classification
+      brand: 'Playmobil',
+      theme: this.cleanString(raw.theme),
+      category: this.extractCategory(raw),
+      
+      // Dates & métriques
+      year: this.parseYear(this.extractYear(raw)),
+      pieceCount: this.parseInt(this.extractPieceCount(raw)),
+      ageRange: this.extractAgeRange(raw),
+      
+      // Visuels
+      images: this.normalizeImages(this.extractImages(raw)),
+      
+      // URLs
+      urls: {
+        source: this.parseUrl(this.extractSourceUrl(raw)),
+        detail: this.buildDetailUrl(sourceId)
+      },
+      
+      // Prix (encyclopédie = pas de prix)
+      price: null,
+      listPrice: null,
+      onSale: false,
+      
+      // Disponibilité (encyclopédie = info limitée)
+      availability: 'unknown',
+      
+      // Instructions (format unifié)
+      instructions: this.extractInstructions(raw),
+      instructionsUrl: null
+    };
+
+    // Extract provider-specific details
+    const details = this.extractDetails(raw);
+
+    // Flatten: merge base + details at root level
+    return { ...base, ...details };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXTRACTION METHODS - Champs communs uniformisés
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extraire l'ID source
+   */
+  extractSourceId(raw) {
+    return raw.id || raw.productCode;
+  }
+
+  /**
+   * Extraire le titre
+   */
+  extractTitle(raw) {
+    // Priorité : traduction > nom original
+    const lang = raw.lang || 'fr';
+    if (raw.translations && raw.translations[lang]) {
+      return raw.translations[lang];
+    }
+    return raw.name || raw.displayName || `Playmobil ${raw.id || raw.productCode}`;
+  }
+
+  /**
+   * Extraire le titre original
+   */
+  extractTitleOriginal(raw) {
+    return raw.name || raw.displayName;
+  }
+
+  /**
+   * Extraire la description
+   */
+  extractDescription(raw) {
+    return raw.description || null;
+  }
+
+  /**
+   * Extraire la catégorie (Klickypedia n'a pas de catégorie stricte)
+   */
+  extractCategory(raw) {
+    return raw.format || null; // Format peut servir de catégorie
+  }
+
+  /**
+   * Extraire l'année (released → year)
+   */
+  extractYear(raw) {
+    return raw.released || null;
+  }
+
+  /**
+   * Extraire le nombre de pièces (figureCount → pieceCount)
+   */
+  extractPieceCount(raw) {
+    return raw.figureCount || null;
+  }
+
+  /**
+   * Extraire la tranche d'âge
+   */
+  extractAgeRange(raw) {
+    return raw.ageRange || null;
+  }
+
+  /**
+   * Extraire les images
+   */
+  extractImages(raw) {
+    const images = [];
+
+    // Images principales
+    if (raw.images && Array.isArray(raw.images)) {
+      raw.images.forEach(img => {
+        if (img) images.push(this.cleanImageUrl(img));
+      });
+    }
+
+    // Thumbnail depuis recherche
+    if (raw.thumb) {
+      images.push(this.cleanImageUrl(raw.thumb));
+    }
+
+    return images;
+  }
+
+  /**
+   * Extraire l'URL source
+   */
+  extractSourceUrl(raw) {
+    return raw.url || raw.src_url || null;
+  }
+
+  /**
+   * Extraire les instructions (format unifié)
+   */
+  extractInstructions(raw) {
+    if (!raw.instructions) {
+      return null;
+    }
+
+    const instructions = raw.instructions;
+
+    // Si déjà au format unifié LEGO
+    if (instructions.manuals && Array.isArray(instructions.manuals)) {
+      return instructions;
+    }
+
+    // Convertir format Playmobil simple vers unifié
+    if (instructions.available && instructions.url) {
+      const productId = instructions.productId || raw.id || raw.productCode;
+      return {
+        count: 1,
+        manuals: [
+          {
+            id: productId,
+            description: `Notice de montage ${productId}`,
+            pdfUrl: instructions.url,
+            sequence: null
+          }
+        ],
+        url: instructions.url
+      };
+    }
+
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXTRACT DETAILS - Champs spécifiques Klickypedia (SANS PERTE DE DONNÉES)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extraire les détails spécifiques à Klickypedia
+   * Conserve TOUTES les données propres à cette source
+   */
+  extractDetails(raw) {
+    return {
+      // Codes
+      productCode: raw.productCode || raw.id,
+      slug: raw.slug || this.generateSlug(raw.name),
+      ean: raw.ean || null,
+
+      // Traductions (spécifique Klickypedia)
+      translations: raw.translations || {},
+      localizedName: raw.translations?.[raw.lang || 'fr'] || raw.name,
+
+      // Classification étendue
+      format: raw.format || null, // Ex: "Standard Box", "Play Box", etc.
+      tags: raw.tags || [], // Tags communautaires
+
+      // Dates spécifiques
+      released: raw.released || null,
+      discontinued: raw.discontinued || null,
+
+      // Contenu détaillé
+      figureCount: raw.figureCount || null, // Conservé en plus de pieceCount
+
+      // URLs spécifiques
+      klickypedia_url: raw.url || raw.src_url,
+      src_url: raw.url || raw.src_url,
+
+      // Métadonnées encyclopédiques
+      metadata: {
+        source: 'klickypedia',
+        type: 'encyclopedia',
+        note: 'Données encyclopédiques - pas de prix disponible'
+      }
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // NORMALISATION DE RECHERCHE
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Normaliser la réponse de recherche Klickypedia
-   * @param {Array} products - Liste des produits
-   * @param {Object} metadata - Métadonnées
    */
   normalizeSearchResponse(products, metadata = {}) {
     const { query, total = products.length, pagination, lang = 'fr' } = metadata;
@@ -53,7 +288,6 @@ export class KlickypediaNormalizer extends BaseNormalizer {
 
   /**
    * Normaliser un item de recherche
-   * @private
    */
   normalizeSearchItem(product, lang) {
     return {
@@ -80,176 +314,34 @@ export class KlickypediaNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE DÉTAILS
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Normaliser la réponse de détails
-   * @param {Object} product - Produit avec détails
-   * @param {Object} options
-   */
-  normalizeDetailResponse(product, options = {}) {
-    const { lang = 'fr' } = options;
-
-    const data = {
-      // Identifiants
-      id: `${this.source}:${product.id || product.productCode}`,
-      type: this.type,
-      source: this.source,
-      sourceId: String(product.id || product.productCode),
-      provider: 'klickypedia',
-      brand: 'Playmobil',
-      
-      // Nom et description
-      title: this.getName(product, lang),
-      name: this.getName(product, lang),
-      localizedName: product.translations?.[lang] || product.name,
-      translations: product.translations || {},
-      description: product.description || null,
-      
-      // Codes
-      productCode: product.productCode || product.id,
-      slug: product.slug || this.generateSlug(product.name),
-      ean: null, // Non disponible sur Klickypedia
-      
-      // URLs
-      urls: {
-        source: product.url || product.src_url,
-        detail: `/api/${this.domain}/${this.source}/${product.id || product.productCode}`
-      },
-      src_url: product.url || product.src_url,
-      klickypedia_url: product.url || product.src_url,
-      
-      // Images
-      images: this.normalizeImages(product),
-      
-      // Classification
-      theme: product.theme,
-      format: product.format,
-      tags: product.tags || [],
-      
-      // Dates
-      released: product.released,
-      discontinued: product.discontinued,
-      
-      // Contenu
-      figureCount: product.figureCount,
-      
-      // Instructions (format unifié avec LEGO)
-      instructions: this.extractInstructions(product),
-      
-      // Métadonnées internes
-      metadata: {
-        source: 'klickypedia',
-        type: 'encyclopedia',
-        note: 'Données encyclopédiques - pas de prix disponible'
-      }
-    };
-
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: lang || 'fr',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Extraire les instructions/manuels (format unifié avec LEGO)
-   * @private
+   * Normaliser les images au format unifié LEGO/Playmobil
+   * Format: { primary: "...", thumbnail: "...", gallery: [...] }
    */
-  extractInstructions(product) {
-    if (!product.instructions) {
-      return null;
-    }
-
-    const instructions = product.instructions;
-
-    // Si c'est déjà au format unifié LEGO (avec manuals[])
-    if (instructions.manuals && Array.isArray(instructions.manuals)) {
-      return instructions;
-    }
-
-    // Convertir le format Playmobil/Klickypedia simple vers le format unifié
-    if (instructions.available && instructions.url) {
-      const productId = instructions.productId || product.id || product.productCode;
+  normalizeImages(images) {
+    if (!images || images.length === 0) {
       return {
-        count: 1,
-        manuals: [
-          {
-            id: productId,
-            description: `Notice de montage ${productId}`,
-            pdfUrl: instructions.url,
-            sequence: null
-          }
-        ],
-        url: instructions.url
+        primary: null,
+        thumbnail: null,
+        gallery: []
       };
     }
 
-    // Si pas disponible
-    return null;
-  }
+    // Dédupliquer
+    const uniqueImages = [...new Set(images.filter(Boolean))];
 
-  /**
-   * Obtenir le nom selon la langue
-   * @private
-   */
-  getName(product, lang) {
-    // Priorité : traduction > nom direct
-    if (product.translations?.[lang]) {
-      return product.translations[lang];
-    }
-    return product.name || product.displayName || `Playmobil ${product.productCode}`;
-  }
-
-  /**
-   * Normaliser les images
-   * @private
-   */
-  normalizeImages(product) {
-    const images = [];
-
-    // Image principale
-    if (product.images && Array.isArray(product.images)) {
-      product.images.forEach((img, index) => {
-        images.push({
-          url: this.cleanImageUrl(img),
-          type: index === 0 ? 'primary' : 'gallery',
-          width: null,
-          height: null
-        });
-      });
-    }
-
-    // Thumbnail depuis la recherche
-    if (product.thumb && !images.some(i => i.url === product.thumb)) {
-      images.push({
-        url: this.cleanImageUrl(product.thumb),
-        type: images.length === 0 ? 'primary' : 'thumbnail',
-        width: null,
-        height: null
-      });
-    }
-
-    return images;
+    return {
+      primary: uniqueImages[0] || null,
+      thumbnail: uniqueImages[0] || null, // Klickypedia n'a généralement qu'une image
+      gallery: uniqueImages
+    };
   }
 
   /**
    * Nettoyer l'URL d'image
-   * @private
    */
   cleanImageUrl(url) {
     if (!url) return null;
@@ -258,7 +350,6 @@ export class KlickypediaNormalizer extends BaseNormalizer {
 
   /**
    * Générer un slug depuis le nom
-   * @private
    */
   generateSlug(name) {
     if (!name) return '';
