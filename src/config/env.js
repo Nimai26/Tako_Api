@@ -87,6 +87,9 @@ export const env = {
   
   // Construction Toys
   BRICKSET_API_KEY: process.env.BRICKSET_API_KEY || null,
+  BRICKSET_USERNAME: process.env.BRICKSET_USERNAME || null,
+  BRICKSET_PASSWORD: process.env.BRICKSET_PASSWORD || null,
+  BRICKSET_USER_HASH: process.env.BRICKSET_USER_HASH || null,
   REBRICKABLE_API_KEY: process.env.REBRICKABLE_API_KEY || null,
   
   // Books
