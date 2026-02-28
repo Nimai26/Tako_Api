@@ -63,6 +63,7 @@ const EXCLUDED_PRODUCT_IDS = new Set([
   '40154',  // Brick Calendar - calendrier
   '40178',  // Mini VIP Store - cadeau VIP
   '40488',  // Coffee Cart - GWP
+  '501020',  // Set fantôme - n'existe pas mais apparaît dans les recherches
   '5006290', // BrickLink Designer Program
   '5006291', // BrickLink Designer Program
 ]);

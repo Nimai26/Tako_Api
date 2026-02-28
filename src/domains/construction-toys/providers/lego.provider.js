@@ -147,6 +147,12 @@ export class LegoProvider extends BaseProvider {
       try {
         const instructions = await this.getLegoInstructions(cleanId, { locale });
         productData.instructions = instructions;
+        
+        // Si l'année est présente dans les instructions et absente du produit, l'ajouter
+        if (instructions.year && !productData.year) {
+          productData.year = instructions.year;
+          logger.debug(`[LEGO] Année enrichie depuis les instructions: ${instructions.year}`);
+        }
       } catch (err) {
         logger.warn(`[LEGO] Impossible de récupérer les instructions: ${err.message}`);
         productData.instructions = { manuals: [] };
@@ -284,6 +290,9 @@ export class LegoProvider extends BaseProvider {
       instructions.manuals = this.extractPdfsFromHtml(html, productId);
     }
 
+    // Extraire l'année depuis le HTML (présente sur la page des manuels)
+    instructions.year = this.extractYearFromInstructionsHtml(html);
+
     // Trier les manuels par séquence
     instructions.manuals.sort((a, b) => {
       if (a.sequence === null && b.sequence === null) return 0;
@@ -295,6 +304,38 @@ export class LegoProvider extends BaseProvider {
     logger.info(`[LEGO] Trouvé ${instructions.manuals.length} manuels pour ${productId}`);
     
     return instructions;
+  }
+
+  /**
+   * Extraire l'année depuis le HTML de la page des manuels
+   * @private
+   * @param {string} html - HTML de la page
+   * @returns {number|null} Année ou null si non trouvée
+   */
+  extractYearFromInstructionsHtml(html) {
+    // Pattern pour extraire l'année du HTML
+    // Ex: <p class="ds-heading-lg _setId__productDetails__aQ9pA">Année : 2023</p>
+    const yearPatterns = [
+      /Année\s*:\s*(\d{4})/i,
+      /Year\s*:\s*(\d{4})/i,
+      /<p[^>]*>\s*Année\s*:\s*(\d{4})\s*<\/p>/i,
+      /<p[^>]*>\s*Year\s*:\s*(\d{4})\s*<\/p>/i
+    ];
+
+    for (const pattern of yearPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const year = parseInt(match[1], 10);
+        // Vérifier que l'année est plausible (entre 1949 et maintenant + 2 ans)
+        const currentYear = new Date().getFullYear();
+        if (year >= 1949 && year <= currentYear + 2) {
+          logger.debug(`[LEGO] Année extraite: ${year}`);
+          return year;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
