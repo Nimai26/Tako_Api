@@ -113,7 +113,7 @@ router.get('/', asyncHandler(async (req, res) => {
           { method: 'GET', path: '/franchises', description: 'Franchises disponibles' },
           { method: 'GET', path: '/franchise/:name', description: 'Produits par franchise' },
           { method: 'GET', path: '/sublines', description: 'Sous-lignes disponibles' },
-          { method: 'GET', path: '/file/:setNumber/image', description: 'Image proxy depuis MinIO' },
+          { method: 'GET', path: '/file/:setNumber/image', description: 'Image statique (redirect)' },
           { method: 'GET', path: '/:id', description: 'Détails d\'un produit' }
         ],
         rateLimit: 'Archive locale (rapide)',

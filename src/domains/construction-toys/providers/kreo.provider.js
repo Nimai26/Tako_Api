@@ -1,12 +1,12 @@
 /**
- * KRE-O Provider (Database)
+ * KRE-O Provider (Database + Filesystem)
  * 
  * Provider pour les sets de construction Hasbro KRE-O (2011-2017).
- * Utilise la même infrastructure que MEGA (PostgreSQL + MinIO sur Louis).
+ * Utilise PostgreSQL + stockage fichiers (filesystem) sur Louis.
  * 
  * ARCHITECTURE :
- * - PostgreSQL (Louis 10.20.0.10:5434) : 77 produits dans la table kreo_products
- * - MinIO (Louis 10.20.0.10:9000)      : 73 images dans le bucket kreo-archive
+ * - PostgreSQL (Louis 10.20.0.10:5434) : 417 produits dans la table kreo_products
+ * - Filesystem (/data/tako-storage/kreo-archive/) : 2170 fichiers (images + PDFs)
  * 
  * TABLE kreo_products :
  *   id, set_number, name, franchise, sub_line, year, piece_count,
@@ -26,11 +26,11 @@ import {
   isMegaConnected,
   megaQueryOne,
   megaQueryAll,
-  isMegaMinIOConnected,
-  getPresignedUrlFromBucket
+  isMegaMinIOConnected as isStorageReady,
+  getFileUrl
 } from '../../../infrastructure/mega/index.js';
 
-const KREO_BUCKET = 'kreo-archive';
+const KREO_ARCHIVE = 'kreo-archive';
 
 export class KreoProvider extends BaseProvider {
   constructor() {
@@ -102,7 +102,7 @@ export class KreoProvider extends BaseProvider {
     ]);
 
     const total = parseInt(countResult?.total || 0);
-    const enriched = await this.enrichWithMinioUrls(results);
+    const enriched = this.enrichWithFileUrls(results);
 
     return this.normalizer.normalizeSearchResponse(enriched, {
       query,
@@ -139,7 +139,7 @@ export class KreoProvider extends BaseProvider {
       throw new NotFoundError(`Produit KRE-O non trouvé: ${id}`);
     }
 
-    const enriched = await this.enrichRowWithMinioUrls(row);
+    const enriched = this.enrichRowWithFileUrls(row);
     const normalized = this.normalizer.normalize(enriched);
 
     return {
@@ -208,7 +208,7 @@ export class KreoProvider extends BaseProvider {
       throw new NotFoundError(`Franchise KRE-O non trouvée: ${franchise}`);
     }
 
-    const enriched = await this.enrichWithMinioUrls(results);
+    const enriched = this.enrichWithFileUrls(results);
 
     return this.normalizer.normalizeSearchResponse(enriched, {
       query: `franchise:${franchise}`,
@@ -254,55 +254,38 @@ export class KreoProvider extends BaseProvider {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ENRICHISSEMENT MinIO
+  // ENRICHISSEMENT FICHIERS
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Enrichir une liste de produits avec les URLs proxy/MinIO
+   * Enrichir une liste de produits avec les URLs fichiers statiques
    * @private
    */
-  async enrichWithMinioUrls(rows) {
+  enrichWithFileUrls(rows) {
     if (!rows.length) return rows;
-
-    const batchSize = 10;
-    const enriched = [];
-
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
-      const results = await Promise.all(
-        batch.map(row => this.enrichRowWithMinioUrls(row))
-      );
-      enriched.push(...results);
-    }
-
-    return enriched;
+    return rows.map(row => this.enrichRowWithFileUrls(row));
   }
 
   /**
-   * Enrichir un produit unique avec les URLs proxy Tako + MinIO
+   * Enrichir un produit unique avec les URLs fichiers statiques
    * @private
    */
-  async enrichRowWithMinioUrls(row) {
-    const baseUrl = env.apiBaseUrl;
-    const enriched = {
+  enrichRowWithFileUrls(row) {
+    return {
       ...row,
-      // URLs proxy Tako absolues
+      // URL directe vers l'image statique
+      image_file_url: row.image_path
+        ? getFileUrl(KREO_ARCHIVE, row.image_path)
+        : null,
+      // URL directe vers le PDF d'instructions
+      pdf_file_url: row.pdf_path
+        ? getFileUrl(KREO_ARCHIVE, row.pdf_path)
+        : null,
+      // Rétrocompatibilité : mapper les anciens noms de champs
       image_proxy_url: row.image_path
-        ? `${baseUrl}/api/construction-toys/kreo/file/${row.set_number}/image`
+        ? getFileUrl(KREO_ARCHIVE, row.image_path)
         : null
     };
-
-    // Ajouter les presigned URLs MinIO en fallback
-    if (isMegaMinIOConnected() && row.image_path) {
-      try {
-        const presignedUrl = await getPresignedUrlFromBucket(KREO_BUCKET, row.image_path);
-        enriched.image_presigned_url = presignedUrl;
-      } catch {
-        // Pas grave, les proxy URLs sont disponibles
-      }
-    }
-
-    return enriched;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -318,14 +301,14 @@ export class KreoProvider extends BaseProvider {
   async healthCheck() {
     const startTime = Date.now();
     const dbConnected = isMegaConnected();
-    const minioConnected = isMegaMinIOConnected();
+    const storageConnected = isStorageReady();
 
     if (!dbConnected) {
       return {
         healthy: false,
         latency: Date.now() - startTime,
         message: 'KRE-O Database non connectée',
-        details: { db: false, minio: minioConnected }
+        details: { db: false, storage: storageConnected }
       };
     }
 
@@ -342,10 +325,10 @@ export class KreoProvider extends BaseProvider {
         message: `KRE-O Archive opérationnelle (${countResult.count} produits)`,
         details: {
           db: true,
-          minio: minioConnected,
+          storage: storageConnected,
           products: parseInt(countResult.count),
           franchises: franchises.map(f => ({ name: f.franchise, count: parseInt(f.count) })),
-          bucket: KREO_BUCKET,
+          archive: KREO_ARCHIVE,
           source: 'database'
         }
       };
@@ -354,7 +337,7 @@ export class KreoProvider extends BaseProvider {
         healthy: false,
         latency: Date.now() - startTime,
         message: err.message,
-        details: { db: false, minio: minioConnected }
+        details: { db: false, storage: storageConnected }
       };
     }
   }

@@ -93,7 +93,7 @@ export const env = {
   BRICKSET_USER_HASH: process.env.BRICKSET_USER_HASH || null,
   REBRICKABLE_API_KEY: process.env.REBRICKABLE_API_KEY || null,
   
-  // Mega Construx - Base de données dédiée
+  // Mega Construx / KRE-O - Base de données dédiée
   mega: {
     db: {
       host: process.env.MEGA_DB_HOST || null,
@@ -101,15 +101,13 @@ export const env = {
       name: process.env.MEGA_DB_NAME || 'mega_archive',
       user: process.env.MEGA_DB_USER || 'megauser',
       password: process.env.MEGA_DB_PASSWORD || null
-    },
-    minio: {
-      endpoint: process.env.MEGA_MINIO_ENDPOINT || null,
-      port: parseInt(process.env.MEGA_MINIO_PORT, 9000),
-      accessKey: process.env.MEGA_MINIO_ACCESS_KEY || null,
-      secretKey: process.env.MEGA_MINIO_SECRET_KEY || null,
-      bucket: process.env.MEGA_MINIO_BUCKET || 'mega-pdfs',
-      useSSL: parseBoolean(process.env.MEGA_MINIO_USE_SSL, false)
     }
+  },
+
+  // Stockage fichiers (filesystem local, servi par express.static)
+  storage: {
+    path: process.env.STORAGE_PATH || '/data/tako-storage',
+    fileBaseUrl: process.env.FILE_BASE_URL || `${process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`}/files`
   },
   
   // Books

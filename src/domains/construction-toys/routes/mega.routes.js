@@ -1,8 +1,8 @@
 /**
- * Routes: Mega Construx Provider (v2 - Database)
+ * Routes: Mega Construx Provider (v2.1 - Database + Filesystem)
  * 
  * Endpoints pour les produits MEGA Construx archivés.
- * Source : PostgreSQL (catalogue) + MinIO (PDFs d'instructions + images)
+ * Source : PostgreSQL (catalogue) + Filesystem (PDFs d'instructions + images)
  * 
  * Routes disponibles:
  * - GET /construction-toys/mega/health      - État du provider
@@ -10,8 +10,8 @@
  * - GET /construction-toys/mega/categories  - Catégories disponibles
  * - GET /construction-toys/mega/category/:name - Produits par catégorie
  * - GET /construction-toys/mega/instructions/:sku - PDF d'instructions
- * - GET /construction-toys/mega/file/:sku/pdf   - Proxy : stream PDF depuis MinIO
- * - GET /construction-toys/mega/file/:sku/image - Proxy : stream image depuis MinIO
+ * - GET /construction-toys/mega/file/:sku/pdf   - Redirige vers fichier PDF statique
+ * - GET /construction-toys/mega/file/:sku/image - Redirige vers fichier image statique
  * - GET /construction-toys/mega/:id         - Détails d'un produit
  */
 
@@ -20,7 +20,7 @@ import { MegaProvider } from '../providers/mega.provider.js';
 import { asyncHandler } from '../../../shared/utils/async-handler.js';
 import { ValidationError, NotFoundError } from '../../../shared/errors/index.js';
 import { megaQueryOne } from '../../../infrastructure/mega/index.js';
-import { getObjectStream, isMegaMinIOConnected } from '../../../infrastructure/mega/index.js';
+import { getFileUrl, isMegaMinIOConnected as isStorageReady } from '../../../infrastructure/mega/index.js';
 
 export const router = Router();
 
@@ -129,12 +129,14 @@ router.get('/instructions/:sku', asyncHandler(async (req, res) => {
 }));
 
 // ===========================================
-// Proxy fichiers MinIO (PDF + Images)
+// Fichiers statiques (rétrocompatibilité proxy → redirect)
 // ===========================================
+
+const MEGA_ARCHIVE = 'mega-archive';
 
 /**
  * GET /construction-toys/mega/file/:sku/pdf
- * Streame le PDF d'instructions depuis MinIO via Tako API (proxy)
+ * Redirige vers le fichier PDF statique
  * 
  * @param {string} sku - SKU du produit (ex: HGC23)
  */
@@ -142,36 +144,21 @@ router.get('/file/:sku/pdf', asyncHandler(async (req, res) => {
   const { sku } = req.params;
   if (!sku) throw new ValidationError('SKU manquant');
 
-  if (!isMegaMinIOConnected()) {
-    throw new NotFoundError('MinIO non disponible');
-  }
-
-  // Lookup catégorie depuis la DB
   const row = await megaQueryOne(
     `SELECT category, sku FROM products WHERE UPPER(sku) = UPPER($1)`,
     [sku]
   );
   if (!row) throw new NotFoundError(`Produit MEGA non trouvé: ${sku}`);
 
-  const objectPath = `${row.category}/${row.sku.toLowerCase()}.pdf`;
+  const fileUrl = getFileUrl(MEGA_ARCHIVE, `${row.category}/${row.sku.toLowerCase()}.pdf`);
+  if (!fileUrl) throw new NotFoundError(`PDF non disponible pour ${sku}`);
 
-  try {
-    const { stream, stat } = await getObjectStream(objectPath);
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Length': stat.size,
-      'Content-Disposition': `inline; filename="${row.sku.toUpperCase()}.pdf"`,
-      'Cache-Control': 'public, max-age=86400'
-    });
-    stream.pipe(res);
-  } catch (err) {
-    throw new NotFoundError(`PDF non trouvé pour ${sku}: ${err.message}`);
-  }
+  res.redirect(301, fileUrl);
 }));
 
 /**
  * GET /construction-toys/mega/file/:sku/image
- * Streame l'image du produit depuis MinIO via Tako API (proxy)
+ * Redirige vers le fichier image statique
  * 
  * @param {string} sku - SKU du produit (ex: HGC23)
  */
@@ -179,31 +166,16 @@ router.get('/file/:sku/image', asyncHandler(async (req, res) => {
   const { sku } = req.params;
   if (!sku) throw new ValidationError('SKU manquant');
 
-  if (!isMegaMinIOConnected()) {
-    throw new NotFoundError('MinIO non disponible');
-  }
-
-  // Lookup catégorie depuis la DB
   const row = await megaQueryOne(
     `SELECT category, sku FROM products WHERE UPPER(sku) = UPPER($1)`,
     [sku]
   );
   if (!row) throw new NotFoundError(`Produit MEGA non trouvé: ${sku}`);
 
-  const objectPath = `${row.category}/${row.sku.toLowerCase()}.jpg`;
+  const fileUrl = getFileUrl(MEGA_ARCHIVE, `${row.category}/${row.sku.toLowerCase()}.jpg`);
+  if (!fileUrl) throw new NotFoundError(`Image non disponible pour ${sku}`);
 
-  try {
-    const { stream, stat } = await getObjectStream(objectPath);
-    res.set({
-      'Content-Type': 'image/jpeg',
-      'Content-Length': stat.size,
-      'Content-Disposition': `inline; filename="${row.sku.toUpperCase()}.jpg"`,
-      'Cache-Control': 'public, max-age=86400'
-    });
-    stream.pipe(res);
-  } catch (err) {
-    throw new NotFoundError(`Image non trouvée pour ${sku}: ${err.message}`);
-  }
+  res.redirect(301, fileUrl);
 }));
 
 // ===========================================

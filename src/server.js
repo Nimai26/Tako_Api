@@ -35,16 +35,16 @@ async function start() {
     }
   }
   
-  // Initialiser l'infrastructure MEGA (PostgreSQL + MinIO sur Louis)
+  // Initialiser l'infrastructure MEGA (PostgreSQL + Stockage fichiers sur Louis)
   try {
     const megaStatus = await initMegaInfrastructure();
     if (megaStatus.db) {
       log.info('✅ MEGA Archive connectée');
     }
-    if (megaStatus.minio) {
-      log.info('✅ MEGA MinIO connecté');
+    if (megaStatus.storage) {
+      log.info('✅ Stockage fichiers initialisé');
     }
-    if (!megaStatus.db && !megaStatus.minio) {
+    if (!megaStatus.db && !megaStatus.storage) {
       log.warn('⚠️  MEGA Archive non disponible (non-bloquant)');
     }
   } catch (err) {

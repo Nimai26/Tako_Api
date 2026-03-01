@@ -7,7 +7,7 @@
 
 import express from 'express';
 import compression from 'compression';
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
@@ -18,6 +18,7 @@ import {
   requestLogger,
   errorHandler 
 } from './shared/middleware/index.js';
+import { env } from './config/env.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -51,6 +52,28 @@ app.use(requestId);
 
 // Logger des requêtes
 app.use(requestLogger);
+
+// ===========================================
+// Fichiers statiques (stockage archives)
+// ===========================================
+
+const storagePath = env.storage?.path || '/data/tako-storage';
+if (existsSync(storagePath)) {
+  app.use('/files', express.static(storagePath, {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true,
+    immutable: false,
+    setHeaders: (res, filePath) => {
+      // CORS pour les fichiers statiques
+      res.set('Access-Control-Allow-Origin', '*');
+      // Content-Type adapté
+      if (filePath.endsWith('.pdf')) {
+        res.set('Content-Type', 'application/pdf');
+      }
+    }
+  }));
+}
 
 // ===========================================
 // Routes système

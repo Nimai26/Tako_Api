@@ -3,7 +3,7 @@
  * 
  * Point d'entrée pour l'infrastructure MEGA :
  * - PostgreSQL (catalogue de produits)
- * - MinIO (PDFs d'instructions + images)
+ * - Stockage fichiers (filesystem local via express.static)
  */
 
 export {
@@ -15,26 +15,24 @@ export {
   megaQueryAll
 } from './mega-database.js';
 
+// Réexporter le stockage fichiers pour rétrocompatibilité
 export {
-  initMegaMinIO,
-  isMegaMinIOConnected,
-  getPresignedUrl,
-  getPresignedUrlFromBucket,
-  getProductUrls,
-  getObjectStream,
-  getObjectStreamFromBucket,
-  listCategoryFiles,
-  getBucketStats
-} from './mega-minio.js';
+  isStorageReady as isMegaMinIOConnected,
+  getFileUrl,
+  fileExists,
+  getAbsolutePath,
+  getArchiveStats as getBucketStats
+} from '../storage/index.js';
 
 /**
  * Initialise toute l'infrastructure MEGA
  */
 export async function initMegaInfrastructure() {
-  const [dbOk, minioOk] = await Promise.all([
-    (await import('./mega-database.js')).initMegaDatabase(),
-    (await import('./mega-minio.js')).initMegaMinIO()
-  ]);
+  const { initMegaDatabase } = await import('./mega-database.js');
+  const { initStorage } = await import('../storage/index.js');
 
-  return { db: dbOk, minio: minioOk };
+  const dbOk = await initMegaDatabase();
+  const storageOk = initStorage();
+
+  return { db: dbOk, storage: storageOk, minio: storageOk };
 }

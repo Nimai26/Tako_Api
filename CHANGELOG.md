@@ -9,7 +9,25 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [2.2.2] - 2025-03-01
+## [2.3.0] - 2026-03-01
+
+### 📦 Migration MinIO → Stockage Fichiers (Filesystem)
+
+**Breaking change** : Remplacement de MinIO par un stockage fichiers en clair sur le disque.
+
+- **Suppression de la dépendance MinIO** : plus de presigned URLs, plus de client S3
+- **Fichiers en clair** : tous les fichiers (images, PDFs) sont désormais accessibles directement sur le disque
+  - Chemin : `/data/tako-storage/{mega-archive,kreo-archive}/`
+  - Servis par `express.static` via `/files/*`
+  - 2580 fichiers migrés (410 MEGA + 2170 KRE-O, ~4 Go)
+- **Nouvelle infrastructure** : `src/infrastructure/storage/index.js` remplace `mega-minio.js`
+- **URLs stables** : plus d'expiration (les presigned URLs MinIO expiraient après 1h)
+  - MEGA : `/files/mega-archive/{category}/{sku}.{pdf,jpg}`
+  - KRE-O : `/files/kreo-archive/{path}`
+- **Rétrocompatibilité** : les anciennes routes proxy (`/file/:sku/pdf`, `/file/:sku/image`) redirigent (301) vers les fichiers statiques
+- **Config** : nouvelles variables `STORAGE_PATH` et `FILE_BASE_URL` (remplacent `MEGA_MINIO_*`)
+- **Docker** : volume monté en read-only (`/mnt/egon/websites/tako-storage:/data/tako-storage:ro`)
+- **Nginx Proxy Manager** : prët pour `tako.snowmanprod.fr/files/`
 
 ### 🏗️ KRE-O Archive - Conversion scans d'instructions en PDF
 

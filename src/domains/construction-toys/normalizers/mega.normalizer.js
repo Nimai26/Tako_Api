@@ -1,13 +1,13 @@
 /**
- * Mega Construx Normalizer (v2 - Database)
+ * Mega Construx Normalizer (v2.1 - Database + Filesystem)
  * 
  * Transforme les données de la base PostgreSQL MEGA en format Tako normalisé.
  * 
  * COLONNES TABLE products :
  *   id, sku, name, category, pdf_url, image_url, pdf_path, image_path, discovered_at
  * 
- * COLONNES ENRICHIES (ajoutées par le provider via MinIO) :
- *   pdf_presigned_url, image_presigned_url
+ * COLONNES ENRICHIES (ajoutées par le provider via stockage fichiers) :
+ *   pdf_file_url, image_file_url
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -127,8 +127,8 @@ export class MegaNormalizer extends BaseNormalizer {
   }
 
   extractImage(raw) {
-    // Priorité : URL présignée MinIO > URL image originale Mattel
-    return raw.image_presigned_url || raw.image_url || null;
+    // Priorité : URL fichier statique > URL image originale Mattel
+    return raw.image_file_url || raw.image_proxy_url || raw.image_url || null;
   }
 
   extractSourceUrl(raw) {
@@ -181,7 +181,7 @@ export class MegaNormalizer extends BaseNormalizer {
       
       // Instructions PDF (format unifié avec LEGO/Playmobil)
       instructions: this.extractInstructions(raw),
-      instructionsUrl: raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null,
+      instructionsUrl: raw.pdf_file_url || raw.pdf_proxy_url || raw.pdf_url || null,
       
       // Caractéristiques
       features: null,
@@ -207,7 +207,7 @@ export class MegaNormalizer extends BaseNormalizer {
    * Format: { count, manuals: [{ id, description, pdfUrl, sequence }], url }
    */
   extractInstructions(raw) {
-    const pdfUrl = raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null;
+    const pdfUrl = raw.pdf_file_url || raw.pdf_proxy_url || raw.pdf_url || null;
     
     if (!pdfUrl) {
       return null;
@@ -299,8 +299,8 @@ export class MegaNormalizer extends BaseNormalizer {
    * Retourne le format attendu par BaseNormalizer.normalizeImages()
    */
   extractImages(raw) {
-    // Priorité : URL proxy Tako > URL originale Mattel
-    const primary = raw.image_proxy_url || raw.image_presigned_url || raw.image_url || null;
+    // Priorité : URL fichier statique > URL proxy > URL originale Mattel
+    const primary = raw.image_file_url || raw.image_proxy_url || raw.image_url || null;
 
     return {
       primary,

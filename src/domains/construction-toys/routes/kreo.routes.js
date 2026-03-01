@@ -1,8 +1,8 @@
 /**
- * Routes: KRE-O Provider (Database)
+ * Routes: KRE-O Provider (Database + Filesystem)
  * 
  * Endpoints pour les produits KRE-O archivés (Hasbro 2011-2017).
- * Source : PostgreSQL (catalogue) + MinIO (images)
+ * Source : PostgreSQL (catalogue) + Filesystem (images + PDFs)
  * 
  * Routes disponibles:
  * - GET /construction-toys/kreo/health                - État du provider
@@ -10,7 +10,7 @@
  * - GET /construction-toys/kreo/franchises            - Franchises disponibles
  * - GET /construction-toys/kreo/franchise/:name       - Produits par franchise
  * - GET /construction-toys/kreo/sublines              - Sous-lignes disponibles
- * - GET /construction-toys/kreo/file/:setNumber/image - Proxy : stream image depuis MinIO
+ * - GET /construction-toys/kreo/file/:setNumber/image - Redirige vers image statique
  * - GET /construction-toys/kreo/:id                   - Détails d'un produit
  */
 
@@ -19,11 +19,11 @@ import { KreoProvider } from '../providers/kreo.provider.js';
 import { asyncHandler } from '../../../shared/utils/async-handler.js';
 import { ValidationError, NotFoundError } from '../../../shared/errors/index.js';
 import { megaQueryOne } from '../../../infrastructure/mega/index.js';
-import { getObjectStreamFromBucket, isMegaMinIOConnected } from '../../../infrastructure/mega/index.js';
+import { getFileUrl, isMegaMinIOConnected as isStorageReady } from '../../../infrastructure/mega/index.js';
 
 export const router = Router();
 
-const KREO_BUCKET = 'kreo-archive';
+const KREO_ARCHIVE = 'kreo-archive';
 const kreoProvider = new KreoProvider();
 
 // ===========================================
@@ -118,12 +118,12 @@ router.get('/sublines', asyncHandler(async (req, res) => {
 }));
 
 // ===========================================
-// Proxy fichiers MinIO (Images)
+// Fichiers statiques (rétrocompatibilité proxy → redirect)
 // ===========================================
 
 /**
  * GET /construction-toys/kreo/file/:setNumber/image
- * Streame l'image du produit depuis MinIO (bucket kreo-archive)
+ * Redirige vers le fichier image statique
  * 
  * @param {string} setNumber - Numéro de set (ex: 31144, A2225)
  */
@@ -131,34 +131,17 @@ router.get('/file/:setNumber/image', asyncHandler(async (req, res) => {
   const { setNumber } = req.params;
   if (!setNumber) throw new ValidationError('Numéro de set manquant');
 
-  if (!isMegaMinIOConnected()) {
-    throw new NotFoundError('MinIO non disponible');
-  }
-
-  // Lookup le produit pour trouver le image_path
   const row = await megaQueryOne(
-    `SELECT set_number, franchise, image_path FROM kreo_products WHERE UPPER(set_number) = UPPER($1)`,
+    `SELECT set_number, image_path FROM kreo_products WHERE UPPER(set_number) = UPPER($1)`,
     [setNumber]
   );
   if (!row) throw new NotFoundError(`Produit KRE-O non trouvé: ${setNumber}`);
   if (!row.image_path) throw new NotFoundError(`Image non disponible pour ${setNumber}`);
 
-  try {
-    const { stream, stat } = await getObjectStreamFromBucket(KREO_BUCKET, row.image_path);
-    
-    const ext = row.image_path.match(/\.(png|jpg|jpeg|gif|webp)$/i)?.[1] || 'jpg';
-    const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+  const fileUrl = getFileUrl(KREO_ARCHIVE, row.image_path);
+  if (!fileUrl) throw new NotFoundError(`Image non disponible pour ${setNumber}`);
 
-    res.set({
-      'Content-Type': contentType,
-      'Content-Length': stat.size,
-      'Content-Disposition': `inline; filename="KREO-${row.set_number.toUpperCase()}.${ext}"`,
-      'Cache-Control': 'public, max-age=86400'
-    });
-    stream.pipe(res);
-  } catch (err) {
-    throw new NotFoundError(`Image non trouvée pour ${setNumber}: ${err.message}`);
-  }
+  res.redirect(301, fileUrl);
 }));
 
 // ===========================================

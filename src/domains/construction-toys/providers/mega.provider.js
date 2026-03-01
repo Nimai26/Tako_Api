@@ -1,12 +1,12 @@
 /**
- * Mega Construx Provider (v2 - Database)
+ * Mega Construx Provider (v2.1 - Database + Filesystem)
  * 
  * Provider pour les sets de construction Mattel MEGA.
- * Utilise la base de données archivée (PostgreSQL + MinIO) au lieu de l'API Searchspring.
+ * Utilise la base de données archivée (PostgreSQL) + stockage fichiers (filesystem).
  * 
  * ARCHITECTURE :
  * - PostgreSQL (Louis 10.20.0.10:5434) : Catalogue de 199 produits archivés
- * - MinIO (Louis 10.20.0.10:9000)      : 205 PDFs d'instructions + 205 images
+ * - Filesystem (/data/tako-storage/mega-archive/) : 205 PDFs d'instructions + 205 images
  * 
  * TABLE products :
  *   id, sku, name, category, pdf_url, image_url, pdf_path, image_path, discovered_at
@@ -23,10 +23,12 @@ import {
   isMegaConnected,
   megaQueryOne,
   megaQueryAll,
-  isMegaMinIOConnected,
-  getProductUrls,
-  getBucketStats
+  isMegaMinIOConnected as isStorageReady,
+  getFileUrl,
+  getBucketStats as getArchiveStats
 } from '../../../infrastructure/mega/index.js';
+
+const MEGA_ARCHIVE = 'mega-archive';
 
 export class MegaProvider extends BaseProvider {
   constructor() {
@@ -91,8 +93,8 @@ export class MegaProvider extends BaseProvider {
 
     const total = parseInt(countResult?.total || 0);
 
-    // Enrichir avec les URLs MinIO présignées
-    const enrichedResults = await this.enrichWithMinioUrls(results);
+    // Enrichir avec les URLs fichiers statiques
+    const enrichedResults = await this.enrichWithFileUrls(results);
 
     // Normaliser
     return this.normalizer.normalizeSearchResponse(enrichedResults, {
@@ -126,8 +128,8 @@ export class MegaProvider extends BaseProvider {
       throw new NotFoundError(`Produit MEGA non trouvé: ${id}`);
     }
 
-    // Enrichir avec URLs MinIO
-    const enriched = await this.enrichRowWithMinioUrls(row);
+    // Enrichir avec URLs fichiers
+    const enriched = await this.enrichRowWithFileUrls(row);
 
     // Normaliser
     const normalized = this.normalizer.normalize(enriched);
@@ -172,7 +174,7 @@ export class MegaProvider extends BaseProvider {
       throw new NotFoundError(`Catégorie MEGA non trouvée: ${category}`);
     }
 
-    const enrichedResults = await this.enrichWithMinioUrls(results);
+    const enrichedResults = await this.enrichWithFileUrls(results);
 
     return this.normalizer.normalizeSearchResponse(enrichedResults, {
       query: `category:${category}`,
@@ -230,14 +232,10 @@ export class MegaProvider extends BaseProvider {
       throw new NotFoundError(`Instructions non trouvées pour le SKU: ${sku}`);
     }
 
-    // Générer l'URL présignée vers le PDF
-    let pdfPresignedUrl = null;
-    if (row.pdf_path && isMegaMinIOConnected()) {
-      const urls = await getProductUrls(row.category, row.sku);
-      pdfPresignedUrl = urls.pdfUrl;
-    }
-
-    const proxyUrl = `${env.apiBaseUrl}/api/construction-toys/mega/file/${row.sku}/pdf`;
+    // Générer l'URL directe vers le fichier statique
+    const pdfFileUrl = row.pdf_path
+      ? getFileUrl(MEGA_ARCHIVE, `${row.category}/${row.sku.toLowerCase()}.pdf`)
+      : null;
 
     return {
       success: true,
@@ -245,67 +243,51 @@ export class MegaProvider extends BaseProvider {
       sku: row.sku.toUpperCase(),
       name: row.name,
       category: row.category,
-      pdfUrl: proxyUrl,
-      pdfDirectUrl: pdfPresignedUrl || null,
+      pdfUrl: pdfFileUrl,
       pdfOriginalUrl: row.pdf_url,
-      source: 'proxy',
-      note: 'PDF servi via le proxy Tako API (stream depuis MinIO)'
+      source: 'filesystem',
+      note: 'PDF servi via stockage fichiers statiques'
     };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ENRICHISSEMENT MinIO
+  // ENRICHISSEMENT FICHIERS
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Enrichir une liste de produits avec les URLs MinIO
+   * Enrichir une liste de produits avec les URLs fichiers statiques
    * @private
    */
-  async enrichWithMinioUrls(rows) {
-    if (!isMegaMinIOConnected() || !rows.length) {
-      return rows;
-    }
-
-    // Enrichir en parallèle (par lots de 10)
-    const batchSize = 10;
-    const enriched = [];
-
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
-      const results = await Promise.all(
-        batch.map(row => this.enrichRowWithMinioUrls(row))
-      );
-      enriched.push(...results);
-    }
-
-    return enriched;
+  async enrichWithFileUrls(rows) {
+    if (!rows.length) return rows;
+    return rows.map(row => this.enrichRowWithFileUrls(row));
   }
 
   /**
-   * Enrichir un produit unique avec les URLs proxy Tako + MinIO fallback
+   * Enrichir un produit unique avec les URLs fichiers statiques
    * @private
    */
-  async enrichRowWithMinioUrls(row) {
-    const baseUrl = env.apiBaseUrl;
-    const enriched = {
+  enrichRowWithFileUrls(row) {
+    const skuLower = (row.sku || '').toLowerCase();
+    const category = row.category || '';
+
+    return {
       ...row,
-      // URLs proxy Tako absolues (accessibles depuis n'importe quel client)
-      pdf_proxy_url: `${baseUrl}/api/construction-toys/mega/file/${row.sku}/pdf`,
-      image_proxy_url: `${baseUrl}/api/construction-toys/mega/file/${row.sku}/image`
+      // URLs directes vers les fichiers statiques
+      pdf_file_url: row.pdf_path
+        ? getFileUrl(MEGA_ARCHIVE, `${category}/${skuLower}.pdf`)
+        : null,
+      image_file_url: row.image_path
+        ? getFileUrl(MEGA_ARCHIVE, `${category}/${skuLower}.jpg`)
+        : null,
+      // Rétrocompatibilité : mapper les anciens noms de champs
+      pdf_proxy_url: row.pdf_path
+        ? getFileUrl(MEGA_ARCHIVE, `${category}/${skuLower}.pdf`)
+        : null,
+      image_proxy_url: row.image_path
+        ? getFileUrl(MEGA_ARCHIVE, `${category}/${skuLower}.jpg`)
+        : null
     };
-
-    // Ajouter aussi les presigned URLs en fallback
-    if (isMegaMinIOConnected()) {
-      try {
-        const urls = await getProductUrls(row.category, row.sku);
-        enriched.pdf_presigned_url = urls.pdfUrl;
-        enriched.image_presigned_url = urls.imageUrl;
-      } catch {
-        // Pas grave, les proxy URLs sont disponibles
-      }
-    }
-
-    return enriched;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -330,14 +312,14 @@ export class MegaProvider extends BaseProvider {
     const startTime = Date.now();
 
     const dbConnected = isMegaConnected();
-    const minioConnected = isMegaMinIOConnected();
+    const storageConnected = isStorageReady();
 
     if (!dbConnected) {
       return {
         healthy: false,
         latency: Date.now() - startTime,
         message: 'MEGA Database non connectée',
-        details: { db: false, minio: minioConnected }
+        details: { db: false, storage: storageConnected }
       };
     }
 
@@ -351,7 +333,7 @@ export class MegaProvider extends BaseProvider {
         message: `MEGA Archive opérationnelle (${countResult.count} produits)`,
         details: {
           db: true,
-          minio: minioConnected,
+          storage: storageConnected,
           products: parseInt(countResult.count),
           source: 'database'
         }
@@ -361,7 +343,7 @@ export class MegaProvider extends BaseProvider {
         healthy: false,
         latency: Date.now() - startTime,
         message: err.message,
-        details: { db: false, minio: minioConnected }
+        details: { db: false, storage: storageConnected }
       };
     }
   }

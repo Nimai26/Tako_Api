@@ -1,5 +1,5 @@
 /**
- * KRE-O Normalizer (Database)
+ * KRE-O Normalizer (Database + Filesystem)
  * 
  * Transforme les données de la table kreo_products en format Tako normalisé.
  * 
@@ -9,8 +9,8 @@
  *   product_type, image_url, image_path, pdf_url, pdf_path,
  *   wiki_url, wiki_image_url, discovered_at, updated_at
  * 
- * COLONNES ENRICHIES (ajoutées par le provider via MinIO) :
- *   image_proxy_url, image_presigned_url
+ * COLONNES ENRICHIES (ajoutées par le provider via stockage fichiers) :
+ *   image_file_url, pdf_file_url
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -142,9 +142,9 @@ export class KreoNormalizer extends BaseNormalizer {
       // Notes
       rating: null,
 
-      // Instructions (pas de PDF pour la plupart des KRE-O)
+      // Instructions
       instructions: this.extractInstructions(raw),
-      instructionsUrl: raw.pdf_proxy_url || raw.pdf_url || null,
+      instructionsUrl: raw.pdf_file_url || raw.pdf_proxy_url || raw.pdf_url || null,
 
       // Caractéristiques
       features: null,
@@ -171,7 +171,7 @@ export class KreoNormalizer extends BaseNormalizer {
    * Extraire les instructions au format unifié
    */
   extractInstructions(raw) {
-    const pdfUrl = raw.pdf_proxy_url || raw.pdf_url || null;
+    const pdfUrl = raw.pdf_file_url || raw.pdf_proxy_url || raw.pdf_url || null;
     if (!pdfUrl) return null;
 
     const setNum = (raw.set_number || '').toUpperCase();
@@ -204,7 +204,7 @@ export class KreoNormalizer extends BaseNormalizer {
    * Extraire les images
    */
   extractImages(raw) {
-    const primary = raw.image_proxy_url || raw.image_presigned_url || raw.wiki_image_url || null;
+    const primary = raw.image_file_url || raw.image_proxy_url || raw.wiki_image_url || null;
     return {
       primary,
       thumbnail: primary,
