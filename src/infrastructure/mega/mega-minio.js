@@ -169,6 +169,22 @@ export async function getBucketStats() {
 }
 
 /**
+ * Récupère un objet MinIO en stream (pour proxy)
+ * @param {string} objectPath - Chemin dans le bucket (ex: "pokemon/hnt96.pdf")
+ * @returns {Promise<{stream: ReadableStream, stat: Object}>} Stream + métadonnées
+ */
+export async function getObjectStream(objectPath) {
+  if (!client || !isConnected) {
+    throw new Error('MinIO non connecté');
+  }
+
+  const stat = await client.statObject(bucketName, objectPath);
+  const stream = await client.getObject(bucketName, objectPath);
+
+  return { stream, stat };
+}
+
+/**
  * Formater les bytes
  */
 function formatBytes(bytes) {

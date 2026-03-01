@@ -179,9 +179,9 @@ export class MegaNormalizer extends BaseNormalizer {
       // Note et avis (non disponible dans l'archive)
       rating: null,
       
-      // Instructions PDF
-      instructions: raw.pdf_presigned_url || raw.pdf_url || null,
-      instructionsUrl: raw.pdf_presigned_url || raw.pdf_url || null,
+      // Instructions PDF (proxy Tako > presigned MinIO > URL Mattel originale)
+      instructions: raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null,
+      instructionsUrl: raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null,
       
       // Caractéristiques
       features: null,
@@ -275,13 +275,26 @@ export class MegaNormalizer extends BaseNormalizer {
    * Retourne le format attendu par BaseNormalizer.normalizeImages()
    */
   extractImages(raw) {
-    // Image principale : présignée MinIO ou originale Mattel
-    const primary = raw.image_presigned_url || raw.image_url || null;
+    // Priorité : URL proxy Tako > URL originale Mattel
+    const primary = raw.image_proxy_url || raw.image_presigned_url || raw.image_url || null;
 
     return {
       primary,
       thumbnail: primary,
       gallery: primary ? [primary] : []
+    };
+  }
+
+  /**
+   * Override normalizeImages pour ne pas altérer les URLs proxy relatives
+   * BaseNormalizer.parseUrl() ajoute https:// aux chemins relatifs, ce qui casse les URLs proxy
+   * @override
+   */
+  normalizeImages(images) {
+    return {
+      primary: images?.primary || null,
+      thumbnail: images?.thumbnail || images?.primary || null,
+      gallery: Array.isArray(images?.gallery) ? images.gallery.filter(Boolean) : []
     };
   }
 

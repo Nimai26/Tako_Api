@@ -236,18 +236,19 @@ export class MegaProvider extends BaseProvider {
       pdfPresignedUrl = urls.pdfUrl;
     }
 
+    const proxyUrl = `/api/construction-toys/mega/file/${row.sku}/pdf`;
+
     return {
       success: true,
       provider: 'mega',
       sku: row.sku.toUpperCase(),
       name: row.name,
       category: row.category,
-      pdfUrl: pdfPresignedUrl || row.pdf_url,
+      pdfUrl: proxyUrl,
+      pdfDirectUrl: pdfPresignedUrl || null,
       pdfOriginalUrl: row.pdf_url,
-      source: pdfPresignedUrl ? 'minio' : 'mattel',
-      note: pdfPresignedUrl 
-        ? 'PDF servi depuis l\'archive MinIO (URL temporaire 1h)'
-        : 'PDF servi depuis l\'URL Mattel d\'origine (peut expirer)'
+      source: 'proxy',
+      note: 'PDF servi via le proxy Tako API (stream depuis MinIO)'
     };
   }
 
@@ -280,24 +281,29 @@ export class MegaProvider extends BaseProvider {
   }
 
   /**
-   * Enrichir un produit unique avec les URLs MinIO
+   * Enrichir un produit unique avec les URLs proxy Tako + MinIO fallback
    * @private
    */
   async enrichRowWithMinioUrls(row) {
-    if (!isMegaMinIOConnected()) {
-      return row;
+    const enriched = {
+      ...row,
+      // URLs proxy Tako (accessibles depuis n'importe quel client)
+      pdf_proxy_url: `/api/construction-toys/mega/file/${row.sku}/pdf`,
+      image_proxy_url: `/api/construction-toys/mega/file/${row.sku}/image`
+    };
+
+    // Ajouter aussi les presigned URLs en fallback
+    if (isMegaMinIOConnected()) {
+      try {
+        const urls = await getProductUrls(row.category, row.sku);
+        enriched.pdf_presigned_url = urls.pdfUrl;
+        enriched.image_presigned_url = urls.imageUrl;
+      } catch {
+        // Pas grave, les proxy URLs sont disponibles
+      }
     }
 
-    try {
-      const urls = await getProductUrls(row.category, row.sku);
-      return {
-        ...row,
-        pdf_presigned_url: urls.pdfUrl,
-        image_presigned_url: urls.imageUrl
-      };
-    } catch {
-      return row;
-    }
+    return enriched;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

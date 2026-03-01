@@ -20,6 +20,7 @@ export {
   isMegaMinIOConnected,
   getPresignedUrl,
   getProductUrls,
+  getObjectStream,
   listCategoryFiles,
   getBucketStats
 } from './mega-minio.js';
