@@ -9,6 +9,21 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.2.2] - 2025-03-01
+
+### 🏗️ KRE-O Archive - Conversion scans d'instructions en PDF
+
+- Conversion des 87 dossiers de scans (images WebP page par page) en **87 PDFs uniques**
+- 1621 pages traitées, 677 MB de PDFs générés (sharp + pdf-lib)
+- Stockés dans MinIO : `pdfs/{set_number}_instructions_scan.pdf`
+- `pdf_path` en base pointe désormais vers le PDF au lieu du dossier d'images
+- **100 PDFs au total** dans MinIO : 87 scans + 12 Hasbro officiels + 1 replacement parts
+
+#### Script ajouté
+- `scripts/convert-kreo-instructions-to-pdf.js` — Conversion images → PDF par produit
+
+---
+
 ## [2.2.1] - 2025-03-01
 
 ### 🏗️ KRE-O Archive - Manuels Hasbro + corrections orphelins
