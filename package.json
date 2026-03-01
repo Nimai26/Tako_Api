@@ -1,6 +1,6 @@
 {
   "name": "tako-api",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "type": "module",
   "description": "API REST multi-sources pour jouets, médias, collectibles et plus - Architecture modulaire par domaines",
   "main": "src/server.js",
