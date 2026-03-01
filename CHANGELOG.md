@@ -9,6 +9,30 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.2.1] - 2025-03-01
+
+### 🏗️ KRE-O Archive - Manuels Hasbro + corrections orphelins
+
+#### Manuels PDF Hasbro via Wayback Machine
+- Scraping des pages produit Hasbro archivées (131 pages : 121 ancien format + 10 nouveau format)
+- **12 manuels d'instructions** PDF officiels téléchargés et stockés dans MinIO (`pdfs/`)
+- 1 PDF "Replacement Parts" récupéré en bonus (WK2682 Ocean Attack)
+- 4 PDFs non archivés par la Wayback Machine (impossible à récupérer)
+- Produits enrichis : 30667, 30687, 30688, 31145, 31146, 36421, A4584, A4585, B0715, KR7722, WK2225, WK2682
+
+#### Correction des instructions orphelines
+- 37 dossiers d'instructions dans MinIO sans produit correspondant en base
+- 35 nouveaux produits Kreon créés (IDs 384-418) avec set_number généré `KRO-{SLUG}`
+- 2 produits existants mis à jour (A4910, KR31831)
+- **Total : 417 produits** (était 382), **93 avec au moins un PDF/scan**
+
+#### Scripts ajoutés
+- `scripts/scrape-kreo-wayback-pdfs.js` — Extraction + téléchargement des manuels PDF Hasbro
+- `scripts/fix-orphan-instructions-v2.js` — Correction des dossiers instructions orphelins
+- `scripts/report-kreo.js` — Rapport complet état BDD + MinIO
+
+---
+
 ## [2.2.0] - 2025-03-01
 
 ### 🏗️ KRE-O Archive - 382 produits, 6 franchises (2011-2017)
