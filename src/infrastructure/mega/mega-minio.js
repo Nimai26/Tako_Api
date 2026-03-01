@@ -185,6 +185,43 @@ export async function getObjectStream(objectPath) {
 }
 
 /**
+ * Récupère un objet dans un bucket spécifique (pour KRE-O et autres)
+ * @param {string} bucket - Nom du bucket (ex: "kreo-archive")
+ * @param {string} objectPath - Chemin dans le bucket (ex: "transformers/a2225.jpg")
+ * @returns {Promise<{stream: ReadableStream, stat: Object}>} Stream + métadonnées
+ */
+export async function getObjectStreamFromBucket(bucket, objectPath) {
+  if (!client || !isConnected) {
+    throw new Error('MinIO non connecté');
+  }
+
+  const stat = await client.statObject(bucket, objectPath);
+  const stream = await client.getObject(bucket, objectPath);
+
+  return { stream, stat };
+}
+
+/**
+ * Génère une URL présignée pour un fichier dans un bucket spécifique
+ * @param {string} bucket - Nom du bucket
+ * @param {string} objectPath - Chemin dans le bucket
+ * @param {number} [expiry=3600] - Durée de validité en secondes
+ * @returns {Promise<string>} URL présignée
+ */
+export async function getPresignedUrlFromBucket(bucket, objectPath, expiry = DEFAULT_EXPIRY) {
+  if (!client || !isConnected) {
+    return null;
+  }
+
+  try {
+    return await client.presignedGetObject(bucket, objectPath, expiry);
+  } catch (err) {
+    log.debug(`Erreur URL présignée pour ${bucket}/${objectPath}: ${err.message}`);
+    return null;
+  }
+}
+
+/**
  * Formater les bytes
  */
 function formatBytes(bytes) {

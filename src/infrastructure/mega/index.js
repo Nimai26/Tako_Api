@@ -19,8 +19,10 @@ export {
   initMegaMinIO,
   isMegaMinIOConnected,
   getPresignedUrl,
+  getPresignedUrlFromBucket,
   getProductUrls,
   getObjectStream,
+  getObjectStreamFromBucket,
   listCategoryFiles,
   getBucketStats
 } from './mega-minio.js';

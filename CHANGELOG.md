@@ -9,6 +9,58 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.2.0] - 2025-03-01
+
+### 🏗️ KRE-O Archive - 382 produits, 6 franchises (2011-2017)
+
+Ajout de l'archive complète KRE-O (Hasbro), construite par croisement de 4 sources :
+wiki Fandom, Wayback Machine, TFWiki.net, et enrichissement par franchise.
+
+#### Infrastructure
+
+**Base de données** (`kreo_products` dans `mega_archive`) :
+- 382 produits : 201 Transformers, 124 GI Joe, 17 CityVille, 15 D&D, 15 Star Trek, 10 Battleship
+- 382/382 avec `sub_line` et `year` renseignés
+- 146 avec prix retail, 50 avec scans d'instructions, 122 avec nombre de pièces
+- Index trigram sur `name` pour recherche full-text
+
+**MinIO** (`kreo-archive` bucket) :
+- 2070 objets : 360 images produits + 1710 scans d'instructions
+- Support multi-bucket ajouté dans `mega-minio.js`
+
+#### API KRE-O
+
+**Provider** (`src/domains/construction-toys/providers/kreo.provider.js`) :
+- Recherche SQL (ILIKE + trigram) avec pagination et filtres
+- Navigation par franchise et sub-line
+- Health check avec statistiques complètes
+
+**Normalizer** (`src/domains/construction-toys/normalizers/kreo.normalizer.js`) :
+- Normalisation au format Tako standard (`construct_toy`)
+- Images servies via proxy MinIO
+
+**Routes** (`src/domains/construction-toys/routes/kreo.routes.js`) - 7 endpoints :
+- `GET /api/construction-toys/kreo/health` - Santé DB + MinIO + stats
+- `GET /api/construction-toys/kreo/search?q=` - Recherche avec pagination
+- `GET /api/construction-toys/kreo/franchises` - 6 franchises avec compteurs
+- `GET /api/construction-toys/kreo/franchise/:name` - Produits par franchise
+- `GET /api/construction-toys/kreo/sublines` - Sub-lines par franchise
+- `GET /api/construction-toys/kreo/file/:setNumber/image` - Proxy image MinIO
+- `GET /api/construction-toys/kreo/:id` - Détail produit par set_number
+
+#### Scripts de scraping
+
+- `scripts/scrape-kreo.js` (1151 lignes) - Phases 1-3 : wiki Fandom (365 produits)
+- `scripts/scrape-kreo-instructions.js` (420 lignes) - Phase 4 : instructions wiki (1710 scans)
+- `scripts/scrape-kreo-wayback.js` (350 lignes) - Phase 5 : prix Wayback Machine (+81 prix, +17 produits)
+- `scripts/enrich-kreo-tfwiki.js` (454 lignes) - Phase 6 : TFWiki + enrichissement franchises
+
+#### Documentation
+
+- Nouveau : `docs/KREO_SCRAPING_WORKFLOW.md` - Workflow complet des 7 phases de scraping
+
+---
+
 ## [2.1.0] - 2025-07-04
 
 ### 🚀 MEGA Construx - Migration vers base de données

@@ -23,6 +23,7 @@ import legoRouter from './routes/lego.routes.js';
 import rebrickableRouter from './routes/rebrickable.routes.js';
 import bricksetRouter from './routes/brickset.routes.js';
 import megaRouter from './routes/mega.routes.js';
+import kreoRouter from './routes/kreo.routes.js';
 import klickypediaRouter from './routes/klickypedia.routes.js';
 import playmobilRouter from './routes/playmobil.routes.js';
 
@@ -103,6 +104,22 @@ router.get('/', asyncHandler(async (req, res) => {
         authentication: 'Aucune'
       },
       {
+        name: 'kreo',
+        description: 'KRE-O (Hasbro) - Transformers, D&D, Battleship, etc. (2011-2017)',
+        baseUrl: '/construction-toys/kreo',
+        endpoints: [
+          { method: 'GET', path: '/health', description: 'État du provider' },
+          { method: 'GET', path: '/search', description: 'Recherche de produits' },
+          { method: 'GET', path: '/franchises', description: 'Franchises disponibles' },
+          { method: 'GET', path: '/franchise/:name', description: 'Produits par franchise' },
+          { method: 'GET', path: '/sublines', description: 'Sous-lignes disponibles' },
+          { method: 'GET', path: '/file/:setNumber/image', description: 'Image proxy depuis MinIO' },
+          { method: 'GET', path: '/:id', description: 'Détails d\'un produit' }
+        ],
+        rateLimit: 'Archive locale (rapide)',
+        authentication: 'Aucune'
+      },
+      {
         name: 'klickypedia',
         description: 'Encyclopédie Playmobil communautaire',
         baseUrl: '/construction-toys/klickypedia',
@@ -161,6 +178,7 @@ router.use('/lego', legoRouter);
 router.use('/rebrickable', rebrickableRouter);
 router.use('/brickset', bricksetRouter);
 router.use('/mega', megaRouter);
+router.use('/kreo', kreoRouter);
 router.use('/klickypedia', klickypediaRouter);
 router.use('/playmobil', playmobilRouter);
 // router.use('/playmobil', playmobilRouter);
