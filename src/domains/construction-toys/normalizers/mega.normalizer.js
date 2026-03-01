@@ -179,8 +179,8 @@ export class MegaNormalizer extends BaseNormalizer {
       // Note et avis (non disponible dans l'archive)
       rating: null,
       
-      // Instructions PDF (proxy Tako > presigned MinIO > URL Mattel originale)
-      instructions: raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null,
+      // Instructions PDF (format unifié avec LEGO/Playmobil)
+      instructions: this.extractInstructions(raw),
       instructionsUrl: raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null,
       
       // Caractéristiques
@@ -201,6 +201,30 @@ export class MegaNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS SPÉCIFIQUES MEGA
   // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extraire les instructions au format unifié (compatible LEGO/Playmobil)
+   * Format: { count, manuals: [{ id, description, pdfUrl, sequence }], url }
+   */
+  extractInstructions(raw) {
+    const pdfUrl = raw.pdf_proxy_url || raw.pdf_presigned_url || raw.pdf_url || null;
+    
+    if (!pdfUrl) {
+      return null;
+    }
+
+    const sku = (raw.sku || '').toUpperCase();
+    return {
+      count: 1,
+      manuals: [{
+        id: sku,
+        description: `Notice de montage ${sku}`,
+        pdfUrl: pdfUrl,
+        sequence: null
+      }],
+      url: pdfUrl
+    };
+  }
 
   /**
    * Nettoyer le nom du produit (enlever les infos de pièces)
