@@ -1,74 +1,44 @@
 /**
- * Mega Construx Provider
+ * Mega Construx Provider (v2 - Database)
  * 
- * Provider pour les sets de construction Mattel MEGA via l'API Searchspring.
- * Ne nécessite pas FlareSolverr - API publique directe.
+ * Provider pour les sets de construction Mattel MEGA.
+ * Utilise la base de données archivée (PostgreSQL + MinIO) au lieu de l'API Searchspring.
  * 
- * @see https://shop.mattel.com (US)
- * @see https://shopping.mattel.com (EU)
+ * ARCHITECTURE :
+ * - PostgreSQL (Louis 10.20.0.10:5434) : Catalogue de 199 produits archivés
+ * - MinIO (Louis 10.20.0.10:9000)      : 205 PDFs d'instructions + 205 images
  * 
- * ENDPOINTS SEARCHSPRING :
- * - US: https://ck4bj7.a.searchspring.io/api/search/search.json
- * - EU: https://0w0shw.a.searchspring.io/api/search/search.json
+ * TABLE products :
+ *   id, sku, name, category, pdf_url, image_url, pdf_path, image_path, discovered_at
  * 
- * AUTHENTIFICATION : Aucune (API publique)
- * 
- * RATE LIMIT : Non documenté (raisonnable)
- * 
- * NOTE: L'API US contient les produits MEGA Construx.
- * L'API EU contient principalement Barbie/autres jouets Mattel.
- * On utilise toujours l'API US pour la recherche MEGA.
+ * CATÉGORIES : pokemon (87), halo (40), hot-wheels (34), barbie (29), masters-of-the-universe (9)
  */
 
 import { BaseProvider } from '../../../core/providers/index.js';
 import { MegaNormalizer } from '../normalizers/mega.normalizer.js';
 import { NotFoundError, BadGatewayError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/utils/logger.js';
-
-// Configuration Mega Construx
-const MEGA_CONFIG = {
-  // API Searchspring US (produits MEGA)
-  us: {
-    apiUrl: 'https://ck4bj7.a.searchspring.io/api/search/search.json',
-    siteId: 'ck4bj7',
-    baseUrl: 'https://shop.mattel.com',
-    currency: 'USD'
-  },
-  // API Searchspring EU (principalement autres produits Mattel)
-  eu: {
-    apiUrl: 'https://0w0shw.a.searchspring.io/api/search/search.json',
-    siteId: '0w0shw',
-    baseUrl: 'https://shopping.mattel.com',
-    currency: 'EUR'
-  }
-};
-
-// Suffixes de langue à filtrer (on garde uniquement les versions US/anglaises)
-const LANG_SUFFIXES = ['-es-mx', '-pt-br', '-fr-ca', '-de-de', '-fr-fr', '-en-gb', '-es-es', '-it-it', '-nl-nl'];
-
-// Catégories MEGA pour les instructions (EU)
-const MEGA_EU_CATEGORIES = [
-  'pokemon', 'halo', 'masters-of-the-universe', 'hot-wheels',
-  'barbie', 'minecraft', 'game-of-thrones', 'call-of-duty',
-  'star-trek', 'american-girl', 'hello-kitty', 'teenage-mutant-ninja-turtles'
-];
+import {
+  isMegaConnected,
+  megaQueryOne,
+  megaQueryAll,
+  isMegaMinIOConnected,
+  getProductUrls,
+  getBucketStats
+} from '../../../infrastructure/mega/index.js';
 
 export class MegaProvider extends BaseProvider {
   constructor() {
     super({
       name: 'mega',
       domain: 'construction-toys',
-      baseUrl: MEGA_CONFIG.us.apiUrl,
-      timeout: 15000,
-      retries: 2
+      baseUrl: 'database://mega_archive',
+      timeout: 10000,
+      retries: 1
     });
 
     this.normalizer = new MegaNormalizer();
     this.log = logger.create('MegaProvider');
-    
-    // Cache pour les noms localisés EU
-    this.localizedNamesCache = new Map();
-    this.CACHE_TTL = 3600000; // 1 heure
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -76,150 +46,91 @@ export class MegaProvider extends BaseProvider {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Rechercher des produits Mega Construx
+   * Rechercher des produits MEGA dans la BDD
    * @param {string} query - Terme de recherche
    * @param {Object} options
-   * @param {number} [options.page=1] - Page (non utilisé, pagination via pageSize)
+   * @param {number} [options.page=1] - Page
    * @param {number} [options.pageSize=20] - Résultats par page (max 100)
-   * @param {string} [options.lang=fr-FR] - Langue pour localisation des noms
+   * @param {string} [options.category] - Filtrer par catégorie
    */
   async search(query, options = {}) {
+    this.ensureConnected();
+
     const {
+      page = 1,
       pageSize = 20,
-      lang = 'fr-FR'
+      category = null
     } = options;
 
-    const config = MEGA_CONFIG.us; // Toujours utiliser l'API US pour MEGA
-    const max = Math.min(pageSize, 100);
+    const limit = Math.min(pageSize, 100);
+    const offset = (page - 1) * limit;
 
-    this.log.debug(`Recherche: "${query}" (max: ${max}, lang: ${lang})`);
+    this.log.debug(`Recherche BDD: "${query}" (page: ${page}, limit: ${limit}, cat: ${category || 'toutes'})`);
 
-    // Construire l'URL de recherche
-    const url = `${config.apiUrl}?siteId=${config.siteId}&q=${encodeURIComponent(query)}&resultsFormat=native&resultsPerPage=${max * 3}`;
+    // Construire la requête avec recherche ILIKE + filtre catégorie optionnel
+    let countSql = `SELECT COUNT(*) as total FROM products WHERE (name ILIKE $1 OR sku ILIKE $1 OR category ILIKE $1)`;
+    let searchSql = `SELECT * FROM products WHERE (name ILIKE $1 OR sku ILIKE $1 OR category ILIKE $1)`;
+    const params = [`%${query}%`];
 
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': this.userAgent
-      },
-      signal: AbortSignal.timeout(this.timeout)
-    });
-
-    if (!response.ok) {
-      throw new BadGatewayError(`Searchspring error: ${response.status}`);
+    if (category) {
+      countSql += ` AND category = $2`;
+      searchSql += ` AND category = $2`;
+      params.push(category);
     }
 
-    const data = await response.json();
+    searchSql += ` ORDER BY category, name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
 
-    // Filtrer pour ne garder que les versions anglaises (sans suffixe de langue)
-    const filteredItems = (data.results || []).filter(item => {
-      const handle = item.handle || item.url || '';
-      return !LANG_SUFFIXES.some(suffix => handle.endsWith(suffix));
-    });
+    // Exécuter en parallèle
+    const countParams = category ? [`%${query}%`, category] : [`%${query}%`];
+    const [countResult, results] = await Promise.all([
+      megaQueryOne(countSql, countParams),
+      megaQueryAll(searchSql, params)
+    ]);
 
-    // Dédupliquer par SKU
-    const seenSkus = new Set();
-    const uniqueItems = filteredItems.filter(item => {
-      const sku = item.sku || this.extractSkuFromName(item.name);
-      if (!sku) return true;
-      if (seenSkus.has(sku.toUpperCase())) return false;
-      seenSkus.add(sku.toUpperCase());
-      return true;
-    });
+    const total = parseInt(countResult?.total || 0);
 
-    const results = uniqueItems.slice(0, max);
+    // Enrichir avec les URLs MinIO présignées
+    const enrichedResults = await this.enrichWithMinioUrls(results);
 
-    // Localisation des noms si langue non-anglaise
-    const langCode = this.extractLangCode(lang);
-    if (langCode && langCode !== 'en') {
-      await this.localizeResults(results, langCode);
-    }
-
-    // Normaliser et retourner
-    return this.normalizer.normalizeSearchResponse(results, {
+    // Normaliser
+    return this.normalizer.normalizeSearchResponse(enrichedResults, {
       query,
-      total: data.pagination?.totalResults || results.length,
+      total,
       pagination: {
-        page: 1,
-        pageSize: max,
-        totalResults: data.pagination?.totalResults || results.length,
-        totalPages: Math.ceil((data.pagination?.totalResults || results.length) / max),
-        hasMore: results.length < (data.pagination?.totalResults || 0)
-      },
-      lang,
-      currency: config.currency,
-      baseUrl: config.baseUrl
+        page,
+        pageSize: limit,
+        totalResults: total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: offset + results.length < total
+      }
     });
   }
 
   /**
-   * Récupérer les détails d'un produit par ID ou SKU
-   * @param {string} id - ID ou SKU du produit
-   * @param {Object} options
-   * @param {string} [options.lang=fr-FR] - Langue
+   * Récupérer un produit par SKU
+   * @param {string} id - SKU du produit (ex: HGC23)
    */
   async getById(id, options = {}) {
-    const { lang = 'fr-FR' } = options;
-    const config = MEGA_CONFIG.us;
+    this.ensureConnected();
 
-    this.log.debug(`Récupération produit: ${id} (lang: ${lang})`);
+    this.log.debug(`Récupération produit: ${id}`);
 
-    // Rechercher par ID/SKU
-    const url = `${config.apiUrl}?siteId=${config.siteId}&q=${encodeURIComponent(id)}&resultsFormat=native&resultsPerPage=10`;
-
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': this.userAgent
-      },
-      signal: AbortSignal.timeout(this.timeout)
-    });
-
-    if (!response.ok) {
-      throw new BadGatewayError(`Searchspring error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Trouver le produit correspondant
-    let item = (data.results || []).find(r =>
-      r.uid === id ||
-      r.sku === id ||
-      r.id === id ||
-      r.sku?.toUpperCase() === id.toUpperCase()
+    const row = await megaQueryOne(
+      `SELECT * FROM products WHERE UPPER(sku) = UPPER($1)`,
+      [id]
     );
 
-    // Si pas de correspondance exacte, prendre le premier résultat
-    if (!item && data.results?.length > 0) {
-      item = data.results[0];
-    }
-
-    if (!item) {
+    if (!row) {
       throw new NotFoundError(`Produit MEGA non trouvé: ${id}`);
     }
 
-    // Enrichir avec les données metafields
-    const enrichedData = this.parseMetafields(item.metafields);
+    // Enrichir avec URLs MinIO
+    const enriched = await this.enrichRowWithMinioUrls(row);
 
-    // Localisation du nom (optionnel)
-    const langCode = this.extractLangCode(lang);
-    if (langCode && langCode !== 'en') {
-      const localizedNames = await this.getLocalizedNames(langCode);
-      const sku = item.sku?.toUpperCase();
-      if (sku && localizedNames.has(sku)) {
-        item.localizedName = localizedNames.get(sku);
-      }
-    }
+    // Normaliser
+    const normalized = this.normalizer.normalize(enriched);
 
-    // Ajouter les données enrichies directement dans l'item
-    if (enrichedData) {
-      item.enrichedData = enrichedData;
-    }
-
-    // Normaliser avec la méthode v2.0.0
-    const normalized = this.normalizer.normalize(item);
-
-    // Retourner avec wrapper de réponse
     return {
       success: true,
       provider: 'mega',
@@ -227,227 +138,222 @@ export class MegaProvider extends BaseProvider {
       data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),
-        lang,
-        currency: config.currency
+        source: 'database'
       }
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MÉTHODES SPÉCIFIQUES MEGA
-  // ═══════════════════════════════════════════════════════════════════════════
-
   /**
-   * Récupérer les instructions de montage pour un SKU
-   * @param {string} sku - SKU du produit (ex: HGC23, HTH96)
-   * @returns {Promise<Object>} Informations sur les instructions
+   * Lister les produits par catégorie
+   * @param {string} category - Catégorie (pokemon, halo, hot-wheels, barbie, masters-of-the-universe)
+   * @param {Object} options
    */
-  async getMegaInstructions(sku) {
-    // Les instructions nécessitent FlareSolverr pour scraper le site Mattel
-    // Pour l'instant, on retourne les URLs de base
-    const skuUpper = sku.toUpperCase();
-    
-    return {
-      sku: skuUpper,
-      instructionsSearchUrl: `https://shopping.mattel.com/fr-fr/blogs/mega-building-instructions?q=${skuUpper}`,
-      note: 'Recherchez manuellement sur le site Mattel',
-      source: 'mega'
-    };
-  }
+  async getByCategory(category, options = {}) {
+    this.ensureConnected();
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════════════════════════════════════
+    const { page = 1, pageSize = 50 } = options;
+    const limit = Math.min(pageSize, 100);
+    const offset = (page - 1) * limit;
 
-  /**
-   * Extraire le SKU d'un nom de produit
-   * @private
-   */
-  extractSkuFromName(productName) {
-    if (!productName) return null;
-    // Pattern: lettres + chiffres (ex: HGC23, HTJ06)
-    const match = productName.match(/\b([A-Z]{2,5}[0-9]{2,5})\b/i);
-    return match ? match[1].toUpperCase() : null;
-  }
+    this.log.debug(`Catégorie: ${category} (page: ${page})`);
 
-  /**
-   * Extraire le code langue court
-   * @private
-   */
-  extractLangCode(lang) {
-    if (!lang) return null;
-    return lang.toLowerCase().split('-')[0];
-  }
+    const [countResult, results] = await Promise.all([
+      megaQueryOne(`SELECT COUNT(*) as total FROM products WHERE category = $1`, [category]),
+      megaQueryAll(
+        `SELECT * FROM products WHERE category = $1 ORDER BY name LIMIT $2 OFFSET $3`,
+        [category, limit, offset]
+      )
+    ]);
 
-  /**
-   * Parser les metafields d'un produit
-   * @private
-   */
-  parseMetafields(metafields) {
-    const enrichedData = {};
-    if (!metafields) return enrichedData;
+    const total = parseInt(countResult?.total || 0);
 
-    try {
-      const metaStr = metafields.replace(/&quot;/g, '"');
+    if (total === 0) {
+      throw new NotFoundError(`Catégorie MEGA non trouvée: ${category}`);
+    }
 
-      const ageMatch = metaStr.match(/"age_grade":\s*"([^"]+)"/);
-      if (ageMatch) enrichedData.ageRange = ageMatch[1];
+    const enrichedResults = await this.enrichWithMinioUrls(results);
 
-      const upcMatch = metaStr.match(/"upc_ean":\s*"([^"]+)"/);
-      if (upcMatch) enrichedData.upc = upcMatch[1];
-
-      const categoryMatch = metaStr.match(/"web_category":\s*"([^"]+)"/);
-      if (categoryMatch) enrichedData.category = categoryMatch[1];
-
-      const subtypeMatch = metaStr.match(/"subtype":\s*"([^"]+)"/);
-      if (subtypeMatch) enrichedData.franchise = subtypeMatch[1];
-
-      const features = [];
-      for (let i = 1; i <= 5; i++) {
-        const featureMatch = metaStr.match(new RegExp(`"bullet_feature_${i}":\\s*"([^"]+)"`));
-        if (featureMatch) {
-          features.push(featureMatch[1].replace(/\\"/g, '"'));
-        }
+    return this.normalizer.normalizeSearchResponse(enrichedResults, {
+      query: `category:${category}`,
+      total,
+      pagination: {
+        page,
+        pageSize: limit,
+        totalResults: total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: offset + results.length < total
       }
-      if (features.length > 0) enrichedData.features = features;
-    } catch (e) {
-      this.log.debug(`Erreur parsing metafields: ${e.message}`);
-    }
-
-    return enrichedData;
+    });
   }
 
   /**
-   * Localiser les résultats avec les noms EU
-   * @private
+   * Lister toutes les catégories avec comptages
    */
-  async localizeResults(results, langCode) {
-    try {
-      const localizedNames = await this.getLocalizedNames(langCode);
-      if (localizedNames.size > 0) {
-        this.log.debug(`Localisation: ${localizedNames.size} noms EU disponibles`);
-        for (const item of results) {
-          const sku = item.sku || this.extractSkuFromName(item.name);
-          if (sku && localizedNames.has(sku.toUpperCase())) {
-            item.localizedName = localizedNames.get(sku.toUpperCase());
-          }
-        }
-      }
-    } catch (err) {
-      this.log.debug(`Localisation échouée (non-bloquant): ${err.message}`);
-    }
-  }
+  async getCategories() {
+    this.ensureConnected();
 
-  /**
-   * Récupérer les noms localisés depuis le cache ou le site EU
-   * @private
-   */
-  async getLocalizedNames(langCode) {
-    if (!langCode || langCode === 'en') return new Map();
-
-    const cacheKey = 'mega_names_eu';
-    const cached = this.localizedNamesCache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.data;
-    }
-
-    this.log.info(`🌍 Récupération des noms MEGA EU...`);
-
-    const allNames = new Map();
-
-    // Récupérer en parallèle toutes les catégories principales
-    const promises = MEGA_EU_CATEGORIES.map(cat =>
-      this.fetchLocalizedNamesFromCategory(cat)
+    const rows = await megaQueryAll(
+      `SELECT category, COUNT(*) as count FROM products GROUP BY category ORDER BY count DESC`
     );
 
-    const results = await Promise.allSettled(promises);
-
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        for (const [sku, name] of result.value) {
-          allNames.set(sku, name);
-        }
+    return {
+      success: true,
+      provider: 'mega',
+      domain: 'construction-toys',
+      data: rows.map(r => ({
+        name: r.category,
+        count: parseInt(r.count),
+        slug: r.category
+      })),
+      total: rows.reduce((sum, r) => sum + parseInt(r.count), 0),
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        source: 'database'
       }
-    }
-
-    this.log.info(`✅ ${allNames.size} noms MEGA EU chargés`);
-
-    // Mettre en cache
-    this.localizedNamesCache.set(cacheKey, {
-      data: allNames,
-      timestamp: Date.now()
-    });
-
-    return allNames;
+    };
   }
 
   /**
-   * Récupérer les noms localisés depuis une catégorie EU
+   * Récupérer les instructions (PDF) pour un SKU
+   * @param {string} sku - SKU du produit
+   */
+  async getInstructions(sku) {
+    this.ensureConnected();
+
+    const row = await megaQueryOne(
+      `SELECT sku, name, category, pdf_url, pdf_path FROM products WHERE UPPER(sku) = UPPER($1)`,
+      [sku]
+    );
+
+    if (!row) {
+      throw new NotFoundError(`Instructions non trouvées pour le SKU: ${sku}`);
+    }
+
+    // Générer l'URL présignée vers le PDF
+    let pdfPresignedUrl = null;
+    if (row.pdf_path && isMegaMinIOConnected()) {
+      const urls = await getProductUrls(row.category, row.sku);
+      pdfPresignedUrl = urls.pdfUrl;
+    }
+
+    return {
+      success: true,
+      provider: 'mega',
+      sku: row.sku.toUpperCase(),
+      name: row.name,
+      category: row.category,
+      pdfUrl: pdfPresignedUrl || row.pdf_url,
+      pdfOriginalUrl: row.pdf_url,
+      source: pdfPresignedUrl ? 'minio' : 'mattel',
+      note: pdfPresignedUrl 
+        ? 'PDF servi depuis l\'archive MinIO (URL temporaire 1h)'
+        : 'PDF servi depuis l\'URL Mattel d\'origine (peut expirer)'
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ENRICHISSEMENT MinIO
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Enrichir une liste de produits avec les URLs MinIO
    * @private
    */
-  async fetchLocalizedNamesFromCategory(category) {
-    const locale = 'fr-fr';
-    const url = `https://shopping.mattel.com/${locale}/blogs/mega-building-instructions/tagged/${locale}-category-${category}`;
+  async enrichWithMinioUrls(rows) {
+    if (!isMegaMinIOConnected() || !rows.length) {
+      return rows;
+    }
+
+    // Enrichir en parallèle (par lots de 10)
+    const batchSize = 10;
+    const enriched = [];
+
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const results = await Promise.all(
+        batch.map(row => this.enrichRowWithMinioUrls(row))
+      );
+      enriched.push(...results);
+    }
+
+    return enriched;
+  }
+
+  /**
+   * Enrichir un produit unique avec les URLs MinIO
+   * @private
+   */
+  async enrichRowWithMinioUrls(row) {
+    if (!isMegaMinIOConnected()) {
+      return row;
+    }
 
     try {
-      const response = await fetch(url, {
-        headers: { 'User-Agent': this.userAgent },
-        signal: AbortSignal.timeout(10000)
-      });
+      const urls = await getProductUrls(row.category, row.sku);
+      return {
+        ...row,
+        pdf_presigned_url: urls.pdfUrl,
+        image_presigned_url: urls.imageUrl
+      };
+    } catch {
+      return row;
+    }
+  }
 
-      if (!response.ok) return new Map();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // UTILITAIRES
+  // ═══════════════════════════════════════════════════════════════════════════
 
-      const html = await response.text();
-      const names = new Map();
-
-      // Pattern: "Nom FR - sku" (ex: "Pikachu en Mouvement - hgc23")
-      const pattern = /"([^"]+)\s+-\s+([a-zA-Z]{2,5}[0-9]{2,5})"/gi;
-      let match;
-
-      while ((match = pattern.exec(html)) !== null) {
-        const [, name, sku] = match;
-        names.set(sku.toUpperCase(), name.trim());
-      }
-
-      return names;
-    } catch (error) {
-      this.log.debug(`⚠️ Erreur récupération noms pour ${category}: ${error.message}`);
-      return new Map();
+  /**
+   * Vérifie que la DB MEGA est connectée
+   * @private
+   */
+  ensureConnected() {
+    if (!isMegaConnected()) {
+      throw new BadGatewayError('Base de données MEGA non disponible. Vérifiez la connexion à Louis (10.20.0.10:5434).');
     }
   }
 
   /**
-   * Health check spécifique
+   * Health check
    * @override
    */
   async healthCheck() {
     const startTime = Date.now();
 
-    try {
-      // Test avec une recherche simple
-      const config = MEGA_CONFIG.us;
-      const url = `${config.apiUrl}?siteId=${config.siteId}&q=pokemon&resultsFormat=native&resultsPerPage=1`;
+    const dbConnected = isMegaConnected();
+    const minioConnected = isMegaMinIOConnected();
 
-      const response = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(5000)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      return {
-        healthy: true,
-        latency: Date.now() - startTime,
-        message: 'Searchspring API disponible'
-      };
-    } catch (error) {
+    if (!dbConnected) {
       return {
         healthy: false,
         latency: Date.now() - startTime,
-        message: error.message
+        message: 'MEGA Database non connectée',
+        details: { db: false, minio: minioConnected }
+      };
+    }
+
+    try {
+      const countResult = await megaQueryOne('SELECT COUNT(*) as count FROM products');
+      const latency = Date.now() - startTime;
+
+      return {
+        healthy: true,
+        latency,
+        message: `MEGA Archive opérationnelle (${countResult.count} produits)`,
+        details: {
+          db: true,
+          minio: minioConnected,
+          products: parseInt(countResult.count),
+          source: 'database'
+        }
+      };
+    } catch (err) {
+      return {
+        healthy: false,
+        latency: Date.now() - startTime,
+        message: err.message,
+        details: { db: false, minio: minioConnected }
       };
     }
   }

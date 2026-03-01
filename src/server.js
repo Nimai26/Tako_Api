@@ -9,6 +9,7 @@ import { config } from './config/index.js';
 import { logger } from './shared/utils/logger.js';
 import { initDatabase, closeDatabase } from './infrastructure/database/index.js';
 import { startRefreshScheduler, stopRefreshScheduler } from './infrastructure/database/refresh-scheduler.js';
+import { initMegaInfrastructure, closeMegaDatabase } from './infrastructure/mega/index.js';
 
 const log = logger.create('Server');
 
@@ -32,6 +33,22 @@ async function start() {
       log.error('⚠️  Erreur initialisation database', { error: err.message });
       log.warn('   Le serveur continuera sans cache persistant');
     }
+  }
+  
+  // Initialiser l'infrastructure MEGA (PostgreSQL + MinIO sur Louis)
+  try {
+    const megaStatus = await initMegaInfrastructure();
+    if (megaStatus.db) {
+      log.info('✅ MEGA Archive connectée');
+    }
+    if (megaStatus.minio) {
+      log.info('✅ MEGA MinIO connecté');
+    }
+    if (!megaStatus.db && !megaStatus.minio) {
+      log.warn('⚠️  MEGA Archive non disponible (non-bloquant)');
+    }
+  } catch (err) {
+    log.warn(`⚠️  MEGA Archive init échouée: ${err.message} (non-bloquant)`);
   }
   
   // Démarrer le serveur HTTP
@@ -63,6 +80,13 @@ async function start() {
       } catch (err) {
         log.error('Erreur fermeture database', { error: err.message });
       }
+    }
+    
+    // Fermer la connexion MEGA
+    try {
+      await closeMegaDatabase();
+    } catch (err) {
+      log.error('Erreur fermeture MEGA DB', { error: err.message });
     }
     
     // Fermer le serveur HTTP

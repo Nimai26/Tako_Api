@@ -37,3 +37,6 @@ temp/
 
 # Cache
 .cache/
+
+# POC / Experimental
+mega-archive/

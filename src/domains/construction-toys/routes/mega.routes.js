@@ -1,33 +1,22 @@
 /**
- * Routes: Mega Construx Provider
+ * Routes: Mega Construx Provider (v2 - Database)
  * 
- * Endpoints pour les produits MEGA Construx (Mattel).
- * Utilise l'API Searchspring (pas de scraping nécessaire).
- * 
- * @see https://shop.mattel.com (US)
- * @see https://shopping.mattel.com (EU)
+ * Endpoints pour les produits MEGA Construx archivés.
+ * Source : PostgreSQL (catalogue) + MinIO (PDFs d'instructions + images)
  * 
  * Routes disponibles:
- * - GET /construction-toys/mega/health - État du provider
- * - GET /construction-toys/mega/search - Recherche de produits
- * - GET /construction-toys/mega/:id - Détails d'un produit
- * - GET /construction-toys/mega/instructions/:sku - Instructions de montage
- * 
- * Support traduction :
- * - lang : Code langue (fr-FR, en-US, etc.) - localisation native des noms
- * - autoTrad : Activer la traduction auto des descriptions (1 ou true)
+ * - GET /construction-toys/mega/health      - État du provider
+ * - GET /construction-toys/mega/search      - Recherche de produits
+ * - GET /construction-toys/mega/categories  - Catégories disponibles
+ * - GET /construction-toys/mega/category/:name - Produits par catégorie
+ * - GET /construction-toys/mega/instructions/:sku - PDF d'instructions
+ * - GET /construction-toys/mega/:id         - Détails d'un produit
  */
 
 import { Router } from 'express';
 import { MegaProvider } from '../providers/mega.provider.js';
 import { asyncHandler } from '../../../shared/utils/async-handler.js';
 import { ValidationError } from '../../../shared/errors/index.js';
-import {
-  translateSearchResults,
-  translateText,
-  isAutoTradEnabled,
-  extractLangCode
-} from '../../../shared/utils/translator.js';
 
 export const router = Router();
 
@@ -40,16 +29,7 @@ const megaProvider = new MegaProvider();
 
 /**
  * GET /construction-toys/mega/health
- * Vérifier la disponibilité du provider Mega
- * 
- * @returns {Object} État de santé
- * @example
- * {
- *   "healthy": true,
- *   "latency": 120,
- *   "message": "Searchspring API disponible",
- *   "provider": "mega"
- * }
+ * Vérifier la disponibilité de la BDD MEGA
  */
 router.get('/health', asyncHandler(async (req, res) => {
   const health = await megaProvider.healthCheck();
@@ -65,72 +45,73 @@ router.get('/health', asyncHandler(async (req, res) => {
 
 /**
  * GET /construction-toys/mega/search
- * Rechercher des produits MEGA Construx
+ * Rechercher des produits MEGA Construx dans l'archive
  * 
  * @query {string} q - Terme de recherche (requis)
+ * @query {number} page - Page (défaut: 1)
  * @query {number} pageSize - Résultats par page (défaut: 20, max: 100)
- * @query {string} lang - Langue pour localisation (défaut: fr-FR)
- * 
- * @returns {Object} Résultats de recherche normalisés
- * 
- * @example
- * GET /construction-toys/mega/search?q=pokemon&pageSize=10
- * 
- * Franchises supportées:
- * - Pokemon
- * - Halo
- * - Hot Wheels
- * - Barbie
- * - Masters of the Universe
- * - Minecraft
- * - Call of Duty
- * - Hello Kitty
- * - Game of Thrones
- * - Star Trek
- * - TMNT
+ * @query {string} category - Filtrer par catégorie (optionnel)
  */
 router.get('/search', asyncHandler(async (req, res) => {
-  const { q, query, pageSize = 20, lang = 'fr-FR', autoTrad } = req.query;
+  const { q, query, page = 1, pageSize = 20, category } = req.query;
 
   const searchQuery = q || query;
   if (!searchQuery) {
     throw new ValidationError('Le paramètre "q" est requis');
   }
 
-  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
-  const targetLang = extractLangCode(lang);
-
-  let result = await megaProvider.search(searchQuery, {
+  const result = await megaProvider.search(searchQuery, {
+    page: parseInt(page, 10),
     pageSize: Math.min(parseInt(pageSize, 10), 100),
-    lang
+    category: category || null
   });
-
-  // Traduction automatique des descriptions si activée
-  if (autoTradEnabled && result.data && result.data.length > 0) {
-    result.data = await translateSearchResults(result.data, true, targetLang);
-  }
 
   res.json(result);
 }));
 
 // ===========================================
-// Instructions (doit être AVANT /:id)
+// Catégories
+// ===========================================
+
+/**
+ * GET /construction-toys/mega/categories
+ * Lister toutes les catégories avec le nombre de produits
+ */
+router.get('/categories', asyncHandler(async (req, res) => {
+  const result = await megaProvider.getCategories();
+  res.json(result);
+}));
+
+/**
+ * GET /construction-toys/mega/category/:name
+ * Lister les produits d'une catégorie
+ * 
+ * @param {string} name - Nom de la catégorie (pokemon, halo, hot-wheels, barbie, masters-of-the-universe)
+ * @query {number} page - Page (défaut: 1)
+ * @query {number} pageSize - Résultats par page (défaut: 50, max: 100)
+ */
+router.get('/category/:name', asyncHandler(async (req, res) => {
+  const { name } = req.params;
+  const { page = 1, pageSize = 50 } = req.query;
+
+  const result = await megaProvider.getByCategory(name, {
+    page: parseInt(page, 10),
+    pageSize: Math.min(parseInt(pageSize, 10), 100)
+  });
+
+  res.json(result);
+}));
+
+// ===========================================
+// Instructions PDF (doit être AVANT /:id)
 // ===========================================
 
 /**
  * GET /construction-toys/mega/instructions/:sku
- * Obtenir les informations d'instructions pour un produit
+ * Obtenir l'URL du PDF d'instructions pour un produit
  * 
  * @param {string} sku - SKU du produit (ex: HGC23)
- * 
- * @returns {Object} Informations sur les instructions
- * @example
- * {
- *   "success": true,
- *   "sku": "HGC23",
- *   "instructionsSearchUrl": "https://shopping.mattel.com/...",
- *   "note": "Recherchez manuellement sur le site Mattel"
- * }
+ * @returns {Object} URL du PDF (présignée MinIO ou originale Mattel)
  */
 router.get('/instructions/:sku', asyncHandler(async (req, res) => {
   const { sku } = req.params;
@@ -139,13 +120,8 @@ router.get('/instructions/:sku', asyncHandler(async (req, res) => {
     throw new ValidationError('SKU manquant');
   }
 
-  const result = await megaProvider.getMegaInstructions(sku);
-
-  res.json({
-    success: true,
-    provider: 'mega',
-    ...result
-  });
+  const result = await megaProvider.getInstructions(sku);
+  res.json(result);
 }));
 
 // ===========================================
@@ -154,37 +130,18 @@ router.get('/instructions/:sku', asyncHandler(async (req, res) => {
 
 /**
  * GET /construction-toys/mega/:id
- * Récupérer les détails d'un produit MEGA
+ * Récupérer les détails d'un produit MEGA par SKU
  * 
- * @param {string} id - ID ou SKU du produit (ex: HGC23)
- * @query {string} lang - Langue pour localisation (défaut: fr-FR)
- * 
- * @returns {Object} Détails du produit normalisés
- * 
- * Note: L'ID peut être soit l'UID Searchspring soit le SKU du produit
+ * @param {string} id - SKU du produit (ex: HGC23)
  */
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { lang = 'fr-FR', autoTrad } = req.query;
 
   if (!id) {
     throw new ValidationError('ID produit manquant');
   }
 
-  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
-  const targetLang = extractLangCode(lang);
-
-  let result = await megaProvider.getById(id, { lang });
-
-  // Traduction automatique de la description si activée
-  if (autoTradEnabled && result.data?.description) {
-    const translated = await translateText(result.data.description, { enabled: true, targetLang });
-    if (translated.translated) {
-      result.data.descriptionOriginal = result.data.description;
-      result.data.description = translated.text;
-    }
-  }
-
+  const result = await megaProvider.getById(id);
   res.json(result);
 }));
 

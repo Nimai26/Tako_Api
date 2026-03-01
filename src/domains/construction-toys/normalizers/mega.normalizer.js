@@ -1,31 +1,13 @@
 /**
- * Mega Construx Normalizer
+ * Mega Construx Normalizer (v2 - Database)
  * 
- * Transforme les données de l'API Searchspring en format Tako normalisé.
+ * Transforme les données de la base PostgreSQL MEGA en format Tako normalisé.
  * 
- * @see https://shop.mattel.com (US)
- * @see https://shopping.mattel.com (EU)
+ * COLONNES TABLE products :
+ *   id, sku, name, category, pdf_url, image_url, pdf_path, image_path, discovered_at
  * 
- * EXEMPLE DE DONNÉES BRUTES SEARCHSPRING :
- * {
- *   "uid": "7459399500000",
- *   "id": "7459399500000",
- *   "name": "MEGA Pokémon Pikachu Building Set (1095 Pieces)",
- *   "sku": "HGC23",
- *   "price": 59.99,
- *   "imageUrl": "https://...",
- *   "thumbnailImageUrl": "https://...",
- *   "images": ["https://..."],
- *   "description": "Build your own...",
- *   "brand": "MEGA",
- *   "handle": "/products/mega-pokemon-pikachu-hgc23",
- *   "url": "/products/mega-pokemon-pikachu-hgc23",
- *   "rating": 4.8,
- *   "ratingCount": 120,
- *   "ss_available": "1",
- *   "in_stock_offers": "1",
- *   "metafields": "{...}"
- * }
+ * COLONNES ENRICHIES (ajoutées par le provider via MinIO) :
+ *   pdf_presigned_url, image_presigned_url
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -116,8 +98,7 @@ export class MegaNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   extractSourceId(raw) {
-    // Priorité: SKU > uid > id
-    return raw.sku || raw.uid || raw.id || null;
+    return raw.sku || raw.id || null;
   }
 
   extractTitle(raw) {
@@ -130,90 +111,89 @@ export class MegaNormalizer extends BaseNormalizer {
   }
 
   extractPieceCount(raw) {
-    // Extraire le nombre de pièces du nom
     return this.extractPieces(raw);
   }
 
   extractDescription(raw) {
-    return raw.description || null;
+    return null; // La BDD ne stocke pas de description
   }
 
   extractYear(raw) {
-    // L'API Searchspring ne fournit pas l'année directement
+    // Extraire l'année depuis discovered_at si disponible
+    if (raw.discovered_at) {
+      return new Date(raw.discovered_at).getFullYear();
+    }
     return null;
   }
 
-  extractImage(raw, context = {}) {
-    const baseUrl = context.baseUrl || 'https://shop.mattel.com';
-    const image = raw.imageUrl || raw.thumbnailImageUrl || (raw.images?.[0]);
-    
-    if (!image) return null;
-    
-    // Assurer une URL absolue
-    if (image.startsWith('http')) return image;
-    return `${baseUrl}${image}`;
+  extractImage(raw) {
+    // Priorité : URL présignée MinIO > URL image originale Mattel
+    return raw.image_presigned_url || raw.image_url || null;
   }
 
-  extractSourceUrl(raw, context = {}) {
-    const baseUrl = context.baseUrl || 'https://shop.mattel.com';
-    const path = raw.url || raw.handle;
-    
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${baseUrl}${path}`;
+  extractSourceUrl(raw) {
+    // Pas d'URL source dans la BDD, construire depuis le SKU
+    if (raw.sku) {
+      return `https://shopping.mattel.com/fr-fr/search?q=${raw.sku}`;
+    }
+    return null;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EXTRACTION DES DÉTAILS SPÉCIFIQUES
   // ═══════════════════════════════════════════════════════════════════════════
 
-  extractDetails(raw, context = {}) {
-    const enrichedData = context.enrichedData || {};
-    
+  extractDetails(raw) {
     return {
       // Marque et classification
-      brand: raw.brand || 'MEGA',
-      theme: null, // MEGA n'a pas de thèmes comme LEGO
-      category: enrichedData.category || null,
+      brand: 'MEGA',
+      theme: null,
+      category: raw.category || null,
 
       // Spécifications standardisées
-      set_number: this.extractSourceId(raw),
+      set_number: raw.sku || null,
       pieces: this.extractPieceCount(raw),
-      minifigs: null, // MEGA n'a pas de concept de minifigs
+      minifigs: null,
       
-      // SKU/UPC
+      // SKU
       sku: raw.sku || null,
-      upc: enrichedData.upc || null,
+      upc: null,
       
       // Tranche d'âge
-      ageRange: this.parseAgeRange(enrichedData.ageRange),
+      ageRange: null,
       
-      // Franchise (Pokemon, Halo, etc.)
-      franchise: enrichedData.franchise || this.detectFranchise(raw.name),
-      category: enrichedData.category || null,
+      // Franchise (détectée depuis le nom ou la catégorie)
+      franchise: raw.category || this.detectFranchise(raw.name),
       
-      // Prix
-      price: this.extractPrice(raw),
+      // Prix (non disponible dans l'archive)
+      price: null,
       listPrice: null,
       onSale: false,
       
-      // Disponibilité
-      availability: this.extractAvailability(raw),
+      // Disponibilité (archivé = plus en vente)
+      availability: {
+        status: 'archived',
+        inStock: false
+      },
       
-      // Note et avis
-      rating: this.extractRating(raw),
+      // Note et avis (non disponible dans l'archive)
+      rating: null,
       
-      // Instructions
-      instructions: null, // MEGA n'a pas d'instructions dans l'API
-      instructionsUrl: null,
+      // Instructions PDF
+      instructions: raw.pdf_presigned_url || raw.pdf_url || null,
+      instructionsUrl: raw.pdf_presigned_url || raw.pdf_url || null,
       
-      // Caractéristiques MEGA-spécifiques
-      features: enrichedData.features || null,
+      // Caractéristiques
+      features: null,
       
-      // Métadonnées
+      // Métadonnées enrichies
       metadata: {
         source: 'mega',
-        type: 'construction_toy'
+        type: 'construction_toy',
+        dataSource: 'database',
+        archivedAt: raw.discovered_at || null,
+        pdfOriginalUrl: raw.pdf_url || null,
+        imageOriginalUrl: raw.image_url || null
       }
     };
   }
@@ -290,71 +270,19 @@ export class MegaNormalizer extends BaseNormalizer {
   }
 
   /**
-   * Extraire le prix
-   */
-  extractPrice(raw, context = {}) {
-    if (!raw.price) return null;
-
-    return {
-      amount: parseFloat(raw.price),
-      currency: context.currency || 'USD',
-      formatted: `${raw.price} ${context.currency || 'USD'}`
-    };
-  }
-
-  /**
-   * Extraire la disponibilité
-   */
-  extractAvailability(raw) {
-    const inStock = raw.ss_available === '1' || raw.in_stock_offers === '1';
-    
-    return {
-      status: inStock ? 'available' : 'out_of_stock',
-      inStock
-    };
-  }
-
-  /**
-   * Extraire la note
-   */
-  extractRating(raw) {
-    if (!raw.rating) return null;
-
-    return {
-      value: parseFloat(raw.rating),
-      count: raw.ratingCount ? parseInt(raw.ratingCount) : null,
-      max: 5
-    };
-  }
-
-  /**
    * Extraire toutes les images
+   * Priorité : URL présignée MinIO > URL originale Mattel
+   * Retourne le format attendu par BaseNormalizer.normalizeImages()
    */
   extractImages(raw) {
-    const baseUrl = 'https://shop.mattel.com';
-    const images = [];
+    // Image principale : présignée MinIO ou originale Mattel
+    const primary = raw.image_presigned_url || raw.image_url || null;
 
-    // Images array
-    if (raw.images && Array.isArray(raw.images)) {
-      for (const img of raw.images) {
-        const url = img.startsWith('http') ? img : `${baseUrl}${img}`;
-        images.push(url);
-      }
-    }
-
-    // Image principale si pas dans l'array
-    if (images.length === 0 && raw.imageUrl) {
-      const url = raw.imageUrl.startsWith('http') ? raw.imageUrl : `${baseUrl}${raw.imageUrl}`;
-      images.push(url);
-    }
-
-    // Thumbnail en fallback
-    if (images.length === 0 && raw.thumbnailImageUrl) {
-      const url = raw.thumbnailImageUrl.startsWith('http') ? raw.thumbnailImageUrl : `${baseUrl}${raw.thumbnailImageUrl}`;
-      images.push(url);
-    }
-
-    return images.length > 0 ? images : [];
+    return {
+      primary,
+      thumbnail: primary,
+      gallery: primary ? [primary] : []
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -382,8 +310,7 @@ export class MegaNormalizer extends BaseNormalizer {
       },
       meta: {
         fetchedAt: new Date().toISOString(),
-        lang: context.lang || 'en-US',
-        currency: context.currency || 'USD'
+        source: 'database'
       }
     };
   }

@@ -41,3 +41,6 @@ Thumbs.db
 # Build artifacts
 dist/
 build/
+
+# POC / Experimental
+mega-archive/

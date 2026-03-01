@@ -92,6 +92,25 @@ export const env = {
   BRICKSET_USER_HASH: process.env.BRICKSET_USER_HASH || null,
   REBRICKABLE_API_KEY: process.env.REBRICKABLE_API_KEY || null,
   
+  // Mega Construx - Base de données dédiée
+  mega: {
+    db: {
+      host: process.env.MEGA_DB_HOST || null,
+      port: parseInt(process.env.MEGA_DB_PORT, 5434),
+      name: process.env.MEGA_DB_NAME || 'mega_archive',
+      user: process.env.MEGA_DB_USER || 'megauser',
+      password: process.env.MEGA_DB_PASSWORD || null
+    },
+    minio: {
+      endpoint: process.env.MEGA_MINIO_ENDPOINT || null,
+      port: parseInt(process.env.MEGA_MINIO_PORT, 9000),
+      accessKey: process.env.MEGA_MINIO_ACCESS_KEY || null,
+      secretKey: process.env.MEGA_MINIO_SECRET_KEY || null,
+      bucket: process.env.MEGA_MINIO_BUCKET || 'mega-pdfs',
+      useSSL: parseBoolean(process.env.MEGA_MINIO_USE_SSL, false)
+    }
+  },
+  
   // Books
   GOOGLE_BOOKS_API_KEY: process.env.GOOGLE_BOOKS_API_KEY || null,
   

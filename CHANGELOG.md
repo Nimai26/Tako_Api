@@ -7,6 +7,57 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+---
+
+## [2.1.0] - 2025-07-04
+
+### 🚀 MEGA Construx - Migration vers base de données
+
+#### Nouvelle architecture MEGA Provider
+
+Le provider MEGA Construx a été entièrement réécrit pour utiliser une base de données PostgreSQL
+et un stockage MinIO au lieu de l'API Searchspring (désormais hors service).
+
+**Infrastructure** (`src/infrastructure/mega/`) :
+- Nouveau : `mega-database.js` - Pool PostgreSQL dédié pour l'archive MEGA (min:1, max:5)
+- Nouveau : `mega-minio.js` - Client MinIO avec génération d'URLs pré-signées (expiry: 1h)
+- Nouveau : `index.js` - Point d'entrée avec `initMegaInfrastructure()`
+
+**Provider** (`mega.provider.js`) - Réécriture complète :
+- ✅ Recherche par requête SQL (ILIKE) avec filtre par catégorie
+- ✅ Récupération par SKU avec URLs MinIO pré-signées (PDF + images)
+- ✅ Navigation par catégorie avec compteurs
+- ✅ Endpoint instructions avec URLs pré-signées MinIO
+- ✅ Health check avec statistiques (latence DB, nombre de produits)
+- ✅ Enrichissement batch des URLs MinIO (lots de 10)
+
+**Normalizer** (`mega.normalizer.js`) - Adapté pour colonnes DB :
+- Images au format `{primary, thumbnail, gallery}` depuis colonnes DB
+- Statut "archived" pour la disponibilité
+- Instructions depuis URLs pré-signées MinIO
+- Métadonnées enrichies : `dataSource: 'database'`, `archivedAt`, URLs originales
+
+**Routes** (`mega.routes.js`) - 6 endpoints :
+- `GET /api/construction-toys/mega/health` - Santé DB + MinIO
+- `GET /api/construction-toys/mega/search?q=` - Recherche avec pagination
+- `GET /api/construction-toys/mega/categories` - Liste des catégories avec compteurs
+- `GET /api/construction-toys/mega/category/:name` - Produits par catégorie
+- `GET /api/construction-toys/mega/instructions/:sku` - PDF instructions (URL pré-signée)
+- `GET /api/construction-toys/mega/:id` - Détail produit par SKU
+
+**Configuration** :
+- Ajout variables d'environnement MEGA_DB_* et MEGA_MINIO_*
+- Initialisation/fermeture MEGA dans le cycle de vie du serveur
+
+**Dépendances** :
+- Ajout : `minio` ^8.0.7 (client S3-compatible pour MinIO)
+
+**Base de données cible** :
+- PostgreSQL : 199 produits archivés dans 5 catégories (pokemon, halo, hot-wheels, barbie, masters-of-the-universe)
+- MinIO : 410 objets (205 PDFs + 205 images, ~3.1 GiB)
+
+---
+
 ### 🚀 Améliorations majeures
 
 #### Routes Jikan - Filtrage NSFW et optimisation cache
