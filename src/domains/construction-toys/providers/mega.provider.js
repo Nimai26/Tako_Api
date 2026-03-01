@@ -18,6 +18,7 @@ import { BaseProvider } from '../../../core/providers/index.js';
 import { MegaNormalizer } from '../normalizers/mega.normalizer.js';
 import { NotFoundError, BadGatewayError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { env } from '../../../config/env.js';
 import {
   isMegaConnected,
   megaQueryOne,
@@ -236,7 +237,7 @@ export class MegaProvider extends BaseProvider {
       pdfPresignedUrl = urls.pdfUrl;
     }
 
-    const proxyUrl = `/api/construction-toys/mega/file/${row.sku}/pdf`;
+    const proxyUrl = `${env.apiBaseUrl}/api/construction-toys/mega/file/${row.sku}/pdf`;
 
     return {
       success: true,
@@ -285,11 +286,12 @@ export class MegaProvider extends BaseProvider {
    * @private
    */
   async enrichRowWithMinioUrls(row) {
+    const baseUrl = env.apiBaseUrl;
     const enriched = {
       ...row,
-      // URLs proxy Tako (accessibles depuis n'importe quel client)
-      pdf_proxy_url: `/api/construction-toys/mega/file/${row.sku}/pdf`,
-      image_proxy_url: `/api/construction-toys/mega/file/${row.sku}/image`
+      // URLs proxy Tako absolues (accessibles depuis n'importe quel client)
+      pdf_proxy_url: `${baseUrl}/api/construction-toys/mega/file/${row.sku}/pdf`,
+      image_proxy_url: `${baseUrl}/api/construction-toys/mega/file/${row.sku}/image`
     };
 
     // Ajouter aussi les presigned URLs en fallback

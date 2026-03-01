@@ -50,6 +50,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   version: process.env.API_VERSION || packageVersion,
   defaultLocale: process.env.DEFAULT_LOCALE || 'fr-FR',
+  apiBaseUrl: process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
   
   // Fonctionnalités
   isDev: (process.env.NODE_ENV || 'development') === 'development',
