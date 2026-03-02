@@ -13,22 +13,40 @@ services:
     volumes:
       - ./src:/app/src
       - ./docs:/app/docs
+      # Stockage fichiers (images, PDFs) - optionnel en dev
+      # - /mnt/egon/websites/tako-storage:/data/tako-storage:ro
     environment:
       - NODE_ENV=development
       - PORT=3000
       - DEFAULT_LOCALE=fr-FR
-      # Database
+      # Database (cache + données internes MEGA/KRE-O)
       - DB_ENABLED=true
       - DB_HOST=tako-db
       - DB_PORT=5432
       - DB_NAME=tako_cache
       - DB_USER=tako
       - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      # Stockage fichiers
+      - STORAGE_PATH=${STORAGE_PATH:-/data/tako-storage}
+      - FILE_BASE_URL=${FILE_BASE_URL:-http://localhost:3000/files}
       # FlareSolverr
       - FSR_URL=http://flaresolverr:8191/v1
       # VPN (optional)
       - VPN_PROXY_URL=${VPN_PROXY_URL:-}
       - GLUETUN_CONTROL_URL=${GLUETUN_CONTROL_URL:-}
+      # APIs (mettre les clés dans .env)
+      - BRICKSET_API_KEY=${BRICKSET_API_KEY:-}
+      - BRICKSET_USERNAME=${BRICKSET_USERNAME:-}
+      - BRICKSET_PASSWORD=${BRICKSET_PASSWORD:-}
+      - REBRICKABLE_API_KEY=${REBRICKABLE_API_KEY:-}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - TVDB_API_KEY=${TVDB_API_KEY:-}
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID:-}
+      - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET:-}
+      - COMICVINE_API_KEY=${COMICVINE_API_KEY:-}
+      - DISCOGS_TOKEN=${DISCOGS_TOKEN:-}
+      - RAWG_API_KEY=${RAWG_API_KEY:-}
+      - POKEMON_TCG_API_KEY=${POKEMON_TCG_API_KEY:-}
     depends_on:
       - tako-db
     networks:

@@ -1,8 +1,9 @@
 # Tako API 🐙
 
-> **Version 1.0.0** - Architecture modulaire par domaines
+> **Version 2.4.1** - Architecture modulaire par domaines
 > 
-> **Migration toys_api ✅ Terminée** - 30 janvier 2026
+> **Migration toys_api ✅ Terminée** - 30 janvier 2026  
+> **Dernière mise à jour** : 2 mars 2026 (auto-seed, base interne unifiée)
 
 API REST multi-sources pour rechercher et récupérer des informations produits depuis **32 providers** répartis en **11 domaines**.
 
@@ -27,27 +28,35 @@ tako-api/
 │   │   └── schemas/               # Schémas de validation Zod
 │   │
 │   ├── domains/                   # Regroupement par domaine métier
-│   │   ├── construction-toys/     # LEGO, Playmobil, Mega, Rebrickable
+│   │   ├── construction-toys/     # LEGO, Playmobil, Mega, KRE-O, Rebrickable
 │   │   ├── books/                 # GoogleBooks, OpenLibrary
-│   │   ├── games/                 # RAWG, IGDB, JVC
-│   │   ├── media/                 # TMDB, TVDB, IMDB
-│   │   ├── anime-manga/           # Jikan, MangaDex
+│   │   ├── videogames/            # RAWG, IGDB, JVC, ConsoleVariations
+│   │   ├── media/                 # TMDB, TVDB
+│   │   ├── anime-manga/          # Jikan, MangaUpdates
 │   │   ├── comics/                # ComicVine, Bedetheque
-│   │   ├── tcg/                   # Trading Card Games
-│   │   ├── collectibles/          # Coleka, LuluBerlu, etc.
-│   │   ├── music/                 # MusicBrainz, Deezer, etc.
-│   │   ├── ecommerce/             # Amazon
-│   │   └── board-games/           # BoardGameGeek
+│   │   ├── tcg/                   # Pokémon TCG, MTG, Yu-Gi-Oh!, Lorcana, Digimon, One Piece
+│   │   ├── collectibles/          # Coleka, LuluBerlu
+│   │   ├── music/                 # Discogs, Deezer, MusicBrainz, iTunes
+│   │   ├── ecommerce/             # Amazon (8 marketplaces)
+│   │   └── boardgames/            # BoardGameGeek
 │   │
 │   ├── infrastructure/            # Services techniques
-│   │   ├── database/              # PostgreSQL cache
-│   │   ├── http/                  # Client HTTP, proxy, retry
-│   │   ├── scraping/              # FlareSolverr, Puppeteer
-│   │   └── monitoring/            # Health, metrics
+│   │   ├── database/              # PostgreSQL (cache + données internes)
+│   │   │   ├── connection.js      # Pool + auto-migration + auto-seed
+│   │   │   ├── seeds/             # SQL embarqués (MEGA + KRE-O)
+│   │   │   └── ...                # Repository, refresher, scheduler
+│   │   ├── mega/                  # Archive MEGA + KRE-O (wrapper DB + storage)
+│   │   ├── storage/               # Stockage fichiers (images, PDFs)
+│   │   └── scraping/              # FlareSolverr, Puppeteer
 │   │
 │   └── shared/                    # Code partagé
 │       ├── middleware/            # Express middlewares
 │       ├── errors/                # Classes d'erreur
+│       └── utils/                 # Helpers purs
+│
+├── docs/                          # Documentation
+└── scripts/                       # Scripts utilitaires
+```
 │       └── utils/                 # Helpers purs
 │
 ├── tests/                         # Tests (structure miroir de src/)
@@ -59,7 +68,7 @@ tako-api/
 
 | Domaine | Providers | Status |
 |---------|-----------|--------|
-| `construction-toys` | Brickset, Rebrickable, LEGO, Playmobil, Klickypedia, Mega | ✅ Complet (6/6) |
+| `construction-toys` | Brickset, Rebrickable, LEGO, Playmobil, Klickypedia, Mega, KRE-O | ✅ Complet (7/7) |
 | `books` | Google Books, OpenLibrary | ✅ Complet (2/2) |
 | `comics` | ComicVine, Bedetheque | ✅ Complet (2/2) |
 | `anime-manga` | Jikan (MyAnimeList), MangaUpdates | ✅ Complet (2/2) |
@@ -71,7 +80,7 @@ tako-api/
 | `music` | Discogs, Deezer, MusicBrainz, iTunes | ✅ Complet (4/4) |
 | `ecommerce` | Amazon (8 marketplaces) | ✅ Complet (1/1) |
 
-**Total : 11 domaines, 32 providers** - Migration toys_api **100% terminée** ✅
+**Total : 11 domaines, 33 providers** - Migration toys_api **100% terminée** ✅
 
 ## ⚠️ FlareSolverr - IMPORTANT
 
@@ -194,19 +203,26 @@ npm test
 PORT=3000
 NODE_ENV=development
 
-# Cache PostgreSQL
-DB_HOST=localhost
+# Base PostgreSQL interne (cache + données MEGA/KRE-O)
+DB_HOST=tako-db
 DB_PORT=5432
 DB_NAME=tako_cache
 DB_USER=tako
 DB_PASSWORD=secret
 DB_ENABLED=true
 
+# Stockage fichiers (images, PDFs)
+STORAGE_PATH=/data/tako-storage
+FILE_BASE_URL=https://tako.snowmanprod.fr/files
+
 # Scraping
 FSR_URL=http://flaresolverr:8191/v1
 VPN_PROXY_URL=http://gluetun:8888
 
 # APIs (optionnelles)
+BRICKSET_API_KEY=
+BRICKSET_USERNAME=
+BRICKSET_PASSWORD=
 REBRICKABLE_API_KEY=
 TMDB_API_KEY=
 TVDB_API_KEY=
@@ -214,10 +230,38 @@ IGDB_CLIENT_ID=
 IGDB_CLIENT_SECRET=
 COMICVINE_API_KEY=
 DISCOGS_TOKEN=
+RAWG_API_KEY=
+POKEMON_TCG_API_KEY=
 
 # Traduction (intégrée, activée par défaut)
 AUTO_TRAD_ENABLED=true
 ```
+
+## 🗄️ Base de données & Auto-provisioning
+
+Tako API utilise **un seul conteneur PostgreSQL** (`tako_db`) pour tout :
+- **Cache discovery** : table `discovery_cache` — cache des endpoints discovery (trending, popular, etc.)
+- **Archive MEGA Construx** : table `products` — 199 produits archivés
+- **Archive KRE-O** : table `kreo_products` — 417 produits archivés
+
+### Auto-migration
+Au démarrage, `runMigrations()` crée automatiquement toutes les tables + indexes si absents. Aucune intervention manuelle requise.
+
+### Auto-seed
+Au démarrage, `runSeeds()` applique les fichiers SQL de `src/infrastructure/database/seeds/` :
+- Tracking par **SHA-256** dans la table `_seed_migrations`
+- Seeds déjà appliqués avec le même checksum = ignorés
+- Seeds modifiés = ré-appliqués automatiquement (ex: lors d'un rebuild d'image)
+
+**Résultat** : un simple `docker compose up -d` sur une machine vierge donne une API fonctionnelle avec toutes les données.
+
+## 📦 Stockage fichiers
+
+Les fichiers statiques (images produits, PDFs d'instructions) sont servis depuis le disque :
+- **Volume** : `/mnt/egon/websites/tako-storage` monté en **read-only** sur `/data/tako-storage`
+- **Contenu** : 2580 fichiers (~4 Go) — MEGA + KRE-O archives
+- **URLs** : `https://tako.snowmanprod.fr/files/{mega-archive,kreo-archive}/...`
+- **Pas d'expiration** : URLs stables (contrairement aux presigned URLs MinIO)
 
 ## 📖 Documentation API
 
@@ -237,7 +281,8 @@ Ce projet est une refonte complète de `toys_api` avec :
 - ✅ Tests systématiques
 - ✅ FlareSolverr correctement géré (sessions auto-nettoyées)
 
-**Statut de migration** : ✅ **TERMINÉE** (30 janvier 2026)
+**Statut de migration** : ✅ **TERMINÉE** (30 janvier 2026)  
+**Dernière version** : v2.4.1 (2 mars 2026) — auto-seed, base unifiée
 
 ### Améliorations par rapport à toys_api
 

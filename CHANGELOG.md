@@ -9,6 +9,63 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.4.1] - 2026-03-02
+
+### 🌱 Auto-Seed — Données pré-remplies au démarrage
+
+Nouveau système de seeds SQL embarqués : lors d'un déploiement fresh install, les tables `products` (MEGA) et `kreo_products` (KRE-O) sont **automatiquement peuplées** au démarrage de l'application.
+
+#### Système de seeds
+- **Tracking par SHA-256** : table `_seed_migrations` stocke filename + checksum
+- **Idempotent** : un seed déjà appliqué avec le même checksum est ignoré
+- **Auto-update** : si un fichier seed est modifié (checksum différent), il est ré-appliqué automatiquement lors du prochain démarrage / rebuild d'image
+- **Transactionnel** : chaque seed est exécuté dans une transaction (rollback si erreur)
+- Logs au démarrage : `Seeds OK (tous à jour)` ou `Seeds appliqués : X nouveau(x), Y mis à jour`
+
+#### Fichiers seeds ajoutés
+- `src/infrastructure/database/seeds/001_mega_products.sql` — 199 UPSERT (MEGA Construx)
+- `src/infrastructure/database/seeds/002_kreo_products.sql` — 417 UPSERT (KRE-O)
+
+#### Bénéfice
+- **Zéro intervention manuelle** : `docker compose up -d` suffit pour avoir une API fonctionnelle avec toutes les données d'archive
+
+---
+
+## [2.4.0] - 2026-03-02
+
+### 🗄️ Fusion MEGA_DB → Base interne PostgreSQL
+
+**Breaking change** : La base de données externe MEGA (`Tako_DB_postgres`, port 5434) est supprimée. Les tables `products` et `kreo_products` sont désormais dans la base interne `tako_cache`.
+
+#### Migration
+- **Import des données** : 199 produits MEGA + 417 produits KRE-O importés dans `tako_cache`
+- **Auto-migration étendue** : `runMigrations()` crée automatiquement les tables `products` et `kreo_products` (avec indexes et fonctions PL/pgSQL) si absentes
+- **Réécriture `mega-database.js`** : thin wrapper sur `connection.js` (plus de Pool séparé)
+- **Suppression config** : bloc `mega.db` retiré de `env.js`, variables `MEGA_DB_*` supprimées
+
+#### Impact Docker
+- Plus besoin du container `Tako_DB_postgres` (stack Tako_BDD)
+- Variables supprimées du `.env` : `MEGA_DB_HOST`, `MEGA_DB_PORT`, `MEGA_DB_NAME`, `MEGA_DB_USER`, `MEGA_DB_PASSWORD`
+- Un seul container PostgreSQL (`tako_db`) pour tout
+
+#### Vérification
+```bash
+# Devrait afficher: [InterneDB] ✅ Base interne disponible (199 produits MEGA, 417 produits KRE-O)
+docker compose logs tako-api | grep InterneDB
+```
+
+---
+
+## [2.3.1] - 2026-03-02
+
+### 🔄 Auto-migration PostgreSQL au démarrage
+
+- **`runMigrations()`** dans `connection.js` : crée automatiquement la table `discovery_cache` (avec indexes) au démarrage si elle n'existe pas
+- **Idempotent** : utilise `IF NOT EXISTS`, safe à chaque redémarrage
+- **Correction** : la migration SQL (`scripts/migrations/001_create_discovery_cache.sql`) n'avait jamais été exécutée — le cache fonctionnait en mode dégradé (toujours miss)
+
+---
+
 ## [2.3.0] - 2026-03-01
 
 ### 📦 Migration MinIO → Stockage Fichiers (Filesystem)

@@ -1,7 +1,7 @@
 # 🚀 Tako API - Déploiement
 
-> **Déploiement effectué le** : 30 janvier 2026  
-> **Version** : 1.0.0  
+> **Dernière mise à jour** : 2 mars 2026  
+> **Version** : 2.4.1  
 > **Statut** : ✅ Production Ready
 
 ---
@@ -11,15 +11,14 @@
 ### GitHub Repository
 - **URL** : https://github.com/Nimai26/Tako_Api
 - **Branche principale** : `main`
-- **Commit initial** : `8fef753` - 🎉 Initial commit - Tako API v1.0.0
-- **Fichiers** : 189 fichiers, 64,641 insertions
+- **Version actuelle** : v2.4.1 (commit `6d1d1f9`)
 
 ### DockerHub
 - **Image** : `nimai24/tako-api`
 - **Tags disponibles** :
-  - `nimai24/tako-api:1.0.0` (version spécifique)
+  - `nimai24/tako-api:2.4.1` (version actuelle)
   - `nimai24/tako-api:latest` (dernière version)
-- **Taille** : ~373 MB
+  - Tags historiques : `2.4.0`, `2.3.1`, `2.3.0`, `2.2.2`, `1.0.0`
 - **Registry** : https://hub.docker.com/r/nimai24/tako-api
 
 ---
@@ -30,7 +29,7 @@
 
 ```bash
 # Version spécifique
-docker pull nimai24/tako-api:1.0.0
+docker pull nimai24/tako-api:2.4.1
 
 # Dernière version
 docker pull nimai24/tako-api:latest
@@ -39,12 +38,13 @@ docker pull nimai24/tako-api:latest
 ### Démarrage rapide
 
 ```bash
-# Avec docker run (standalone)
+# Avec docker run (standalone - sans DB ni FlareSolverr)
 docker run -d \
   --name tako-api \
   -p 3000:3000 \
   -e PORT=3000 \
   -e NODE_ENV=production \
+  -e DB_ENABLED=false \
   nimai24/tako-api:latest
 
 # Accès API
@@ -54,25 +54,29 @@ curl http://localhost:3000/health
 ### Docker Compose (recommandé)
 
 Le projet inclut un `docker-compose.yaml` complet avec :
-- Tako API
-- PostgreSQL (cache)
-- FlareSolverr (scraping anti-bot)
+- **Tako API** — application Node.js
+- **PostgreSQL** (`tako_db`) — cache + données internes (MEGA, KRE-O)
+- **FlareSolverr** — scraping anti-bot (Cloudflare bypass)
+
+Au démarrage, l'API :
+1. Se connecte à PostgreSQL
+2. **Auto-migration** : crée les tables `discovery_cache`, `products`, `kreo_products` si absentes
+3. **Auto-seed** : peuple les tables MEGA (199 produits) et KRE-O (417 produits) à partir des SQL embarqués
+4. Démarre le serveur HTTP
 
 ```bash
 # Clone le repository
 git clone https://github.com/Nimai26/Tako_Api.git
 cd Tako_Api
 
-# Créer .env depuis .env.example
+# Créer .env avec les clés API
 cp .env.example .env
-
-# Éditer .env et ajouter les clés API
 nano .env
 
 # Démarrer tous les services
 docker compose up -d
 
-# Vérifier les logs
+# Vérifier les logs (auto-migration + auto-seed visibles)
 docker compose logs -f tako-api
 
 # Vérifier la santé
@@ -90,13 +94,17 @@ curl http://localhost:3000/health
 PORT=3000
 NODE_ENV=production
 
-# Cache PostgreSQL
-DB_HOST=postgres
+# Base PostgreSQL interne (cache + données MEGA/KRE-O)
+DB_HOST=tako-db
 DB_PORT=5432
 DB_NAME=tako_cache
 DB_USER=tako
 DB_PASSWORD=your_secure_password
 DB_ENABLED=true
+
+# Stockage fichiers (images, PDFs - optionnel)
+STORAGE_PATH=/data/tako-storage
+FILE_BASE_URL=https://your-domain.com/files
 
 # Scraping
 FSR_URL=http://flaresolverr:8191/v1
@@ -245,12 +253,18 @@ docker compose down
 # Pull dernière image
 docker pull nimai24/tako-api:latest
 
-# Redémarrer
+# Redémarrer (auto-migration + auto-seed appliqués automatiquement)
 docker compose up -d
 
 # Vérifier version
 curl http://localhost:3000/version
 ```
+
+### Mise à jour des données seeds
+
+Les données embarquées (MEGA, KRE-O) sont versionnées dans l'image Docker.
+Lors d'un `docker pull` + restart, si les fichiers seeds ont changé (checksum SHA-256 différent),
+les nouvelles données sont **automatiquement appliquées** via UPSERT (pas de perte de données).
 
 ### Build depuis sources
 
@@ -276,10 +290,10 @@ docker compose up -d
 ### Migration toys_api → Tako_Api
 
 - ✅ **11 domaines** migrés (100%)
-- ✅ **32 providers** fonctionnels (100%)
-- ✅ **189 fichiers** source
-- ✅ **64,641 lignes** de code
-- ✅ **100% testé** et documenté
+- ✅ **33 providers** fonctionnels (100%)
+- ✅ **Auto-migration** des tables au démarrage
+- ✅ **Auto-seed** des données (MEGA + KRE-O) au démarrage
+- ✅ **Stockage fichiers** en clair (plus de MinIO)
 
 ### Domaines & Providers
 
@@ -360,4 +374,4 @@ Voir fichier LICENSE dans le repository.
 
 ---
 
-**Déployé avec ❤️ le 30 janvier 2026**
+**Déployé avec ❤️ — version 2.4.1 (2 mars 2026)**
