@@ -4,9 +4,14 @@
  */
 
 import pg from 'pg';
+import { readFileSync, readdirSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 import { config } from '../../config/index.js';
 import { logger } from '../../shared/utils/logger.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const { Pool } = pg;
 const log = logger.create('Database');
 
@@ -276,8 +281,104 @@ async function runMigrations() {
     } else {
       log.debug('Schema OK (toutes les tables existent)');
     }
+
+    // ── 5. Auto-seed : appliquer les fichiers SQL embarqués ──────────────
+    await runSeeds();
   } catch (err) {
     log.error(`❌ Auto-migration échouée: ${err.message}`);
     // Non bloquant : le serveur continuera en mode dégradé
+  }
+}
+
+/**
+ * Auto-seed : applique les fichiers SQL de seeds/*.sql
+ * 
+ * Tracking via table _seed_migrations :
+ * - Chaque fichier est identifié par son nom + hash SHA-256
+ * - Un fichier déjà appliqué avec le même hash est ignoré
+ * - Un fichier modifié (hash différent) est ré-appliqué (UPSERT = safe)
+ * - Les nouveaux fichiers sont appliqués dans l'ordre alphabétique
+ * 
+ * Pour ajouter/mettre à jour des données :
+ * 1. Modifier le fichier .sql existant ou en créer un nouveau (003_xxx.sql)
+ * 2. Rebuild l'image Docker → les seeds sont appliqués au démarrage
+ */
+async function runSeeds() {
+  try {
+    // Créer la table de tracking si elle n'existe pas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS _seed_migrations (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        checksum VARCHAR(64) NOT NULL,
+        applied_at TIMESTAMP DEFAULT NOW(),
+        rows_affected INTEGER DEFAULT 0,
+        UNIQUE(filename, checksum)
+      )
+    `);
+
+    // Lister les fichiers seeds disponibles
+    const seedsDir = join(__dirname, 'seeds');
+    let seedFiles;
+    try {
+      seedFiles = readdirSync(seedsDir)
+        .filter(f => f.endsWith('.sql'))
+        .sort();
+    } catch {
+      log.debug('Pas de dossier seeds/ — skip auto-seed');
+      return;
+    }
+
+    if (seedFiles.length === 0) return;
+
+    // Récupérer les seeds déjà appliqués
+    const applied = await pool.query('SELECT filename, checksum FROM _seed_migrations');
+    const appliedMap = new Map(applied.rows.map(r => [r.filename, r.checksum]));
+
+    let seeded = [];
+
+    for (const file of seedFiles) {
+      const content = readFileSync(join(seedsDir, file), 'utf-8');
+      const checksum = createHash('sha256').update(content).digest('hex');
+
+      // Skip si déjà appliqué avec le même hash
+      if (appliedMap.get(file) === checksum) continue;
+
+      log.info(`🌱 Seed: application de ${file}...`);
+
+      // Exécuter le SQL dans une transaction
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await client.query(content);
+        
+        // Supprimer l'ancienne entrée si le hash a changé
+        await client.query('DELETE FROM _seed_migrations WHERE filename = $1', [file]);
+        
+        // Enregistrer le nouveau hash
+        const rowCount = result?.rowCount || 0;
+        await client.query(
+          'INSERT INTO _seed_migrations (filename, checksum, rows_affected) VALUES ($1, $2, $3)',
+          [file, checksum, rowCount]
+        );
+        
+        await client.query('COMMIT');
+        seeded.push(file);
+      } catch (seedErr) {
+        await client.query('ROLLBACK');
+        log.error(`❌ Seed ${file} échoué: ${seedErr.message}`);
+      } finally {
+        client.release();
+      }
+    }
+
+    if (seeded.length > 0) {
+      log.info(`✅ Seeds appliqués: ${seeded.join(', ')}`);
+    } else {
+      log.debug('Seeds OK (tous à jour)');
+    }
+  } catch (err) {
+    log.error(`❌ Auto-seed échoué: ${err.message}`);
+    // Non bloquant
   }
 }
