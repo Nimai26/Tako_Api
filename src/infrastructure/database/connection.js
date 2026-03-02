@@ -151,44 +151,105 @@ export function getPoolStats() {
  */
 async function runMigrations() {
   try {
-    // Vérifier si la table discovery_cache existe
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = 'discovery_cache'
-      ) as exists
+    // Lister les tables existantes
+    const tablesResult = await pool.query(`
+      SELECT table_name FROM information_schema.tables 
+      WHERE table_schema = 'public'
     `);
+    const existingTables = new Set(tablesResult.rows.map(r => r.table_name));
 
-    if (tableCheck.rows[0].exists) {
-      log.debug('Schema OK (discovery_cache existe)');
-      return;
+    let created = [];
+
+    // ── 1. Table discovery_cache (système de cache) ──────────────────────
+    if (!existingTables.has('discovery_cache')) {
+      log.info('🔄 Migration: création de discovery_cache...');
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS discovery_cache (
+          id SERIAL PRIMARY KEY,
+          cache_key VARCHAR(255) UNIQUE NOT NULL,
+          provider VARCHAR(50) NOT NULL,
+          endpoint VARCHAR(50) NOT NULL,
+          category VARCHAR(50),
+          period VARCHAR(20),
+          data JSONB NOT NULL,
+          total_results INTEGER,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW(),
+          expires_at TIMESTAMP NOT NULL,
+          last_accessed TIMESTAMP DEFAULT NOW(),
+          fetch_count INTEGER DEFAULT 0,
+          refresh_count INTEGER DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_cache_key ON discovery_cache(cache_key);
+        CREATE INDEX IF NOT EXISTS idx_provider_endpoint ON discovery_cache(provider, endpoint);
+        CREATE INDEX IF NOT EXISTS idx_expires_at ON discovery_cache(expires_at);
+        CREATE INDEX IF NOT EXISTS idx_last_accessed ON discovery_cache(last_accessed);
+      `);
+      created.push('discovery_cache');
     }
 
-    log.info('🔄 Auto-migration: création du schéma discovery_cache...');
+    // ── 2. Table products (MEGA Construx archive) ────────────────────────
+    if (!existingTables.has('products')) {
+      log.info('🔄 Migration: création de products...');
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS products (
+          id SERIAL PRIMARY KEY,
+          sku VARCHAR(50) NOT NULL UNIQUE,
+          name VARCHAR(255) NOT NULL,
+          category VARCHAR(100) NOT NULL,
+          pdf_url TEXT,
+          image_url TEXT,
+          pdf_path VARCHAR(500),
+          image_path VARCHAR(500),
+          discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT valid_category CHECK (category IN (
+            'halo', 'pokemon', 'hot-wheels', 'barbie',
+            'masters-of-universe', 'masters-of-the-universe', 'other'
+          ))
+        );
+        CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+        CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+        CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+      `);
+      created.push('products');
+    }
 
+    // ── 3. Table kreo_products (KRE-O archive) ──────────────────────────
+    if (!existingTables.has('kreo_products')) {
+      log.info('🔄 Migration: création de kreo_products...');
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS kreo_products (
+          id SERIAL PRIMARY KEY,
+          set_number VARCHAR(20) NOT NULL UNIQUE,
+          name VARCHAR(255) NOT NULL,
+          franchise VARCHAR(50) NOT NULL,
+          sub_line VARCHAR(100),
+          year SMALLINT,
+          piece_count INTEGER,
+          kreons_count INTEGER,
+          kreons_included TEXT,
+          description TEXT,
+          price_retail NUMERIC(8,2),
+          product_type VARCHAR(50) DEFAULT 'building_set',
+          image_url TEXT,
+          image_path VARCHAR(255),
+          pdf_url TEXT,
+          pdf_path VARCHAR(255),
+          wiki_url TEXT,
+          wiki_image_url TEXT,
+          discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_kreo_franchise ON kreo_products(franchise);
+        CREATE INDEX IF NOT EXISTS idx_kreo_product_type ON kreo_products(product_type);
+        CREATE INDEX IF NOT EXISTS idx_kreo_sub_line ON kreo_products(sub_line);
+        CREATE INDEX IF NOT EXISTS idx_kreo_year ON kreo_products(year);
+      `);
+      created.push('kreo_products');
+    }
+
+    // ── 4. Fonctions PL/pgSQL utilitaires ────────────────────────────────
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS discovery_cache (
-        id SERIAL PRIMARY KEY,
-        cache_key VARCHAR(255) UNIQUE NOT NULL,
-        provider VARCHAR(50) NOT NULL,
-        endpoint VARCHAR(50) NOT NULL,
-        category VARCHAR(50),
-        period VARCHAR(20),
-        data JSONB NOT NULL,
-        total_results INTEGER,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-        expires_at TIMESTAMP NOT NULL,
-        last_accessed TIMESTAMP DEFAULT NOW(),
-        fetch_count INTEGER DEFAULT 0,
-        refresh_count INTEGER DEFAULT 0
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_cache_key ON discovery_cache(cache_key);
-      CREATE INDEX IF NOT EXISTS idx_provider_endpoint ON discovery_cache(provider, endpoint);
-      CREATE INDEX IF NOT EXISTS idx_expires_at ON discovery_cache(expires_at);
-      CREATE INDEX IF NOT EXISTS idx_last_accessed ON discovery_cache(last_accessed);
-
       CREATE OR REPLACE FUNCTION update_last_accessed()
       RETURNS TRIGGER AS $t$
       BEGIN
@@ -210,9 +271,13 @@ async function runMigrations() {
       $t$ LANGUAGE plpgsql;
     `);
 
-    log.info('✅ Auto-migration terminée (table discovery_cache créée)');
+    if (created.length > 0) {
+      log.info(`✅ Auto-migration terminée (tables créées: ${created.join(', ')})`);
+    } else {
+      log.debug('Schema OK (toutes les tables existent)');
+    }
   } catch (err) {
     log.error(`❌ Auto-migration échouée: ${err.message}`);
-    // Non bloquant : le cache fonctionnera en mode dégradé
+    // Non bloquant : le serveur continuera en mode dégradé
   }
 }

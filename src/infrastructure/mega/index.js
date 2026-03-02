@@ -1,9 +1,11 @@
 /**
- * Infrastructure - MEGA Archive Index
+ * Infrastructure - Archive Interne (MEGA + KRE-O)
  * 
- * Point d'entrée pour l'infrastructure MEGA :
- * - PostgreSQL (catalogue de produits)
+ * Point d'entrée pour l'infrastructure archive :
+ * - PostgreSQL (tables products / kreo_products dans tako_cache)
  * - Stockage fichiers (filesystem local via express.static)
+ * 
+ * Depuis v2.4.0 : le pool MEGA est unifié avec le pool principal.
  */
 
 export {
@@ -25,7 +27,8 @@ export {
 } from '../storage/index.js';
 
 /**
- * Initialise toute l'infrastructure MEGA
+ * Initialise l'infrastructure archive (vérification tables + stockage fichiers)
+ * La connexion DB est déjà gérée par connection.js
  */
 export async function initMegaInfrastructure() {
   const { initMegaDatabase } = await import('./mega-database.js');

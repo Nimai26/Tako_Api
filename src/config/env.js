@@ -93,16 +93,8 @@ export const env = {
   BRICKSET_USER_HASH: process.env.BRICKSET_USER_HASH || null,
   REBRICKABLE_API_KEY: process.env.REBRICKABLE_API_KEY || null,
   
-  // Mega Construx / KRE-O - Base de données dédiée
-  mega: {
-    db: {
-      host: process.env.MEGA_DB_HOST || null,
-      port: parseInt(process.env.MEGA_DB_PORT, 5434),
-      name: process.env.MEGA_DB_NAME || 'mega_archive',
-      user: process.env.MEGA_DB_USER || 'megauser',
-      password: process.env.MEGA_DB_PASSWORD || null
-    }
-  },
+  // Mega Construx / KRE-O - Tables internes (products, kreo_products dans tako_cache)
+  // Plus de base séparée depuis v2.4.0
 
   // Stockage fichiers (filesystem local, servi par express.static)
   storage: {
