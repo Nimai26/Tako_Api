@@ -72,6 +72,9 @@ export async function initDatabase() {
     log.info(`   Database: ${dbConfig.database}`);
     log.info(`   Pool: 2-10 connexions`);
 
+    // Auto-migration : créer les tables si elles n'existent pas
+    await runMigrations();
+
     return true;
   } catch (err) {
     log.error(`❌ Connexion PostgreSQL échouée: ${err.message}`);
@@ -140,4 +143,76 @@ export function getPoolStats() {
     idleCount: pool.idleCount,
     waitingCount: pool.waitingCount
   };
+}
+
+/**
+ * Auto-migration : vérifie et crée les tables/index/fonctions manquantes
+ * Utilise IF NOT EXISTS / CREATE OR REPLACE pour être idempotent
+ */
+async function runMigrations() {
+  try {
+    // Vérifier si la table discovery_cache existe
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'discovery_cache'
+      ) as exists
+    `);
+
+    if (tableCheck.rows[0].exists) {
+      log.debug('Schema OK (discovery_cache existe)');
+      return;
+    }
+
+    log.info('🔄 Auto-migration: création du schéma discovery_cache...');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS discovery_cache (
+        id SERIAL PRIMARY KEY,
+        cache_key VARCHAR(255) UNIQUE NOT NULL,
+        provider VARCHAR(50) NOT NULL,
+        endpoint VARCHAR(50) NOT NULL,
+        category VARCHAR(50),
+        period VARCHAR(20),
+        data JSONB NOT NULL,
+        total_results INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        expires_at TIMESTAMP NOT NULL,
+        last_accessed TIMESTAMP DEFAULT NOW(),
+        fetch_count INTEGER DEFAULT 0,
+        refresh_count INTEGER DEFAULT 0
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cache_key ON discovery_cache(cache_key);
+      CREATE INDEX IF NOT EXISTS idx_provider_endpoint ON discovery_cache(provider, endpoint);
+      CREATE INDEX IF NOT EXISTS idx_expires_at ON discovery_cache(expires_at);
+      CREATE INDEX IF NOT EXISTS idx_last_accessed ON discovery_cache(last_accessed);
+
+      CREATE OR REPLACE FUNCTION update_last_accessed()
+      RETURNS TRIGGER AS $t$
+      BEGIN
+        NEW.last_accessed = NOW();
+        RETURN NEW;
+      END;
+      $t$ LANGUAGE plpgsql;
+
+      CREATE OR REPLACE FUNCTION purge_old_cache_entries(days_threshold INTEGER DEFAULT 90)
+      RETURNS INTEGER AS $t$
+      DECLARE
+        deleted_count INTEGER;
+      BEGIN
+        DELETE FROM discovery_cache 
+        WHERE last_accessed < NOW() - INTERVAL '1 day' * days_threshold;
+        GET DIAGNOSTICS deleted_count = ROW_COUNT;
+        RETURN deleted_count;
+      END;
+      $t$ LANGUAGE plpgsql;
+    `);
+
+    log.info('✅ Auto-migration terminée (table discovery_cache créée)');
+  } catch (err) {
+    log.error(`❌ Auto-migration échouée: ${err.message}`);
+    // Non bloquant : le cache fonctionnera en mode dégradé
+  }
 }
