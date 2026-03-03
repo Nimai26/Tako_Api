@@ -38,6 +38,7 @@ const log = logger.create('CarddassProvider');
 
 const CARDDASS_ARCHIVE = 'carddass-archive';
 const ANIMECOLLECTION_BASE = 'http://www.animecollection.fr';
+const DBZCOLLECTION_BASE = 'http://www.dbzcollection.fr';
 const STORAGE_PREFIX = '/mnt/egon/websites/tako-storage/carddass-archive/';
 
 // ============================================================================
@@ -71,14 +72,16 @@ function getImageUrl(absolutePath) {
 }
 
 /**
- * Construit l'URL source originale sur animecollection.fr
+ * Construit l'URL source originale sur animecollection.fr ou dbzcollection.fr
  * Utilisé uniquement pour les URLs de pages web (pas d'images).
- * @param {string} relativePath - Chemin relatif de l'image (ex: cartes/1/9/h100_8_carte.jpg)
+ * @param {string} relativePath - Chemin relatif de l'image
+ * @param {string} sourceSite - 'animecollection' ou 'dbzcollection'
  * @returns {string|null} URL source
  */
-function getSourceUrl(relativePath) {
+function getSourceUrl(relativePath, sourceSite = 'animecollection') {
   if (!relativePath) return null;
-  return `${ANIMECOLLECTION_BASE}/${relativePath}`;
+  const base = sourceSite === 'dbzcollection' ? DBZCOLLECTION_BASE : ANIMECOLLECTION_BASE;
+  return `${base}/${relativePath}`;
 }
 
 /**
@@ -654,13 +657,14 @@ export async function searchCards(query, options = {}) {
 export async function getStats() {
   ensureConnected();
 
-  const [licenses, collections, series, cards, extraImages, packagings] = await Promise.all([
+  const [licenses, collections, series, cards, extraImages, packagings, bySite] = await Promise.all([
     queryOne('SELECT COUNT(*) as count FROM carddass_licenses'),
     queryOne('SELECT COUNT(*) as count FROM carddass_collections'),
     queryOne('SELECT COUNT(*) as count FROM carddass_series'),
     queryOne('SELECT COUNT(*) as count FROM carddass_cards'),
     queryOne('SELECT COUNT(*) as count FROM carddass_extra_images'),
-    queryOne('SELECT COUNT(*) as count FROM carddass_packagings')
+    queryOne('SELECT COUNT(*) as count FROM carddass_packagings'),
+    queryAll('SELECT source_site, COUNT(*) as count FROM carddass_cards GROUP BY source_site ORDER BY source_site')
   ]);
 
   // Top raretés
@@ -694,6 +698,7 @@ export async function getStats() {
     packagings: parseInt(packagings?.count || 0),
     rarities: rarities.map(r => ({ name: r.rarity, count: parseInt(r.count) })),
     topLicenses: topLicenses.map(l => ({ name: l.name, cardCount: parseInt(l.card_count) })),
+    bySite: bySite.map(s => ({ site: s.source_site, cardCount: parseInt(s.count) })),
     storageReady: isStorageReady()
   };
 }

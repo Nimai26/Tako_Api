@@ -1682,6 +1682,71 @@ GET /api/tcg/pokemon/health
 
 ---
 
+### Dragon Ball Super Card Game (DBS)
+
+> **Base URL** : `/api/tcg/dbs`  
+> **Sources** : [DeckPlanet API](https://api.deckplanet.net) (Masters) + [dbs-cardgame.com](https://www.dbs-cardgame.com) (Fusion World)  
+> **API Key** : Aucune requise  
+> **Note** : Base locale PostgreSQL, 6 213 cartes Masters + 1 689 cartes Fusion World
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /search?q=` | Recherche de cartes | ✅ Fonctionne |
+| `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
+| `GET /sets` | Liste des sets | ✅ Fonctionne |
+| `GET /sets/:code` | Détail d'un set avec cartes | ✅ Fonctionne |
+| `GET /stats` | Statistiques complètes | ✅ Fonctionne |
+| `GET /health` | Health check | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Texte de recherche (requis) — nom, skills, traits
+- `game` : Filtrer par jeu (`masters` ou `fusion_world`, défaut: les deux)
+- `color` : Filtrer par couleur (Red, Blue, Green, Yellow, Black)
+- `type` : Filtrer par type (LEADER, BATTLE, EXTRA, UNISON, Z-BATTLE, etc.)
+- `rarity` : Filtrer par rareté (Common[C], Rare[R], Super Rare[SR], etc.)
+- `set` : Filtrer par set_code (BT1, FB01, etc.)
+- `max` : Résultats max (défaut: 20, max: 100)
+- `page` : Page de résultats (défaut: 1)
+
+**Données retournées (cartes)** :
+- `id` : Numéro de carte (ex: BT1-030, FB01-001)
+- `title` : Nom de la carte
+- `subtitle` : Type · Couleur
+- `description` : Skills de la carte
+- `image` / `thumbnail` : URL image de la carte
+- `metadata` :
+  - `game` : masters ou fusion_world
+  - `cardNumber`, `cardType`, `color`, `rarity`
+  - `power`, `energyCost`, `comboCost`, `comboPower`
+  - `traits`, `character`, `era`, `keywords` (JSON)
+  - `setCode`, `setName`
+  - `isBanned`, `isLimited`, `hasErrata` (Masters uniquement)
+  - `backName`, `backPower`, `backSkill` (Leaders uniquement)
+  - `variants`, `finishes` (Masters uniquement)
+
+**Exemples** :
+```bash
+# Recherche Goku
+GET /api/tcg/dbs/search?q=Goku&max=10
+
+# Goku dans Fusion World uniquement
+GET /api/tcg/dbs/search?q=Goku&game=fusion_world
+
+# Leaders rouges
+GET /api/tcg/dbs/search?q=*&type=LEADER&color=Red
+
+# Détails d'une carte
+GET /api/tcg/dbs/card/FB01-001
+
+# Sets Fusion World 
+GET /api/tcg/dbs/sets?game=fusion_world
+
+# Statistiques
+GET /api/tcg/dbs/stats
+```
+
+---
+
 ## Magic: The Gathering (MTG)
 
 **Base URL** : `/api/tcg/mtg`

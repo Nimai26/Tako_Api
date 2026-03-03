@@ -10,12 +10,14 @@ import yugiohRouter from './routes/yugioh.routes.js';
 import lorcanaRouter from './routes/lorcana.routes.js';
 import digimonRouter from './routes/digimon.routes.js';
 import onepieceRouter from './routes/onepiece.routes.js';
+import dbsRouter from './routes/dbs.routes.js';
 import { healthCheck as pokemonHealth } from './providers/pokemon.provider.js';
 import { healthCheck as mtgHealth } from './providers/mtg.provider.js';
 import { healthCheck as yugiohHealth } from './providers/yugioh.provider.js';
 import { healthCheck as lorcanaHealth } from './providers/lorcana.provider.js';
 import { healthCheck as digimonHealth } from './providers/digimon.provider.js';
 import { healthCheck as onepieceHealth } from './providers/onepiece.provider.js';
+import { healthCheck as dbsHealth } from './providers/dbs.provider.js';
 import { logger } from '../../shared/utils/logger.js';
 
 const router = Router();
@@ -38,19 +40,23 @@ router.use('/digimon', digimonRouter);
 // Routes One Piece
 router.use('/onepiece', onepieceRouter);
 
+// Routes Dragon Ball Super
+router.use('/dbs', dbsRouter);
+
 /**
  * GET /health
  * Health check global TCG
  */
 router.get('/health', async (req, res) => {
   try {
-    const [pokemon, mtg, yugioh, lorcana, digimon, onepiece] = await Promise.allSettled([
+    const [pokemon, mtg, yugioh, lorcana, digimon, onepiece, dbs] = await Promise.allSettled([
       pokemonHealth(),
       mtgHealth(),
       yugiohHealth(),
       lorcanaHealth(),
       digimonHealth(),
-      onepieceHealth()
+      onepieceHealth(),
+      dbsHealth()
     ]);
 
     const providers = {
@@ -59,7 +65,8 @@ router.get('/health', async (req, res) => {
       yugioh: yugioh.status === 'fulfilled' ? yugioh.value : { healthy: false, message: yugioh.reason?.message },
       lorcana: lorcana.status === 'fulfilled' ? lorcana.value : { healthy: false, message: lorcana.reason?.message },
       digimon: digimon.status === 'fulfilled' ? digimon.value : { healthy: false, message: digimon.reason?.message },
-      onepiece: onepiece.status === 'fulfilled' ? onepiece.value : { healthy: false, message: onepiece.reason?.message }
+      onepiece: onepiece.status === 'fulfilled' ? onepiece.value : { healthy: false, message: onepiece.reason?.message },
+      dbs: dbs.status === 'fulfilled' ? dbs.value : { healthy: false, message: dbs.reason?.message }
     };
 
     const allHealthy = Object.values(providers).every(p => p.healthy);
@@ -129,11 +136,17 @@ router.get('/', (req, res) => {
         title: 'One Piece Card Game',
         status: 'active',
         endpoints: ['/search', '/card/:id', '/health']
+      },
+      {
+        name: 'dbs',
+        title: 'Dragon Ball Super Card Game',
+        status: 'active',
+        endpoints: ['/search', '/card/:id', '/sets', '/sets/:code', '/stats', '/health']
       }
     ],
     meta: {
       version: '1.0.0',
-      activeProviders: 6
+      activeProviders: 7
     }
   });
 });

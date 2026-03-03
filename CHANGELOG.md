@@ -9,6 +9,50 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.6.0] - 2026-03-03
+
+### 🐉 Dragon Ball — Archive dbzcollection.fr + DBS Card Game
+
+Expansion majeure Dragon Ball : archive du site dbzcollection.fr dans Carddass + nouveau provider **DBS Card Game** dans le domaine TCG couvrant Masters (6 213 cartes DeckPlanet API) et Fusion World (1 689 cartes Bandai officiel).
+
+#### dbzcollection.fr → Carddass
+- **1 licence** Dragon Ball (source_site: dbzcollection)
+- **336 collections** hiérarchisées
+- **1 477 séries** avec capsules
+- **~27 000 cartes** Dragon Ball avec images h50 + h400
+- Migration `004`: ajout colonne `source_site` sur toutes les tables carddass
+- Contraintes UNIQUE mises à jour pour supporter multi-sites
+
+#### DBS Card Game (nouveau provider TCG)
+- **DBS Masters** : 6 213 cartes, 91 sets (source: DeckPlanet API)
+- **Fusion World** : 1 689 cartes, 25 catégories (source: Bandai officiel dbs-cardgame.com)
+- Migration `005`: tables `dbs_sets` + `dbs_cards` (38 colonnes, 11 index)
+- Support Leaders (recto/verso), bans, errata, variantes
+
+#### 6 endpoints DBS TCG
+- `GET /api/tcg/dbs/search?q=` — recherche full-text (filtres: game, color, type, rarity, set)
+- `GET /api/tcg/dbs/card/:id` — détail carte par card_number ou ID
+- `GET /api/tcg/dbs/sets` — liste des sets (filtre: game)
+- `GET /api/tcg/dbs/sets/:code` — détail set avec cartes
+- `GET /api/tcg/dbs/stats` — statistiques par jeu/couleur/type/rareté
+- `GET /api/tcg/dbs/health` — santé du provider
+
+#### Fichiers ajoutés
+- `src/domains/tcg/providers/dbs.provider.js` — provider PostgreSQL DBS
+- `src/domains/tcg/normalizers/dbs.normalizer.js` — normalisation Tako format
+- `src/domains/tcg/routes/dbs.routes.js` — 6 routes Express
+- `scripts/scrape-dbzcollection.cjs` — scraper 3 phases dbzcollection.fr
+- `scripts/ingest-dbs-cards.cjs` — ingestion DeckPlanet + Fusion World
+- `scripts/migrations/004_add_source_site_column.sql` — migration multi-sources carddass
+- `scripts/migrations/005_create_dbs_tables.sql` — tables DBS Card Game
+- `docs/DRAGON_BALL_RESEARCH.md` — recherche complète sources Dragon Ball
+
+#### Fichiers modifiés
+- `src/domains/tcg/index.js` — DBS ajouté comme 7e provider TCG
+- `src/domains/collectibles/providers/carddass.provider.js` — support multi-sites (animecollection + dbzcollection), stats bySite
+
+---
+
 ## [2.5.0] - 2026-03-03
 
 ### 🃏 Carddass — Archive complète animecollection.fr
