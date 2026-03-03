@@ -9,6 +9,47 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.5.0] - 2026-03-03
+
+### 🃏 Carddass — Archive complète animecollection.fr
+
+Nouveau provider **Carddass** dans le domaine `collectibles` : archive complète du site animecollection.fr (31 685 cartes, 6,5 Go d'images HD).
+
+#### Données archivées
+- **80 licences** (Dragon Ball, Gundam, Sailor Moon, One Piece, etc.)
+- **336 collections** hiérarchisées par licence
+- **727 séries** avec capsules
+- **31 685 cartes** avec images HD depuis le stockage local
+- **6 379 images supplémentaires** (dos de carte, variantes)
+- **1 734 packagings** (emballages produits)
+- **Total : 40 605 fichiers** servis depuis `/files/carddass-archive/`
+
+#### 10 endpoints REST
+- `GET /api/collectibles/carddass/health` — santé du provider
+- `GET /api/collectibles/carddass/stats` — statistiques complètes
+- `GET /api/collectibles/carddass/search?q=` — recherche full-text (filtres : `rarity`, `license`)
+- `GET /api/collectibles/carddass/licenses` — liste des 80 licences
+- `GET /api/collectibles/carddass/licenses/:id` — détail licence
+- `GET /api/collectibles/carddass/licenses/:id/collections` — collections d'une licence
+- `GET /api/collectibles/carddass/collections/:id/series` — séries d'une collection
+- `GET /api/collectibles/carddass/series/:id/cards` — cartes d'une série
+- `GET /api/collectibles/carddass/cards/:id` — détail carte (hiérarchie complète)
+- `GET /api/collectibles/carddass/cards/:id/images` — toutes les images d'une carte
+
+#### Fichiers ajoutés
+- `src/domains/collectibles/providers/carddass.provider.js` — provider PostgreSQL (fonctionnel)
+- `src/domains/collectibles/normalizers/carddass.normalizer.js` — normalisation Tako format
+- `src/domains/collectibles/routes/carddass.routes.js` — 10 routes Express
+- `src/infrastructure/database/seeds/003_carddass_tables.sql` — 7 tables (auto-seed)
+- `docs/CARDDASS_SCRAPING_WORKFLOW.md` — documentation du processus de scraping 3 phases
+
+#### Scraping (3 phases)
+1. **Catalogue** : crawl exhaustif des 80 licences → 336 collections → 727 séries → 31 685 cartes
+2. **Enrichissement AJAX** : récupération URLs HD + images extras via endpoints AJAX
+3. **Téléchargement images** : 40 605 fichiers (6,5 Go) via VPN (Gluetun/PIA)
+
+---
+
 ## [2.4.1] - 2026-03-02
 
 ### 🌱 Auto-Seed — Données pré-remplies au démarrage

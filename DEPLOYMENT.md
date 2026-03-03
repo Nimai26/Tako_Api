@@ -1,7 +1,7 @@
 # 🚀 Tako API - Déploiement
 
-> **Dernière mise à jour** : 2 mars 2026  
-> **Version** : 2.4.1  
+> **Dernière mise à jour** : 3 mars 2026  
+> **Version** : 2.5.0  
 > **Statut** : ✅ Production Ready
 
 ---
@@ -11,14 +11,14 @@
 ### GitHub Repository
 - **URL** : https://github.com/Nimai26/Tako_Api
 - **Branche principale** : `main`
-- **Version actuelle** : v2.4.1 (commit `6d1d1f9`)
+- **Version actuelle** : v2.5.0 (commit `b2745da`)
 
 ### DockerHub
 - **Image** : `nimai24/tako-api`
 - **Tags disponibles** :
-  - `nimai24/tako-api:2.4.1` (version actuelle)
+  - `nimai24/tako-api:2.5.0` (version actuelle)
   - `nimai24/tako-api:latest` (dernière version)
-  - Tags historiques : `2.4.0`, `2.3.1`, `2.3.0`, `2.2.2`, `1.0.0`
+  - Tags historiques : `2.4.1`, `2.4.0`, `2.3.1`, `2.3.0`, `2.2.2`, `1.0.0`
 - **Registry** : https://hub.docker.com/r/nimai24/tako-api
 
 ---
@@ -29,7 +29,7 @@
 
 ```bash
 # Version spécifique
-docker pull nimai24/tako-api:2.4.1
+docker pull nimai24/tako-api:2.5.0
 
 # Dernière version
 docker pull nimai24/tako-api:latest
@@ -61,7 +61,7 @@ Le projet inclut un `docker-compose.yaml` complet avec :
 Au démarrage, l'API :
 1. Se connecte à PostgreSQL
 2. **Auto-migration** : crée les tables `discovery_cache`, `products`, `kreo_products` si absentes
-3. **Auto-seed** : peuple les tables MEGA (199 produits) et KRE-O (417 produits) à partir des SQL embarqués
+3. **Auto-seed** : peuple les tables MEGA (199 produits), KRE-O (417 produits) et Carddass (7 tables) à partir des SQL embarqués
 4. Démarre le serveur HTTP
 
 ```bash
@@ -290,9 +290,9 @@ docker compose up -d
 ### Migration toys_api → Tako_Api
 
 - ✅ **11 domaines** migrés (100%)
-- ✅ **33 providers** fonctionnels (100%)
+- ✅ **35 providers** fonctionnels (100%)
 - ✅ **Auto-migration** des tables au démarrage
-- ✅ **Auto-seed** des données (MEGA + KRE-O) au démarrage
+- ✅ **Auto-seed** des données (MEGA + KRE-O + Carddass) au démarrage
 - ✅ **Stockage fichiers** en clair (plus de MinIO)
 
 ### Domaines & Providers
@@ -306,7 +306,7 @@ docker compose up -d
 | Media | 2 providers | ✅ Complet |
 | Videogames | 4 providers | ✅ Complet |
 | BoardGames | 1 provider | ✅ Complet |
-| Collectibles | 2 providers | ✅ Complet |
+| Collectibles | 4 providers | ✅ Complet |
 | TCG | 6 providers | ✅ Complet |
 | Music | 4 providers | ✅ Complet |
 | E-commerce | 1 provider (8 marketplaces) | ✅ Complet |
@@ -374,4 +374,4 @@ Voir fichier LICENSE dans le repository.
 
 ---
 
-**Déployé avec ❤️ — version 2.4.1 (2 mars 2026)**
+**Déployé avec ❤️ — version 2.5.0 (3 mars 2026)**
