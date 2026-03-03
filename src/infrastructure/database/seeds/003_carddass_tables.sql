@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS carddass_series (
   id SERIAL PRIMARY KEY,
   source_id INTEGER NOT NULL,
   collection_id INTEGER NOT NULL REFERENCES carddass_collections(id),
+  license_source_id INTEGER,
+  collection_source_id INTEGER,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   capsule_url TEXT,
@@ -115,6 +117,7 @@ CREATE TABLE IF NOT EXISTS carddass_packagings (
   source_id INTEGER NOT NULL UNIQUE,
   series_id INTEGER NOT NULL REFERENCES carddass_series(id),
   label VARCHAR(100),
+  rarity VARCHAR(100),
   image_url TEXT,
   image_path VARCHAR(500),
   discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
