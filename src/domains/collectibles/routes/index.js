@@ -10,6 +10,7 @@ import express from 'express';
 import colekaRoutes from './coleka.routes.js';
 import luluberluRoutes from './luluberlu.routes.js';
 import transformerlandRoutes from './transformerland.routes.js';
+import carddassRoutes from './carddass.routes.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 const router = express.Router();
@@ -18,6 +19,7 @@ const router = express.Router();
 router.use('/coleka', colekaRoutes);
 router.use('/luluberlu', luluberluRoutes);
 router.use('/transformerland', transformerlandRoutes);
+router.use('/carddass', carddassRoutes);
 
 // Route d'information sur le domaine
 router.get('/', (req, res) => {
@@ -70,6 +72,27 @@ router.get('/', (req, res) => {
           ],
           requiresAuth: false,
           rateLimit: 'FlareSolverr dependent (~3-5s per request)'
+        },
+        {
+          name: 'carddass',
+          description: 'Archive complète de cartes Carddass japonaises (animecollection.fr)',
+          baseUrl: '/api/collectibles/carddass',
+          features: [
+            'search',
+            'card-details',
+            'hierarchy-browsing',
+            'licenses',
+            'collections',
+            'series',
+            'extra-images',
+            'packagings',
+            'rarity-filter',
+            'hd-images',
+            'statistics'
+          ],
+          requiresAuth: false,
+          rateLimit: 'Database (fast, <100ms)',
+          dataSource: 'PostgreSQL archive (~31,685 cards)'
         }
       ],
       endpoints: {
@@ -91,6 +114,18 @@ router.get('/', (req, res) => {
           'GET /transformerland/details?id={toyId}&lang={fr}&autoTrad={1}',
           'GET /transformerland/item/{toyId}?lang={fr}&autoTrad={1}',
           'GET /transformerland/health'
+        ],
+        carddass: [
+          'GET /carddass/health',
+          'GET /carddass/stats',
+          'GET /carddass/search?q={query}&page={1}&pageSize={20}&rarity={Prism}&license={Dragon Ball}',
+          'GET /carddass/licenses?page={1}&pageSize={50}',
+          'GET /carddass/licenses/{id}',
+          'GET /carddass/licenses/{id}/collections?page={1}&pageSize={50}',
+          'GET /carddass/collections/{id}/series?page={1}&pageSize={50}',
+          'GET /carddass/series/{id}/cards?page={1}&pageSize={50}&rarity={Prism}',
+          'GET /carddass/cards/{id}',
+          'GET /carddass/cards/{id}/images'
         ]
       }
     }
@@ -103,11 +138,12 @@ router.get('/health', async (req, res) => {
     const healthChecks = await Promise.allSettled([
       import('../providers/coleka.provider.js').then(m => m.healthCheck()),
       import('../providers/luluberlu.provider.js').then(m => m.healthCheck()),
-      import('../providers/transformerland.provider.js').then(m => m.healthCheck())
+      import('../providers/transformerland.provider.js').then(m => m.healthCheck()),
+      import('../providers/carddass.provider.js').then(m => m.healthCheck())
     ]);
     
     const results = healthChecks.map((result, index) => {
-      const providerNames = ['coleka', 'lulu-berlu', 'transformerland'];
+      const providerNames = ['coleka', 'lulu-berlu', 'transformerland', 'carddass'];
       return {
         provider: providerNames[index],
         status: result.status === 'fulfilled' ? result.value.status : 'unhealthy',

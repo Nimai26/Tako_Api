@@ -47,7 +47,7 @@ export function initStorage() {
   }
 
   // Vérifier les sous-dossiers connus
-  const expectedDirs = ['mega-archive', 'kreo-archive'];
+  const expectedDirs = ['mega-archive', 'kreo-archive', 'carddass-archive'];
   const found = [];
   const missing = [];
 

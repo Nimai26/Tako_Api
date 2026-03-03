@@ -268,6 +268,16 @@ export const collectibles = {
     name: 'Paninimania',
     baseUrl: 'https://www.paninimania.com',
     defaultMax: 20
+  },
+  
+  carddass: {
+    name: 'Carddass (animecollection.fr)',
+    baseUrl: 'http://www.animecollection.fr',
+    dataSource: 'database',
+    storage: 'carddass-archive',
+    defaultMax: 50,
+    description: 'Archive complète de cartes Carddass japonaises (~31,685 cartes)',
+    hierarchy: ['licenses', 'collections', 'series', 'cards']
   }
 };
 
