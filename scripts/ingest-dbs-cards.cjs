@@ -442,11 +442,17 @@ async function phase2_fusionWorld(downloadImages = false) {
         setsFound.add(setCode);
       }
       
-      const imageUrl = `https://www.dbs-cardgame.com/fw/images/cards/card/en/${cardNumber}_f.webp`;
+      // Leaders: use _f and _b suffixes; others: plain .webp
       const hasBack = card.hasBack;
+      const isLeader = card.cardType === 'LEADER';
+      const imageUrl = isLeader
+        ? `https://www.dbs-cardgame.com/fw/images/cards/card/en/${cardNumber}_f.webp`
+        : `https://www.dbs-cardgame.com/fw/images/cards/card/en/${cardNumber}.webp`;
       const imageBackUrl = hasBack ? `https://www.dbs-cardgame.com/fw/images/cards/card/en/${cardNumber}_b.webp` : null;
       const safeNum = cardNumber.replace(/\//g, '_');
-      const imagePath = `${CONFIG.storage}/fusion_world/${safeNum}_f.webp`;
+      const imagePath = isLeader
+        ? `${CONFIG.storage}/fusion_world/${safeNum}_f.webp`
+        : `${CONFIG.storage}/fusion_world/${safeNum}.webp`;
       const imageBackPath = hasBack ? `${CONFIG.storage}/fusion_world/${safeNum}_b.webp` : null;
       
       await query(`
