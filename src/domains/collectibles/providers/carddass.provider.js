@@ -72,12 +72,34 @@ function getImageUrl(absolutePath) {
 
 /**
  * Construit l'URL source originale sur animecollection.fr
+ * Utilisé uniquement pour les URLs de pages web (pas d'images).
  * @param {string} relativePath - Chemin relatif de l'image (ex: cartes/1/9/h100_8_carte.jpg)
  * @returns {string|null} URL source
  */
 function getSourceUrl(relativePath) {
   if (!relativePath) return null;
   return `${ANIMECOLLECTION_BASE}/${relativePath}`;
+}
+
+/**
+ * Résout une paire thumbnail/hd en URLs locales.
+ * Toutes les images archivées sont en HD (h3000). Les thumbnails (h100) n'ont
+ * pas été téléchargées — on utilise l'image HD comme fallback pour le thumbnail
+ * plutôt que de renvoyer vers animecollection.fr (site source potentiellement
+ * inaccessible / IP banned).
+ */
+function resolveImagePair(thumbPath, hdPath) {
+  const hd = getImageUrl(hdPath);
+  const thumbnail = getImageUrl(thumbPath) || hd;
+  return { thumbnail, hd };
+}
+
+/**
+ * Résout une image unique (licence, capsule, packaging…) en URL locale.
+ * Fallback: null (jamais d'URL externe).
+ */
+function resolveImage(localPath) {
+  return getImageUrl(localPath) || null;
 }
 
 // ============================================================================
@@ -114,8 +136,8 @@ export async function getLicenses(options = {}) {
       sourceId: row.source_id,
       name: row.name,
       description: row.description || null,
-      image: getImageUrl(row.image_path) || getSourceUrl(row.image_url),
-      banner: getImageUrl(row.banner_path) || getSourceUrl(row.banner_url),
+      image: resolveImage(row.image_path),
+      banner: resolveImage(row.banner_path),
       url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${row.source_id}`
     })),
     total,
@@ -155,8 +177,8 @@ export async function getLicenseById(licenseId) {
     sourceId: row.source_id,
     name: row.name,
     description: row.description || null,
-    image: getImageUrl(row.image_path) || getSourceUrl(row.image_url),
-    banner: getImageUrl(row.banner_path) || getSourceUrl(row.banner_url),
+    image: resolveImage(row.image_path),
+    banner: resolveImage(row.banner_path),
     collectionCount: parseInt(row.collection_count || 0),
     cardCount: parseInt(row.card_count || 0),
     url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${row.source_id}`
@@ -301,7 +323,7 @@ export async function getSeries(collectionId, options = {}) {
       sourceId: row.source_id,
       name: row.name,
       description: row.description || null,
-      capsule: getImageUrl(row.capsule_path) || getSourceUrl(row.capsule_url),
+      capsule: resolveImage(row.capsule_path),
       cardCount: parseInt(row.card_count || 0),
       packagingCount: parseInt(row.packaging_count || 0),
       url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${collection.license_source_id}&idc=${collection.source_id}&ids=${row.source_id}`
@@ -456,18 +478,21 @@ export async function getCardById(cardId) {
         name: row.series_name
       }
     },
-    extraImages: extraImages.map(img => ({
-      id: img.id,
-      sourceId: img.source_id,
-      label: img.label || null,
-      thumbnail: getImageUrl(img.image_path_thumb) || getSourceUrl(img.image_url_thumb),
-      hd: getImageUrl(img.image_path_hd) || getSourceUrl(img.image_url_hd)
-    })),
+    extraImages: extraImages.map(img => {
+      const imgs = resolveImagePair(img.image_path_thumb, img.image_path_hd);
+      return {
+        id: img.id,
+        sourceId: img.source_id,
+        label: img.label || null,
+        thumbnail: imgs.thumbnail,
+        hd: imgs.hd
+      };
+    }),
     packagings: packagings.map(pack => ({
       id: pack.id,
       sourceId: pack.source_id,
       label: pack.label || null,
-      image: getImageUrl(pack.image_path) || getSourceUrl(pack.image_url)
+      image: resolveImage(pack.image_path)
     }))
   };
 }
@@ -497,13 +522,16 @@ export async function getCardImages(cardId) {
   return {
     cardId: card.source_id,
     cardNumber: card.card_number,
-    images: extraImages.map(img => ({
-      id: img.id,
-      sourceId: img.source_id,
-      label: img.label || null,
-      thumbnail: getImageUrl(img.image_path_thumb) || getSourceUrl(img.image_url_thumb),
-      hd: getImageUrl(img.image_path_hd) || getSourceUrl(img.image_url_hd)
-    })),
+    images: extraImages.map(img => {
+      const imgs = resolveImagePair(img.image_path_thumb, img.image_path_hd);
+      return {
+        id: img.id,
+        sourceId: img.source_id,
+        label: img.label || null,
+        thumbnail: imgs.thumbnail,
+        hd: imgs.hd
+      };
+    }),
     total: extraImages.length
   };
 }
@@ -600,8 +628,7 @@ export async function searchCards(query, options = {}) {
       cardNumber: row.card_number,
       rarity: row.rarity || null,
       rarityColor: row.rarity_color || null,
-      thumbnail: getImageUrl(row.image_path_thumb) || getSourceUrl(row.image_url_thumb),
-      hd: getImageUrl(row.image_path_hd) || getSourceUrl(row.image_url_hd),
+      ...resolveImagePair(row.image_path_thumb, row.image_path_hd),
       license: row.license_name_ref || row.license_name,
       collection: row.collection_name_ref || row.collection_name,
       series: row.series_name_ref || row.series_name
@@ -770,10 +797,7 @@ function enrichCard(row, context) {
     cardNumber: row.card_number,
     rarity: row.rarity || null,
     rarityColor: row.rarity_color || null,
-    images: {
-      thumbnail: getImageUrl(row.image_path_thumb) || getSourceUrl(row.image_url_thumb),
-      hd: getImageUrl(row.image_path_hd) || getSourceUrl(row.image_url_hd)
-    },
+    images: resolveImagePair(row.image_path_thumb, row.image_path_hd),
     license: row.license_name || null,
     collection: row.collection_name || null,
     series: row.series_name || null
