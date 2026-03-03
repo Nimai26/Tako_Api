@@ -1,6 +1,10 @@
 -- Seed: Carddass Archive Tables
 -- Source: animecollection.fr (31,685 cards, 80 licenses, 336 collections, 733 series)
 -- Tables créées ici, données peuplées par le scraper carddass séparé
+--
+-- IMPORTANT: Chaque CREATE TABLE est suivi de ALTER TABLE ADD COLUMN IF NOT EXISTS
+-- pour permettre l'évolution du schéma lors des mises à jour d'image Docker.
+-- (CREATE TABLE IF NOT EXISTS ne rajoute pas les colonnes manquantes)
 
 -- ═══════════════════════════════════════════════════════════
 -- TABLE 1: carddass_licenses (80 licences)
@@ -17,6 +21,10 @@ CREATE TABLE IF NOT EXISTS carddass_licenses (
   discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Schema evolution: colonnes ajoutées après la création initiale
+ALTER TABLE carddass_licenses ADD COLUMN IF NOT EXISTS banner_url TEXT;
+ALTER TABLE carddass_licenses ADD COLUMN IF NOT EXISTS banner_path VARCHAR(500);
 
 CREATE INDEX IF NOT EXISTS idx_carddass_licenses_source ON carddass_licenses(source_id);
 CREATE INDEX IF NOT EXISTS idx_carddass_licenses_name ON carddass_licenses(name);
@@ -56,6 +64,11 @@ CREATE TABLE IF NOT EXISTS carddass_series (
   UNIQUE(source_id, collection_id)
 );
 
+-- Schema evolution: colonnes ajoutées par le scraper
+ALTER TABLE carddass_series ADD COLUMN IF NOT EXISTS license_source_id INTEGER;
+ALTER TABLE carddass_series ADD COLUMN IF NOT EXISTS collection_source_id INTEGER;
+ALTER TABLE carddass_series ADD COLUMN IF NOT EXISTS capsule_path VARCHAR(500);
+
 CREATE INDEX IF NOT EXISTS idx_carddass_series_collection ON carddass_series(collection_id);
 CREATE INDEX IF NOT EXISTS idx_carddass_series_source ON carddass_series(source_id);
 
@@ -87,6 +100,24 @@ CREATE TABLE IF NOT EXISTS carddass_cards (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Schema evolution
+ALTER TABLE carddass_cards ADD COLUMN IF NOT EXISTS rarity_color VARCHAR(50);
+ALTER TABLE carddass_cards ADD COLUMN IF NOT EXISTS image_path_thumb VARCHAR(500);
+ALTER TABLE carddass_cards ADD COLUMN IF NOT EXISTS image_path_hd VARCHAR(500);
+ALTER TABLE carddass_cards ADD COLUMN IF NOT EXISTS license_name VARCHAR(255);
+ALTER TABLE carddass_cards ADD COLUMN IF NOT EXISTS collection_name VARCHAR(255);
+ALTER TABLE carddass_cards ADD COLUMN IF NOT EXISTS series_name VARCHAR(255);
+-- Migration: card_number élargi de VARCHAR(20) à VARCHAR(100)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'carddass_cards' AND column_name = 'card_number'
+    AND character_maximum_length < 100
+  ) THEN
+    ALTER TABLE carddass_cards ALTER COLUMN card_number TYPE VARCHAR(100);
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_carddass_cards_series ON carddass_cards(series_id);
 CREATE INDEX IF NOT EXISTS idx_carddass_cards_rarity ON carddass_cards(rarity);
 CREATE INDEX IF NOT EXISTS idx_carddass_cards_source ON carddass_cards(source_id);
@@ -107,6 +138,10 @@ CREATE TABLE IF NOT EXISTS carddass_extra_images (
   discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Schema evolution
+ALTER TABLE carddass_extra_images ADD COLUMN IF NOT EXISTS image_path_thumb VARCHAR(500);
+ALTER TABLE carddass_extra_images ADD COLUMN IF NOT EXISTS image_path_hd VARCHAR(500);
+
 CREATE INDEX IF NOT EXISTS idx_carddass_extra_card ON carddass_extra_images(card_id);
 
 -- ═══════════════════════════════════════════════════════════
@@ -122,6 +157,10 @@ CREATE TABLE IF NOT EXISTS carddass_packagings (
   image_path VARCHAR(500),
   discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Schema evolution: colonne rarity ajoutée par le scraper
+ALTER TABLE carddass_packagings ADD COLUMN IF NOT EXISTS rarity VARCHAR(100);
+ALTER TABLE carddass_packagings ADD COLUMN IF NOT EXISTS image_path VARCHAR(500);
 
 CREATE INDEX IF NOT EXISTS idx_carddass_pack_series ON carddass_packagings(series_id);
 

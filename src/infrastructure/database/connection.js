@@ -299,6 +299,13 @@ async function runMigrations() {
  * - Un fichier modifié (hash différent) est ré-appliqué (UPSERT = safe)
  * - Les nouveaux fichiers sont appliqués dans l'ordre alphabétique
  * 
+ * IMPORTANT pour l'évolution du schéma :
+ * Les fichiers SQL doivent inclure des ALTER TABLE ADD COLUMN IF NOT EXISTS
+ * après chaque CREATE TABLE IF NOT EXISTS, car CREATE TABLE IF NOT EXISTS
+ * ne rajoute PAS les colonnes manquantes sur une table existante.
+ * Cela garantit que les clients existants reçoivent les nouvelles colonnes
+ * lors d'un docker pull + restart.
+ * 
  * Pour ajouter/mettre à jour des données :
  * 1. Modifier le fichier .sql existant ou en créer un nouveau (003_xxx.sql)
  * 2. Rebuild l'image Docker → les seeds sont appliqués au démarrage
