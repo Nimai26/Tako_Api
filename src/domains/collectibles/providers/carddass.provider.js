@@ -119,30 +119,38 @@ function resolveImage(localPath) {
 export async function getLicenses(options = {}) {
   ensureConnected();
 
-  const { page = 1, pageSize = 50 } = options;
+  const { page = 1, pageSize = 50, site = null } = options;
   const limit = Math.min(pageSize, 100);
   const offset = (page - 1) * limit;
 
+  const siteFilter = site ? ' WHERE source_site = $1' : '';
+  const siteParams = site ? [site] : [];
+  const limitIdx = siteParams.length + 1;
+
   const [countResult, rows] = await Promise.all([
-    queryOne('SELECT COUNT(*) as total FROM carddass_licenses'),
+    queryOne(`SELECT COUNT(*) as total FROM carddass_licenses${siteFilter}`, siteParams),
     queryAll(
-      `SELECT * FROM carddass_licenses ORDER BY name LIMIT $1 OFFSET $2`,
-      [limit, offset]
+      `SELECT * FROM carddass_licenses${siteFilter} ORDER BY name LIMIT $${limitIdx} OFFSET $${limitIdx + 1}`,
+      [...siteParams, limit, offset]
     )
   ]);
 
   const total = parseInt(countResult?.total || 0);
 
   return {
-    items: rows.map(row => ({
-      id: row.id,
-      sourceId: row.source_id,
-      name: row.name,
-      description: row.description || null,
-      image: resolveImage(row.image_path),
-      banner: resolveImage(row.banner_path),
-      url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${row.source_id}`
-    })),
+    items: rows.map(row => {
+      const base = row.source_site === 'dbzcollection' ? DBZCOLLECTION_BASE : ANIMECOLLECTION_BASE;
+      return {
+        id: row.id,
+        sourceId: row.source_id,
+        sourceSite: row.source_site || 'animecollection',
+        name: row.name,
+        description: row.description || null,
+        image: resolveImage(row.image_path),
+        banner: resolveImage(row.banner_path),
+        url: `${base}/cartes.php?idl=${row.source_id}`
+      };
+    }),
     total,
     pagination: {
       page,
@@ -175,16 +183,19 @@ export async function getLicenseById(licenseId) {
 
   if (!row) return null;
 
+  const base = row.source_site === 'dbzcollection' ? DBZCOLLECTION_BASE : ANIMECOLLECTION_BASE;
+
   return {
     id: row.id,
     sourceId: row.source_id,
+    sourceSite: row.source_site || 'animecollection',
     name: row.name,
     description: row.description || null,
     image: resolveImage(row.image_path),
     banner: resolveImage(row.banner_path),
     collectionCount: parseInt(row.collection_count || 0),
     cardCount: parseInt(row.card_count || 0),
-    url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${row.source_id}`
+    url: `${base}/cartes.php?idl=${row.source_id}`
   };
 }
 
@@ -242,14 +253,18 @@ export async function getCollections(licenseId, options = {}) {
       sourceId: license.source_id,
       name: license.name
     },
-    items: rows.map(row => ({
-      id: row.id,
-      sourceId: row.source_id,
-      name: row.name,
-      seriesCount: parseInt(row.series_count || 0),
-      cardCount: parseInt(row.card_count || 0),
-      url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${license.source_id}&idc=${row.source_id}`
-    })),
+    items: rows.map(row => {
+      const colBase = row.source_site === 'dbzcollection' ? DBZCOLLECTION_BASE : ANIMECOLLECTION_BASE;
+      return {
+        id: row.id,
+        sourceId: row.source_id,
+        sourceSite: row.source_site || 'animecollection',
+        name: row.name,
+        seriesCount: parseInt(row.series_count || 0),
+        cardCount: parseInt(row.card_count || 0),
+        url: `${colBase}/cartes.php?idl=${license.source_id}&idc=${row.source_id}`
+      };
+    }),
     total,
     pagination: {
       page,
@@ -321,16 +336,20 @@ export async function getSeries(collectionId, options = {}) {
       sourceId: collection.source_id,
       name: collection.name
     },
-    items: rows.map(row => ({
-      id: row.id,
-      sourceId: row.source_id,
-      name: row.name,
-      description: row.description || null,
-      capsule: resolveImage(row.capsule_path),
-      cardCount: parseInt(row.card_count || 0),
-      packagingCount: parseInt(row.packaging_count || 0),
-      url: `${ANIMECOLLECTION_BASE}/cartes.php?idl=${collection.license_source_id}&idc=${collection.source_id}&ids=${row.source_id}`
-    })),
+    items: rows.map(row => {
+      const serBase = row.source_site === 'dbzcollection' ? DBZCOLLECTION_BASE : ANIMECOLLECTION_BASE;
+      return {
+        id: row.id,
+        sourceId: row.source_id,
+        sourceSite: row.source_site || 'animecollection',
+        name: row.name,
+        description: row.description || null,
+        capsule: resolveImage(row.capsule_path),
+        cardCount: parseInt(row.card_count || 0),
+        packagingCount: parseInt(row.packaging_count || 0),
+        url: `${serBase}/cartes.php?idl=${collection.license_source_id}&idc=${collection.source_id}&ids=${row.source_id}`
+      };
+    }),
     total,
     pagination: {
       page,
@@ -556,11 +575,11 @@ export async function getCardImages(cardId) {
 export async function searchCards(query, options = {}) {
   ensureConnected();
 
-  const { page = 1, pageSize = 20, rarity = null, license = null } = options;
+  const { page = 1, pageSize = 20, rarity = null, license = null, site = null } = options;
   const limit = Math.min(pageSize, 100);
   const offset = (page - 1) * limit;
 
-  log.debug(`Recherche carddass: "${query}" (page: ${page}, limit: ${limit})`);
+  log.debug(`Recherche carddass: "${query}" (page: ${page}, limit: ${limit}, site: ${site || 'all'})`);
 
   // Recherche sur license_name, collection_name, series_name, card_number, rarity
   let countSql = `
@@ -594,6 +613,14 @@ export async function searchCards(query, options = {}) {
 
   const params = [`%${query}%`];
   let paramIndex = 2;
+
+  if (site) {
+    const siteFilter = ` AND ca.source_site = $${paramIndex}`;
+    countSql += siteFilter;
+    searchSql += siteFilter;
+    params.push(site);
+    paramIndex++;
+  }
 
   if (rarity) {
     const rarityFilter = ` AND ca.rarity ILIKE $${paramIndex}`;
@@ -652,18 +679,25 @@ export async function searchCards(query, options = {}) {
 
 /**
  * Statistiques globales de l'archive Carddass
+ * @param {Object} [options]
+ * @param {string} [options.site] - Filtrer par source_site ('animecollection' ou 'dbzcollection')
  * @returns {Promise<Object>}
  */
-export async function getStats() {
+export async function getStats(options = {}) {
   ensureConnected();
 
+  const { site = null } = options;
+  const siteFilter = site ? ' WHERE source_site = $1' : '';
+  const siteCardFilter = site ? ' AND ca.source_site = $1' : '';
+  const siteParams = site ? [site] : [];
+
   const [licenses, collections, series, cards, extraImages, packagings, bySite] = await Promise.all([
-    queryOne('SELECT COUNT(*) as count FROM carddass_licenses'),
-    queryOne('SELECT COUNT(*) as count FROM carddass_collections'),
-    queryOne('SELECT COUNT(*) as count FROM carddass_series'),
-    queryOne('SELECT COUNT(*) as count FROM carddass_cards'),
-    queryOne('SELECT COUNT(*) as count FROM carddass_extra_images'),
-    queryOne('SELECT COUNT(*) as count FROM carddass_packagings'),
+    queryOne(`SELECT COUNT(*) as count FROM carddass_licenses${siteFilter}`, siteParams),
+    queryOne(`SELECT COUNT(*) as count FROM carddass_collections${siteFilter}`, siteParams),
+    queryOne(`SELECT COUNT(*) as count FROM carddass_series${siteFilter}`, siteParams),
+    queryOne(`SELECT COUNT(*) as count FROM carddass_cards${siteFilter}`, siteParams),
+    queryOne(`SELECT COUNT(*) as count FROM carddass_extra_images${siteFilter}`, siteParams),
+    queryOne(`SELECT COUNT(*) as count FROM carddass_packagings${siteFilter}`, siteParams),
     queryAll('SELECT source_site, COUNT(*) as count FROM carddass_cards GROUP BY source_site ORDER BY source_site')
   ]);
 
@@ -671,10 +705,11 @@ export async function getStats() {
   const rarities = await queryAll(
     `SELECT rarity, COUNT(*) as count 
      FROM carddass_cards 
-     WHERE rarity IS NOT NULL 
+     WHERE rarity IS NOT NULL${site ? ' AND source_site = $1' : ''}
      GROUP BY rarity 
      ORDER BY count DESC 
-     LIMIT 20`
+     LIMIT 20`,
+    siteParams
   );
 
   // Top licences
@@ -684,9 +719,11 @@ export async function getStats() {
      JOIN carddass_collections c ON c.license_id = l.id
      JOIN carddass_series s ON s.collection_id = c.id
      JOIN carddass_cards ca ON ca.series_id = s.id
+     WHERE 1=1${siteCardFilter}
      GROUP BY l.name
      ORDER BY card_count DESC
-     LIMIT 10`
+     LIMIT 10`,
+    siteParams
   );
 
   return {

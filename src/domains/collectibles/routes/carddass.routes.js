@@ -66,15 +66,26 @@ router.get('/health', asyncHandler(async (req, res) => {
 /**
  * GET /api/collectibles/carddass/stats
  * Statistiques de l'archive Carddass
+ * 
+ * Query params:
+ * - site: Filtrer par source ('animecollection' ou 'dbzcollection')
  */
 router.get('/stats', asyncHandler(async (req, res) => {
-  const stats = await getStats();
+  const { site } = req.query;
+  const validSites = ['animecollection', 'dbzcollection'];
+  const siteFilter = site && validSites.includes(site) ? site : null;
+
+  const stats = await getStats({ site: siteFilter });
+
+  const sourceLabel = siteFilter === 'dbzcollection' ? 'dbzcollection.fr'
+    : siteFilter === 'animecollection' ? 'animecollection.fr'
+    : 'animecollection.fr + dbzcollection.fr';
 
   res.json({
     success: true,
     data: {
       provider: 'carddass',
-      source: 'animecollection.fr',
+      source: sourceLabel,
       ...stats,
       timestamp: new Date().toISOString()
     }
@@ -95,9 +106,10 @@ router.get('/stats', asyncHandler(async (req, res) => {
  * - pageSize: Résultats par page (défaut: 20, max: 100)
  * - rarity: Filtre par rareté (optionnel, ex: "Prism", "Regular")
  * - license: Filtre par licence (optionnel, ex: "Dragon Ball")
+ * - site: Filtre par source ('animecollection' ou 'dbzcollection')
  */
 router.get('/search', asyncHandler(async (req, res) => {
-  const { q, page = 1, pageSize = 20, rarity, license } = req.query;
+  const { q, page = 1, pageSize = 20, rarity, license, site } = req.query;
 
   if (!q || typeof q !== 'string' || q.trim().length === 0) {
     return res.status(400).json({
@@ -109,13 +121,17 @@ router.get('/search', asyncHandler(async (req, res) => {
     });
   }
 
-  logger.info(`[Carddass] Recherche: "${q}" (page: ${page}, rarity: ${rarity || 'all'}, license: ${license || 'all'})`);
+  const validSites = ['animecollection', 'dbzcollection'];
+  const siteFilter = site && validSites.includes(site) ? site : null;
+
+  logger.info(`[Carddass] Recherche: "${q}" (page: ${page}, rarity: ${rarity || 'all'}, license: ${license || 'all'}, site: ${siteFilter || 'all'})`);
 
   const rawData = await searchCards(q.trim(), {
     page: parseInt(page, 10),
     pageSize: Math.min(parseInt(pageSize, 10) || 20, 100),
     rarity: rarity || null,
-    license: license || null
+    license: license || null,
+    site: siteFilter
   });
 
   const normalized = normalizeSearchResults(rawData);
@@ -137,15 +153,19 @@ router.get('/search', asyncHandler(async (req, res) => {
  * Query params:
  * - page: Page (défaut: 1)
  * - pageSize: Résultats par page (défaut: 50, max: 100)
+ * - site: Filtre par source ('animecollection' ou 'dbzcollection')
  */
 router.get('/licenses', asyncHandler(async (req, res) => {
-  const { page = 1, pageSize = 50 } = req.query;
+  const { page = 1, pageSize = 50, site } = req.query;
+  const validSites = ['animecollection', 'dbzcollection'];
+  const siteFilter = site && validSites.includes(site) ? site : null;
 
-  logger.info(`[Carddass] Liste licences (page: ${page})`);
+  logger.info(`[Carddass] Liste licences (page: ${page}, site: ${siteFilter || 'all'})`);
 
   const rawData = await getLicenses({
     page: parseInt(page, 10),
-    pageSize: Math.min(parseInt(pageSize, 10) || 50, 100)
+    pageSize: Math.min(parseInt(pageSize, 10) || 50, 100),
+    site: siteFilter
   });
 
   const normalized = normalizeLicenses(rawData);
