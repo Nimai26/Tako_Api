@@ -189,6 +189,7 @@ export function normalizeLicenses(response) {
     items: (response.items || []).map(item => ({
       id: item.id,
       sourceId: item.sourceId,
+      sourceSite: item.sourceSite || null,
       name: item.name,
       description: item.description || null,
       image: item.image || null,
@@ -218,6 +219,7 @@ export function normalizeCollections(response) {
     items: (response.items || []).map(item => ({
       id: item.id,
       sourceId: item.sourceId,
+      sourceSite: item.sourceSite || null,
       name: item.name,
       seriesCount: item.seriesCount || 0,
       cardCount: item.cardCount || 0,
@@ -245,6 +247,7 @@ export function normalizeSeries(response) {
     items: (response.items || []).map(item => ({
       id: item.id,
       sourceId: item.sourceId,
+      sourceSite: item.sourceSite || null,
       name: item.name,
       description: item.description || null,
       capsule: item.capsule || null,
@@ -275,6 +278,7 @@ export function normalizeCards(response) {
     items: (response.items || []).map(item => ({
       id: item.id,
       sourceId: item.sourceId,
+      sourceSite: item.sourceSite || null,
       cardNumber: item.cardNumber,
       rarity: item.rarity || null,
       rarityColor: item.rarityColor || null,
