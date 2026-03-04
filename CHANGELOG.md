@@ -9,7 +9,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [2.6.0] - 2026-03-03
+## [2.6.0] - 2026-03-04
 
 ### 🐉 Dragon Ball — Archive dbzcollection.fr + DBS Card Game
 
@@ -19,13 +19,13 @@ Expansion majeure Dragon Ball : archive du site dbzcollection.fr dans Carddass +
 - **1 licence** Dragon Ball (source_site: dbzcollection)
 - **336 collections** hiérarchisées
 - **1 477 séries** avec capsules
-- **~27 000 cartes** Dragon Ball avec images h50 + h400
+- **90 515 cartes** Dragon Ball avec images h50 + h400 (219 093 images, 9,8 Go)
 - Migration `004`: ajout colonne `source_site` sur toutes les tables carddass
 - Contraintes UNIQUE mises à jour pour supporter multi-sites
 
 #### DBS Card Game (nouveau provider TCG)
-- **DBS Masters** : 6 213 cartes, 91 sets (source: DeckPlanet API)
-- **Fusion World** : 1 689 cartes, 25 catégories (source: Bandai officiel dbs-cardgame.com)
+- **DBS Masters** : 6 213 cartes, 91 sets (source: DeckPlanet API) — 6 607 images, 441 Mo
+- **Fusion World** : 1 689 cartes, 28 sets (source: Bandai officiel dbs-cardgame.com) — 1 755 images, 163 Mo
 - Migration `005`: tables `dbs_sets` + `dbs_cards` (38 colonnes, 11 index)
 - Support Leaders (recto/verso), bans, errata, variantes
 
@@ -50,6 +50,11 @@ Expansion majeure Dragon Ball : archive du site dbzcollection.fr dans Carddass +
 #### Fichiers modifiés
 - `src/domains/tcg/index.js` — DBS ajouté comme 7e provider TCG
 - `src/domains/collectibles/providers/carddass.provider.js` — support multi-sites (animecollection + dbzcollection), stats bySite
+
+#### Totaux cumulés v2.6.0
+- **Carddass** : 122 200 cartes (31 685 animecollection + 90 515 dbzcollection), 219 093 images (9,8 Go)
+- **DBS Card Game** : 7 902 cartes, 119 sets, 8 362 images (604 Mo)
+- **Grand total** : 130 102 cartes, 227 455 images (~10,4 Go)
 
 ---
 

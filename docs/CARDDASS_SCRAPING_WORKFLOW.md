@@ -1,9 +1,19 @@
 # Carddass Archival Workflow
 
-> **Source** : [animecollection.fr](http://www.animecollection.fr)  
-> **Objectif** : Archiver l'intégralité du catalogue Carddass (31 685 cartes, 6 386 images supplémentaires, 1 734 packagings) dans PostgreSQL + stockage fichiers local  
-> **Version** : 1.0.0  
-> **Date** : 2025-03-02
+> **Sources** : [animecollection.fr](http://www.animecollection.fr) + [dbzcollection.fr](http://www.dbzcollection.fr)  
+> **Objectif** : Archiver l'intégralité des catalogues Carddass dans PostgreSQL + stockage fichiers local  
+> **Version** : 2.0.0 (multi-sites)  
+> **Date** : 2026-03-04
+
+## Données archivées (totaux)
+
+| Source | Cartes | Images | Taille |
+|--------|--------|--------|--------|
+| animecollection.fr | 31 685 | ~40 605 fichiers | 6,5 Go |
+| dbzcollection.fr | 90 515 | ~219 093 fichiers | 9,8 Go |
+| **Total** | **122 200** | **~227 455** | **~10,4 Go** |
+
+> **Note** : Les deux sites partagent la même architecture PHP/AJAX. La colonne `source_site` permet de les distinguer en base. Le script `scrape-dbzcollection.cjs` est un dérivé de l'original pour animecollection.
 
 ---
 

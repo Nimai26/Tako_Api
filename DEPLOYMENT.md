@@ -1,7 +1,7 @@
 # 🚀 Tako API - Déploiement
 
-> **Dernière mise à jour** : 3 mars 2026  
-> **Version** : 2.5.0  
+> **Dernière mise à jour** : 4 mars 2026  
+> **Version** : 2.6.0  
 > **Statut** : ✅ Production Ready
 
 ---
@@ -11,14 +11,14 @@
 ### GitHub Repository
 - **URL** : https://github.com/Nimai26/Tako_Api
 - **Branche principale** : `main`
-- **Version actuelle** : v2.5.0 (commit `b2745da`)
+- **Version actuelle** : v2.6.0
 
 ### DockerHub
 - **Image** : `nimai24/tako-api`
 - **Tags disponibles** :
-  - `nimai24/tako-api:2.5.0` (version actuelle)
+  - `nimai24/tako-api:2.6.0` (version actuelle)
   - `nimai24/tako-api:latest` (dernière version)
-  - Tags historiques : `2.4.1`, `2.4.0`, `2.3.1`, `2.3.0`, `2.2.2`, `1.0.0`
+  - Tags historiques : `2.5.0`, `2.4.1`, `2.4.0`, `2.3.1`, `2.3.0`, `2.2.2`, `1.0.0`
 - **Registry** : https://hub.docker.com/r/nimai24/tako-api
 
 ---
@@ -29,7 +29,7 @@
 
 ```bash
 # Version spécifique
-docker pull nimai24/tako-api:2.5.0
+docker pull nimai24/tako-api:2.6.0
 
 # Dernière version
 docker pull nimai24/tako-api:latest
@@ -62,7 +62,8 @@ Au démarrage, l'API :
 1. Se connecte à PostgreSQL
 2. **Auto-migration** : crée les tables `discovery_cache`, `products`, `kreo_products` si absentes
 3. **Auto-seed** : peuple les tables MEGA (199 produits), KRE-O (417 produits) et Carddass (7 tables) à partir des SQL embarqués
-4. Démarre le serveur HTTP
+4. **Migrations externes** : tables DBS Card Game (dbs_sets, dbs_cards) + colonne source_site Carddass
+5. Démarre le serveur HTTP
 
 ```bash
 # Clone le repository
@@ -293,6 +294,7 @@ docker compose up -d
 - ✅ **35 providers** fonctionnels (100%)
 - ✅ **Auto-migration** des tables au démarrage
 - ✅ **Auto-seed** des données (MEGA + KRE-O + Carddass) au démarrage
+- ✅ **Migrations externes** : DBS Card Game tables + multi-sources Carddass
 - ✅ **Stockage fichiers** en clair (plus de MinIO)
 
 ### Domaines & Providers
@@ -307,7 +309,7 @@ docker compose up -d
 | Videogames | 4 providers | ✅ Complet |
 | BoardGames | 1 provider | ✅ Complet |
 | Collectibles | 4 providers | ✅ Complet |
-| TCG | 6 providers | ✅ Complet |
+| TCG | 7 providers | ✅ Complet |
 | Music | 4 providers | ✅ Complet |
 | E-commerce | 1 provider (8 marketplaces) | ✅ Complet |
 
@@ -374,4 +376,4 @@ Voir fichier LICENSE dans le repository.
 
 ---
 
-**Déployé avec ❤️ — version 2.5.0 (3 mars 2026)**
+**Déployé avec ❤️ — version 2.6.0 (4 mars 2026)**

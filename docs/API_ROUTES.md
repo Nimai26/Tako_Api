@@ -2,9 +2,10 @@
 
 > Documentation complète de toutes les routes disponibles par domaine et provider.
 > 
-> **Dernière mise à jour** : 2 février 2026 - **Phase 5 : Cache PostgreSQL** ✅ Complétée  
+> **Dernière mise à jour** : 4 mars 2026 - **Phase 6 : Dragon Ball** ✅ Complétée  
 > **Endpoints discovery** : 19 (TMDB 7, Jikan 4, RAWG 2, IGDB 1, Deezer 1, iTunes 1)  
-> **Cache** : PostgreSQL actif - 93% réduction latence
+> **Cache** : PostgreSQL actif - 93% réduction latence  
+> **Archives** : 130 102 cartes (Carddass 122 200 + DBS 7 902)
 
 ---
 
@@ -38,6 +39,7 @@
    - [BoardGameGeek (BGG)](#boardgamegeek-bgg)
 8. [Collectibles / Objets de collection](#-collectibles--objets-de-collection)
    - [Coleka](#coleka)
+   - [Carddass](#carddass)
 9. [Music / Musique](#-music--musique)
    - [Discogs](#discogs)
    - [Deezer](#deezer)
@@ -1523,7 +1525,62 @@ GET /api/sticker-albums/paninimania/health
 
 ---
 
-## � TCG / Trading Card Games
+### Carddass
+
+> **Base URL** : `/api/collectibles/carddass`  
+> **Sources** : [animecollection.fr](http://www.animecollection.fr) + [dbzcollection.fr](http://www.dbzcollection.fr)  
+> **API Key** : ❌ Non requise (base locale PostgreSQL)  
+> **Données** : 122 200 cartes (31 685 animecollection + 90 515 dbzcollection), 219 093 images (9,8 Go)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Santé du provider | ✅ Fonctionne |
+| `GET /stats` | Statistiques complètes (par site, licence) | ✅ Fonctionne |
+| `GET /search?q=` | Recherche full-text | ✅ Fonctionne |
+| `GET /licenses` | Liste des licences | ✅ Fonctionne |
+| `GET /licenses/:id` | Détail d'une licence | ✅ Fonctionne |
+| `GET /licenses/:id/collections` | Collections d'une licence | ✅ Fonctionne |
+| `GET /collections/:id/series` | Séries d'une collection | ✅ Fonctionne |
+| `GET /series/:id/cards` | Cartes d'une série | ✅ Fonctionne |
+| `GET /cards/:id` | Détail carte (hiérarchie complète) | ✅ Fonctionne |
+| `GET /random` | Carte aléatoire | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Texte recherché (nom de carte)
+- `rarity` : Filtrer par rareté
+- `license` : Filtrer par ID licence
+- `site` : Filtrer par source (`animecollection` ou `dbzcollection`)
+- `max` : Résultats max (défaut: 20, max: 100)
+- `page` : Page de résultats (défaut: 1)
+
+**Données multi-sites** :
+- `animecollection` : 80 licences — Dragon Ball, Gundam, Sailor Moon, One Piece, Naruto, etc.
+- `dbzcollection` : 1 licence Dragon Ball — 336 collections, 1 477 séries, 90 515 cartes
+
+**Exemples** :
+```bash
+# Recherche globale
+GET /api/collectibles/carddass/search?q=goku&max=10
+
+# Recherche sur un site spécifique
+GET /api/collectibles/carddass/search?q=vegeta&site=dbzcollection
+
+# Licences
+GET /api/collectibles/carddass/licenses
+
+# Collections d'une licence
+GET /api/collectibles/carddass/licenses/1/collections
+
+# Statistiques (inclut breakdown par site)
+GET /api/collectibles/carddass/stats
+
+# Health check
+GET /api/collectibles/carddass/health
+```
+
+---
+
+## 🎴 TCG / Trading Card Games
 
 ### Pokémon TCG
 

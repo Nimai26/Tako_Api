@@ -1,11 +1,11 @@
 # Tako API 🐙
 
-> **Version 2.5.0** - Architecture modulaire par domaines
+> **Version 2.6.0** - Architecture modulaire par domaines
 > 
 > **Migration toys_api ✅ Terminée** - 30 janvier 2026  
-> **Dernière mise à jour** : 3 mars 2026 (Carddass : 31 685 cartes archivées)
+> **Dernière mise à jour** : 4 mars 2026 (Dragon Ball : 90 515 cartes Carddass + 7 902 cartes DBS TCG)
 
-API REST multi-sources pour rechercher et récupérer des informations produits depuis **34 providers** répartis en **11 domaines**.
+API REST multi-sources pour rechercher et récupérer des informations produits depuis **35 providers** répartis en **11 domaines**.
 
 ## 🏗️ Architecture
 
@@ -34,8 +34,8 @@ tako-api/
 │   │   ├── media/                 # TMDB, TVDB
 │   │   ├── anime-manga/          # Jikan, MangaUpdates
 │   │   ├── comics/                # ComicVine, Bedetheque
-│   │   ├── tcg/                   # Pokémon TCG, MTG, Yu-Gi-Oh!, Lorcana, Digimon, One Piece
-│   │   ├── collectibles/          # Coleka, LuluBerlu
+│   │   ├── tcg/                   # Pokémon TCG, MTG, Yu-Gi-Oh!, Lorcana, Digimon, One Piece, DBS
+│   │   ├── collectibles/          # Coleka, LuluBerlu, Carddass
 │   │   ├── music/                 # Discogs, Deezer, MusicBrainz, iTunes
 │   │   ├── ecommerce/             # Amazon (8 marketplaces)
 │   │   └── boardgames/            # BoardGameGeek
@@ -76,11 +76,11 @@ tako-api/
 | `videogames` | IGDB, RAWG, JeuxVideo.com, ConsoleVariations | ✅ Complet (4/4) |
 | `boardgames` | BoardGameGeek | ✅ Complet (1/1) |
 | `collectibles` | Coleka, LuluBerlu, Transformerland, Carddass | ✅ Complet (4/4) |
-| `tcg` | Pokémon TCG, MTG, Yu-Gi-Oh!, Lorcana, Digimon, One Piece | ✅ Complet (6/6) |
+| `tcg` | Pokémon TCG, MTG, Yu-Gi-Oh!, Lorcana, Digimon, One Piece, **DBS** | ✅ Complet (7/7) |
 | `music` | Discogs, Deezer, MusicBrainz, iTunes | ✅ Complet (4/4) |
 | `ecommerce` | Amazon (8 marketplaces) | ✅ Complet (1/1) |
 
-**Total : 11 domaines, 35 providers** - Migration toys_api **100% terminée** ✅
+**Total : 11 domaines, 36 providers** - Migration toys_api **100% terminée** ✅
 
 ## ⚠️ FlareSolverr - IMPORTANT
 
@@ -243,7 +243,8 @@ Tako API utilise **un seul conteneur PostgreSQL** (`tako_db`) pour tout :
 - **Cache discovery** : table `discovery_cache` — cache des endpoints discovery (trending, popular, etc.)
 - **Archive MEGA Construx** : table `products` — 199 produits archivés
 - **Archive KRE-O** : table `kreo_products` — 417 produits archivés
-- **Archive Carddass** : 7 tables — 31 685 cartes archivées (animecollection.fr)
+- **Archive Carddass** : 7 tables — 122 200 cartes archivées (animecollection.fr + dbzcollection.fr)
+- **Archive DBS Card Game** : 2 tables — 7 902 cartes (Masters 6 213 + Fusion World 1 689), 119 sets
 
 ### Auto-migration
 Au démarrage, `runMigrations()` crée automatiquement toutes les tables + indexes si absents. Aucune intervention manuelle requise.
@@ -253,7 +254,8 @@ Au démarrage, `runSeeds()` applique les fichiers SQL de `src/infrastructure/dat
 - Tracking par **SHA-256** dans la table `_seed_migrations`
 - Seeds déjà appliqués avec le même checksum = ignorés
 - Seeds modifiés = ré-appliqués automatiquement (ex: lors d'un rebuild d'image)
-- **3 seeds embarqués** : MEGA (199 produits), KRE-O (417 produits), Carddass (7 tables, 31 685 cartes)
+- **3 seeds embarqués** : MEGA (199 produits), KRE-O (417 produits), Carddass (7 tables)
+- **5 migrations externes** : discovery_cache, DBS tables, source_site multi-sources
 
 **Résultat** : un simple `docker compose up -d` sur une machine vierge donne une API fonctionnelle avec toutes les données.
 
@@ -261,8 +263,8 @@ Au démarrage, `runSeeds()` applique les fichiers SQL de `src/infrastructure/dat
 
 Les fichiers statiques (images produits, PDFs d'instructions) sont servis depuis le disque :
 - **Volume** : `/mnt/egon/websites/tako-storage` monté en **read-only** sur `/data/tako-storage`
-- **Contenu** : 43 185 fichiers (~10,5 Go) — MEGA + KRE-O + Carddass archives
-- **URLs** : `https://tako.snowmanprod.fr/files/{mega-archive,kreo-archive,carddass-archive}/...`
+- **Contenu** : 235 817+ fichiers (~11 Go) — MEGA + KRE-O + Carddass + DBS archives
+- **URLs** : `https://tako.snowmanprod.fr/files/{mega-archive,kreo-archive,carddass-archive,dbs-archive}/...`
 - **Pas d'expiration** : URLs stables (contrairement aux presigned URLs MinIO)
 
 ## 📖 Documentation API
@@ -284,7 +286,7 @@ Ce projet est une refonte complète de `toys_api` avec :
 - ✅ FlareSolverr correctement géré (sessions auto-nettoyées)
 
 **Statut de migration** : ✅ **TERMINÉE** (30 janvier 2026)  
-**Dernière version** : v2.5.0 (3 mars 2026) — Carddass, 31 685 cartes archivées
+**Dernière version** : v2.6.0 (4 mars 2026) — Dragon Ball : 90 515 cartes dbzcollection + DBS TCG (7 902 cartes)
 
 ### Améliorations par rapport à toys_api
 
