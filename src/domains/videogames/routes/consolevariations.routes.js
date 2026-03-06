@@ -68,8 +68,17 @@ router.get('/search', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'consolevariations',
-    query: q,
-    ...normalized
+    domain: 'videogames',
+    total: normalized.total,
+    count: normalized.data.length,
+    data: normalized.data,
+    pagination: null,
+    meta: {
+      source: 'consolevariations',
+      query: q,
+      type,
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -123,7 +132,13 @@ router.get('/details', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'consolevariations',
-    data: normalized
+    domain: 'videogames',
+    id: normalized?.id || null,
+    data: normalized,
+    meta: {
+      source: 'consolevariations',
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -159,7 +174,13 @@ router.get('/item/:slug', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'consolevariations',
-    data: normalized
+    domain: 'videogames',
+    id: normalized?.id || null,
+    data: normalized,
+    meta: {
+      source: 'consolevariations',
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -192,7 +213,12 @@ router.get('/platforms', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'consolevariations',
-    ...normalized
+    domain: 'videogames',
+    ...normalized,
+    meta: {
+      source: 'consolevariations',
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -227,7 +253,16 @@ router.get('/browse/:platform', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'consolevariations',
-    ...normalized
+    domain: 'videogames',
+    total: normalized.total,
+    count: normalized.data.length,
+    data: normalized.data,
+    pagination: null,
+    meta: {
+      source: 'consolevariations',
+      platform,
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 

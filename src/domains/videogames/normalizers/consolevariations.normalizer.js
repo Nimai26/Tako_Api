@@ -65,25 +65,32 @@ function normalizeItemType(type) {
  * @returns {Object}
  */
 export function normalizeSearchResult(item, searchType = 'all') {
+  const sourceId = item.slug || item.id || 'unknown';
+  const image = item.thumbnail || item.image || null;
+
   return {
+    id: `consolevariations:${sourceId}`,
     type: 'console_variation',
     source: 'consolevariations',
-    sourceId: item.id || item.slug,
-    
-    name: item.name || null,
-    name_original: item.name || null,
-    
-    image: item.thumbnail || item.image || null,
-    thumbnail: item.thumbnail || item.image || null,
-    
-    src_url: item.url || null,
-    
-    item_type: normalizeItemType(searchType),
-    
-    // URL pour détails via Tako_Api
-    detailUrl: item.slug 
-      ? `/api/videogames/consolevariations/details?url=consolevariations://item/${encodeURIComponent(item.slug)}`
-      : null
+    sourceId,
+    title: item.name || null,
+    titleOriginal: item.name || null,
+    description: null,
+    year: null,
+    images: {
+      primary: image,
+      thumbnail: image,
+      gallery: [image].filter(Boolean)
+    },
+    urls: {
+      source: item.url || null,
+      detail: sourceId !== 'unknown'
+        ? `/api/videogames/consolevariations/item/${encodeURIComponent(sourceId)}`
+        : null
+    },
+    details: {
+      itemType: normalizeItemType(searchType)
+    }
   };
 }
 
@@ -94,29 +101,13 @@ export function normalizeSearchResult(item, searchType = 'all') {
  */
 export function normalizeSearchResults(rawData) {
   if (!rawData || !rawData.results) {
-    return {
-      items: [],
-      total: 0,
-      metadata: {
-        source: 'consolevariations',
-        query: null,
-        type: 'all'
-      }
-    };
+    return { data: [], total: 0 };
   }
   
   const searchType = rawData.type || 'all';
-  const items = rawData.results.map(item => normalizeSearchResult(item, searchType));
+  const data = rawData.results.map(item => normalizeSearchResult(item, searchType));
   
-  return {
-    items,
-    total: items.length,
-    metadata: {
-      source: 'consolevariations',
-      query: rawData.query || null,
-      type: searchType
-    }
-  };
+  return { data, total: data.length };
 }
 
 /**
@@ -135,13 +126,12 @@ export function normalizeDetails(rawData) {
     return null;
   };
   
+  const sourceId = rawData.slug || rawData.id || 'unknown';
+
   // Images
-  const images = (rawData.images || []).map((img, index) => ({
-    url: img.url,
-    thumbnail: img.thumbnail || img.url,
-    alt: img.alt || extractText(rawData.name) || '',
-    isMain: img.isMain === true || index === 0
-  }));
+  const rawImages = rawData.images || [];
+  const mainImage = rawImages.find(img => img.isMain) || rawImages[0];
+  const gallery = rawImages.map(img => img.url).filter(Boolean);
   
   // Platform
   const platform = rawData.platform ? {
@@ -162,35 +152,38 @@ export function normalizeDetails(rawData) {
   };
   
   return {
+    id: `consolevariations:${sourceId}`,
     type: 'console_variation',
     source: 'consolevariations',
-    sourceId: rawData.id || rawData.slug,
-    
-    name: extractText(rawData.name),
-    name_original: extractText(rawData.nameOriginal) || extractText(rawData.name),
-    name_translated: extractText(rawData.nameTranslated),
-    
-    url: rawData.url,
-    src_url: rawData.url,
-    
-    brand: rawData.brand,
-    platform,
-    
-    images,
-    
-    releaseCountry: rawData.releaseCountry,
-    releaseYear: rawData.releaseYear,
-    releaseType: normalizeReleaseType(rawData.releaseType),
-    regionCode: rawData.regionCode,
-    
-    productionQuantity: rawData.amountProduced,
-    isLimitedEdition: rawData.isLimitedEdition === true,
-    isBundle: rawData.isBundle === true,
-    color: rawData.color,
-    barcode: rawData.barcode,
-    
-    rarity,
-    community
+    sourceId,
+    title: extractText(rawData.name),
+    titleOriginal: extractText(rawData.nameOriginal) || extractText(rawData.name),
+    description: null,
+    year: rawData.releaseYear || null,
+    images: {
+      primary: mainImage?.url || null,
+      thumbnail: mainImage?.thumbnail || mainImage?.url || null,
+      gallery
+    },
+    urls: {
+      source: rawData.url || null,
+      detail: `/api/videogames/consolevariations/item/${encodeURIComponent(sourceId)}`
+    },
+    details: {
+      brand: rawData.brand || null,
+      platform,
+      releaseCountry: rawData.releaseCountry || null,
+      releaseYear: rawData.releaseYear || null,
+      releaseType: normalizeReleaseType(rawData.releaseType),
+      regionCode: rawData.regionCode || null,
+      productionQuantity: rawData.amountProduced || null,
+      isLimitedEdition: rawData.isLimitedEdition === true,
+      isBundle: rawData.isBundle === true,
+      color: rawData.color || null,
+      barcode: rawData.barcode || null,
+      rarity,
+      community
+    }
   };
 }
 
@@ -238,40 +231,10 @@ export function normalizePlatforms(rawData) {
  */
 export function normalizeBrowse(rawData) {
   if (!rawData || !rawData.results) {
-    return {
-      items: [],
-      total: 0,
-      metadata: {
-        source: 'consolevariations',
-        platform: null
-      }
-    };
+    return { data: [], total: 0 };
   }
   
-  const items = rawData.results.map(item => ({
-    type: 'console_variation',
-    source: 'consolevariations',
-    sourceId: item.id || item.slug,
-    
-    name: item.name,
-    name_original: item.name,
-    
-    image: item.thumbnail,
-    thumbnail: item.thumbnail,
-    
-    src_url: item.url,
-    
-    detailUrl: item.slug
-      ? `/api/videogames/consolevariations/details?url=consolevariations://item/${encodeURIComponent(item.slug)}`
-      : null
-  }));
+  const data = rawData.results.map(item => normalizeSearchResult(item, 'all'));
   
-  return {
-    items,
-    total: items.length,
-    metadata: {
-      source: 'consolevariations',
-      platform: rawData.platform || null
-    }
-  };
+  return { data, total: data.length };
 }
