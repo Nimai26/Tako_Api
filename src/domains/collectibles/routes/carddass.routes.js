@@ -138,7 +138,17 @@ router.get('/search', asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    data: normalized
+    provider: 'carddass',
+    domain: 'collectibles',
+    query: normalized.query,
+    total: normalized.total_results,
+    count: normalized.results.length,
+    data: normalized.results,
+    pagination: normalized.pagination,
+    meta: {
+      source: 'database',
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -172,7 +182,16 @@ router.get('/licenses', asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    data: normalized
+    provider: 'carddass',
+    domain: 'collectibles',
+    total: normalized.total || (normalized.items || normalized.licenses || []).length,
+    count: (normalized.items || normalized.licenses || []).length,
+    data: normalized.items || normalized.licenses || normalized,
+    pagination: normalized.pagination || null,
+    meta: {
+      source: 'database',
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -233,7 +252,16 @@ router.get('/licenses/:id/collections', asyncHandler(async (req, res) => {
 
     res.json({
       success: true,
-      data: normalized
+      provider: 'carddass',
+      domain: 'collectibles',
+      total: normalized.total || (normalized.items || normalized.collections || []).length,
+      count: (normalized.items || normalized.collections || []).length,
+      data: normalized.items || normalized.collections || normalized,
+      pagination: normalized.pagination || null,
+      meta: {
+        source: 'database',
+        fetchedAt: new Date().toISOString()
+      }
     });
   } catch (error) {
     if (error.message.includes('non trouvée')) {
@@ -280,7 +308,16 @@ router.get('/collections/:id/series', asyncHandler(async (req, res) => {
 
     res.json({
       success: true,
-      data: normalized
+      provider: 'carddass',
+      domain: 'collectibles',
+      total: normalized.total || (normalized.items || normalized.series || []).length,
+      count: (normalized.items || normalized.series || []).length,
+      data: normalized.items || normalized.series || normalized,
+      pagination: normalized.pagination || null,
+      meta: {
+        source: 'database',
+        fetchedAt: new Date().toISOString()
+      }
     });
   } catch (error) {
     if (error.message.includes('non trouvée')) {
@@ -329,7 +366,16 @@ router.get('/series/:id/cards', asyncHandler(async (req, res) => {
 
     res.json({
       success: true,
-      data: normalized
+      provider: 'carddass',
+      domain: 'collectibles',
+      total: normalized.total || (normalized.items || normalized.cards || []).length,
+      count: (normalized.items || normalized.cards || []).length,
+      data: normalized.items || normalized.cards || normalized,
+      pagination: normalized.pagination || null,
+      meta: {
+        source: 'database',
+        fetchedAt: new Date().toISOString()
+      }
     });
   } catch (error) {
     if (error.message.includes('non trouvée')) {
@@ -377,7 +423,14 @@ router.get('/cards/:id', asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    data: normalized
+    provider: 'carddass',
+    domain: 'collectibles',
+    id: normalized?.id || `carddass_${id}`,
+    data: normalized,
+    meta: {
+      source: 'database',
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
