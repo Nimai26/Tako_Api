@@ -123,6 +123,17 @@ function getAmazonFsrOptions() {
 }
 
 /**
+ * Détecte si la réponse est une page de challenge AWS WAF
+ * (page JS qui demande un token avant de rediriger)
+ * @param {string} html - HTML de la réponse
+ * @returns {boolean}
+ */
+function isWafChallenge(html) {
+  if (!html || html.length > 5000) return false;
+  return html.includes('awsWafCookieDomainList') || html.includes('challenge.js');
+}
+
+/**
  * Détecte si Amazon a bloqué la requête (CAPTCHA, bot detection, etc.)
  * @param {string} html - HTML de la réponse
  * @returns {{ blocked: boolean, reason: string|null }}
@@ -146,6 +157,62 @@ function detectAmazonBlock(html) {
   }
   
   return { blocked: false, reason: null };
+}
+
+// Nombre max de tentatives pour résoudre un WAF challenge
+const WAF_MAX_RETRIES = 2;
+const WAF_RETRY_DELAY = 4000; // 4 secondes entre les tentatives
+
+/**
+ * Récupère une page Amazon via FlareSolverr avec gestion automatique
+ * du challenge AWS WAF (warm-up session + retry).
+ * 
+ * Flux :
+ * 1. Warm-up la session FlareSolverr sur le domaine Amazon (cookies WAF)
+ * 2. Requête vers l'URL cible
+ * 3. Si WAF challenge retourné → retry après délai (la session a résolu le JS)
+ * 
+ * @param {string} url - URL Amazon à charger
+ * @param {string} baseUrl - URL de base du marketplace (pour le warm-up)
+ * @returns {Promise<string>} - HTML de la page
+ */
+async function fetchAmazonPage(url, baseUrl) {
+  const client = getFsrClient();
+  const fsrOptions = getAmazonFsrOptions();
+
+  // Warm-up : créer/réutiliser une session et visiter le domaine Amazon
+  // → résout le WAF challenge en arrière-plan (JS + cookies)
+  await client.ensureSession(baseUrl, fsrOptions);
+
+  for (let attempt = 1; attempt <= WAF_MAX_RETRIES; attempt++) {
+    const html = await client.get(url, fsrOptions);
+
+    if (!html || html.length < 500) {
+      throw new Error('Réponse Amazon vide ou invalide');
+    }
+
+    // Si c'est un WAF challenge et qu'on peut retry
+    if (isWafChallenge(html)) {
+      if (attempt < WAF_MAX_RETRIES) {
+        logger.info(`[Amazon] WAF challenge détecté (${html.length} bytes), retry ${attempt}/${WAF_MAX_RETRIES} dans ${WAF_RETRY_DELAY / 1000}s...`);
+        await new Promise(r => setTimeout(r, WAF_RETRY_DELAY));
+        continue;
+      }
+      logger.warn(`[Amazon] WAF challenge non résolu après ${WAF_MAX_RETRIES} tentatives`);
+      throw new Error('AWS WAF challenge non résolu. Réessayez dans quelques secondes.');
+    }
+
+    // Vérifier blocage Amazon (bot detection, CAPTCHA, etc.)
+    const block = detectAmazonBlock(html);
+    if (block.blocked) {
+      logger.warn(`[Amazon] Requête bloquée par Amazon: ${block.reason} (proxy: ${fsrOptions.proxy || 'aucun'})`);
+      throw new Error(`Amazon a bloqué la requête (${block.reason}). ${fsrOptions.proxy ? 'Le VPN est peut-être détecté.' : 'Configurez VPN_PROXY_URL pour utiliser un proxy.'}`);
+    }
+
+    return html;
+  }
+
+  throw new Error('Échec récupération page Amazon');
 }
 
 // ============================================================================
@@ -404,20 +471,7 @@ export async function searchAmazon(query, options = {}) {
   logger.info(`[Amazon] Recherche "${query}" sur ${marketplace.name}...`);
   
   try {
-    const client = getFsrClient();
-    const fsrOptions = getAmazonFsrOptions();
-    const html = await client.get(searchUrl, fsrOptions);
-    
-    if (!html || html.length < 1000) {
-      throw new Error("Réponse Amazon vide ou invalide");
-    }
-    
-    // Vérifier blocage Amazon
-    const block = detectAmazonBlock(html);
-    if (block.blocked) {
-      logger.warn(`[Amazon] Requête bloquée par Amazon: ${block.reason} (proxy: ${fsrOptions.proxy || 'aucun'})`);
-      throw new Error(`Amazon a bloqué la requête (${block.reason}). ${fsrOptions.proxy ? 'Le VPN est peut-être détecté.' : 'Configurez VPN_PROXY_URL pour utiliser un proxy.'}`);
-    }
+    const html = await fetchAmazonPage(searchUrl, marketplace.baseUrl);
     
     // Parser
     const products = parseSearchResults(html, country);
@@ -460,20 +514,7 @@ export async function getAmazonProduct(asin, country = "fr") {
   logger.info(`[Amazon] Détails produit ${asin} sur ${marketplace.name}...`);
   
   try {
-    const client = getFsrClient();
-    const fsrOptions = getAmazonFsrOptions();
-    const html = await client.get(productUrl, fsrOptions);
-    
-    if (!html || html.length < 1000) {
-      throw new Error("Réponse Amazon vide");
-    }
-    
-    // Vérifier blocage Amazon
-    const block = detectAmazonBlock(html);
-    if (block.blocked) {
-      logger.warn(`[Amazon] Requête bloquée par Amazon: ${block.reason}`);
-      throw new Error(`Amazon a bloqué la requête (${block.reason})`);
-    }
+    const html = await fetchAmazonPage(productUrl, marketplace.baseUrl);
     
     if (html.includes("Looking for something") || html.includes("Nous n'avons rien trouvé")) {
       throw new Error(`Produit ${asin} non trouvé`);

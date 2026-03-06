@@ -114,10 +114,11 @@ export class FlareSolverrClient {
   }
 
   /**
-   * S'assurer qu'on a une session valide avec cookies LEGO
+   * S'assurer qu'on a une session valide avec cookies
    * @param {string} siteUrl - URL du site pour initialiser les cookies
+   * @param {Object} [options] - Options additionnelles (ex: { proxy })
    */
-  async ensureSession(siteUrl) {
+  async ensureSession(siteUrl, options = {}) {
     const now = Date.now();
     
     // Si session récente, ne rien faire
@@ -132,9 +133,9 @@ export class FlareSolverrClient {
       await this._createSession();
     }
 
-    // Visiter la page pour obtenir les cookies
+    // Visiter la page pour obtenir les cookies (wait 5s pour laisser le JS s'exécuter)
     try {
-      await this._request('request.get', siteUrl, { waitInSeconds: 1 });
+      await this._request('request.get', siteUrl, { waitInSeconds: 5, ...options });
       this._session.lastVisit = now;
     } catch (e) {
       logger.warn(`[${this.providerName}] Erreur visite initiale: ${e.message}`);
