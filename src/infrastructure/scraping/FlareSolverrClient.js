@@ -90,6 +90,7 @@ export class FlareSolverrClient {
    * @param {string} url - URL à visiter
    * @param {Object} options
    * @param {number} [options.waitInSeconds=2] - Temps d'attente après chargement
+   * @param {string} [options.proxy] - URL du proxy HTTP (ex: http://gluetun:8888)
    * @returns {Promise<string>} - HTML de la page
    */
   async get(url, options = {}) {
@@ -250,12 +251,21 @@ export class FlareSolverrClient {
    * @private
    */
   async _request(cmd, url, options = {}) {
+    // Extraire le proxy des options avant de spreader
+    const { proxy, ...restOptions } = options;
+    
     const body = {
       cmd,
       url,
       maxTimeout: this.timeout,
-      ...options
+      ...restOptions
     };
+
+    // Ajouter le proxy si spécifié (FlareSolverr le passe à Chromium)
+    if (proxy) {
+      body.proxy = { url: proxy };
+      logger.debug(`[${this.providerName}] Requête via proxy: ${proxy}`);
+    }
 
     // Ajouter la session si disponible
     if (this._session.id) {

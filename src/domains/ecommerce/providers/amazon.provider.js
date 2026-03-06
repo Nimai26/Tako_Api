@@ -13,6 +13,7 @@
 
 import { logger } from '../../../shared/utils/logger.js';
 import { FlareSolverrClient } from '../../../infrastructure/scraping/FlareSolverrClient.js';
+import { env } from '../../../config/env.js';
 
 // ============================================================================
 // CONFIGURATION
@@ -107,6 +108,44 @@ function getFsrClient() {
     fsrClient = new FlareSolverrClient('Amazon');
   }
   return fsrClient;
+}
+
+/**
+ * Options FlareSolverr pour Amazon (inclut le proxy VPN si configuré)
+ * @returns {Object} Options à passer à fsr.get()
+ */
+function getAmazonFsrOptions() {
+  const options = {};
+  if (env.vpn?.proxyUrl) {
+    options.proxy = env.vpn.proxyUrl;
+  }
+  return options;
+}
+
+/**
+ * Détecte si Amazon a bloqué la requête (CAPTCHA, bot detection, etc.)
+ * @param {string} html - HTML de la réponse
+ * @returns {{ blocked: boolean, reason: string|null }}
+ */
+function detectAmazonBlock(html) {
+  if (!html) return { blocked: true, reason: 'empty_response' };
+  
+  // Page "Toutes nos excuses" / "Sorry" (erreur 503 bot-detection)
+  if (html.includes('api-services-support@amazon') || html.includes('automated access')) {
+    return { blocked: true, reason: 'bot_detection' };
+  }
+  
+  // CAPTCHA
+  if (/captcha/i.test(html) && html.length < 10000) {
+    return { blocked: true, reason: 'captcha' };
+  }
+  
+  // Page "Toutes nos excuses" générique
+  if (/<title>[^<]*excuses|<title>[^<]*sorry/i.test(html) && html.length < 5000) {
+    return { blocked: true, reason: 'error_page' };
+  }
+  
+  return { blocked: false, reason: null };
 }
 
 // ============================================================================
@@ -366,10 +405,18 @@ export async function searchAmazon(query, options = {}) {
   
   try {
     const client = getFsrClient();
-    const html = await client.get(searchUrl);
+    const fsrOptions = getAmazonFsrOptions();
+    const html = await client.get(searchUrl, fsrOptions);
     
     if (!html || html.length < 1000) {
       throw new Error("Réponse Amazon vide ou invalide");
+    }
+    
+    // Vérifier blocage Amazon
+    const block = detectAmazonBlock(html);
+    if (block.blocked) {
+      logger.warn(`[Amazon] Requête bloquée par Amazon: ${block.reason} (proxy: ${fsrOptions.proxy || 'aucun'})`);
+      throw new Error(`Amazon a bloqué la requête (${block.reason}). ${fsrOptions.proxy ? 'Le VPN est peut-être détecté.' : 'Configurez VPN_PROXY_URL pour utiliser un proxy.'}`);
     }
     
     // Parser
@@ -414,10 +461,18 @@ export async function getAmazonProduct(asin, country = "fr") {
   
   try {
     const client = getFsrClient();
-    const html = await client.get(productUrl);
+    const fsrOptions = getAmazonFsrOptions();
+    const html = await client.get(productUrl, fsrOptions);
     
     if (!html || html.length < 1000) {
       throw new Error("Réponse Amazon vide");
+    }
+    
+    // Vérifier blocage Amazon
+    const block = detectAmazonBlock(html);
+    if (block.blocked) {
+      logger.warn(`[Amazon] Requête bloquée par Amazon: ${block.reason}`);
+      throw new Error(`Amazon a bloqué la requête (${block.reason})`);
     }
     
     if (html.includes("Looking for something") || html.includes("Nous n'avons rien trouvé")) {

@@ -2,6 +2,15 @@
  * Normalizer Amazon
  * Transforme les données brutes Amazon en format normalisé Tako API
  * 
+ * Format Tako standard pour chaque item :
+ * - id: identifiant unique prefixé (amazon:{asin})
+ * - sourceId: ASIN
+ * - title: titre du produit
+ * - description: description produit
+ * - images: { primary, thumbnail, additional[] }
+ * - urls: { detail (API), source (Amazon) }
+ * - details: { price, marketplace, isPrime, rating, brand, ... }
+ * 
  * @module domains/ecommerce/normalizers/amazon
  */
 
@@ -34,6 +43,39 @@ function getMarketplaceInfo(code) {
 }
 
 /**
+ * Normalise un item de recherche au format Tako standard
+ */
+function normalizeSearchItem(item, marketplace) {
+  const asin = item.asin;
+  
+  return {
+    id: `amazon:${asin}`,
+    sourceId: asin,
+    title: item.title || null,
+    description: null,
+    images: {
+      primary: item.image || null,
+      thumbnail: item.image || null
+    },
+    urls: {
+      detail: `/api/ecommerce/amazon/product/${asin}?country=${marketplace.code}`,
+      source: item.url || `https://${marketplace.domain}/dp/${asin}`
+    },
+    details: {
+      asin,
+      marketplace: marketplace.code,
+      marketplaceName: marketplace.name,
+      price: item.priceValue || null,
+      priceFormatted: item.price || null,
+      currency: item.currency || marketplace.currency,
+      isPrime: item.isPrime === true,
+      rating: item.rating || null,
+      reviewCount: item.reviewCount || null
+    }
+  };
+}
+
+/**
  * Normalise les résultats de recherche Amazon
  * 
  * @param {object} rawData - Données brutes de searchAmazon
@@ -54,49 +96,25 @@ export async function normalizeSearchResults(rawData, options = {}) {
   const normalized = [];
   
   for (const item of rawData.results) {
-    let title = item.title || null;
+    const norm = normalizeSearchItem(item, marketplace);
     
     // Traduction du titre si demandée
-    if (autoTrad && title && lang !== marketplace.code) {
+    if (autoTrad && norm.title && lang !== marketplace.code) {
       try {
-        title = await translateText(title, marketplace.code, lang);
+        norm.title = await translateText(norm.title, marketplace.code, lang);
       } catch (err) {
         // Garder le titre original en cas d'erreur
       }
     }
     
-    normalized.push({
-      id: item.asin,
-      source: 'amazon',
-      collection: marketplace.name,
-      title,
-      subtitle: buildPriceSubtitle(item),
-      description: null,
-      image: item.image || null,
-      thumbnail: item.image || null,
-      year: null,
-      metadata: {
-        asin: item.asin,
-        marketplace: marketplace.code,
-        marketplaceName: marketplace.name,
-        price: {
-          value: item.priceValue,
-          currency: item.currency || marketplace.currency,
-          formatted: item.price
-        },
-        isPrime: item.isPrime === true,
-        rating: item.rating || null,
-        reviewCount: item.reviewCount || null,
-        url: item.url
-      }
-    });
+    normalized.push(norm);
   }
   
   return normalized;
 }
 
 /**
- * Normalise les détails d'un produit Amazon
+ * Normalise les détails d'un produit Amazon au format Tako standard
  * 
  * @param {object} rawData - Données brutes de getAmazonProduct
  * @param {object} options - Options de normalisation
@@ -110,6 +128,7 @@ export async function normalizeProductDetails(rawData, options = {}) {
   if (!rawData) return null;
   
   const marketplace = getMarketplaceInfo(rawData.marketplace);
+  const asin = rawData.asin;
   
   let title = rawData.title || null;
   let description = rawData.description || null;
@@ -117,63 +136,47 @@ export async function normalizeProductDetails(rawData, options = {}) {
   // Traduction si demandée
   if (autoTrad && lang !== marketplace.code) {
     try {
-      if (title) {
-        title = await translateText(title, marketplace.code, lang);
-      }
-      if (description) {
-        description = await translateText(description, marketplace.code, lang);
-      }
+      if (title) title = await translateText(title, marketplace.code, lang);
+      if (description) description = await translateText(description, marketplace.code, lang);
     } catch (err) {
       // Garder texte original en cas d'erreur
     }
   }
   
   // Construire les images
-  const images = [];
+  const imageList = [];
   if (rawData.images && Array.isArray(rawData.images)) {
-    rawData.images.forEach((url, index) => {
-      images.push({
-        url,
-        thumbnail: url,
-        caption: index === 0 ? 'Image principale' : `Image ${index + 1}`,
-        isMain: index === 0
-      });
-    });
+    imageList.push(...rawData.images);
   } else if (rawData.image) {
-    images.push({
-      url: rawData.image,
-      thumbnail: rawData.image,
-      caption: 'Image principale',
-      isMain: true
-    });
+    imageList.push(rawData.image);
   }
   
   return {
-    id: rawData.asin,
-    source: 'amazon',
+    id: `amazon:${asin}`,
+    sourceId: asin,
     title,
-    subtitle: buildPriceSubtitle(rawData),
     description,
-    images,
-    year: null,
-    metadata: {
-      asin: rawData.asin,
+    images: {
+      primary: imageList[0] || null,
+      thumbnail: imageList[0] || null,
+      additional: imageList.slice(1)
+    },
+    urls: {
+      detail: `/api/ecommerce/amazon/product/${asin}?country=${marketplace.code}`,
+      source: rawData.url || `https://${marketplace.domain}/dp/${asin}`
+    },
+    details: {
+      asin,
       marketplace: marketplace.code,
       marketplaceName: marketplace.name,
-      price: {
-        value: rawData.priceValue,
-        currency: rawData.currency || marketplace.currency,
-        formatted: rawData.price
-      },
+      price: rawData.priceValue || null,
+      priceFormatted: rawData.price || null,
+      currency: rawData.currency || marketplace.currency,
       isPrime: rawData.isPrime === true,
-      rating: {
-        value: rawData.rating || null,
-        max: 5,
-        count: rawData.reviewCount || null
-      },
-      brand: rawData.brand || null,
-      url: rawData.url,
-      available: !rawData.error
+      rating: rawData.rating || null,
+      ratingMax: 5,
+      reviewCount: rawData.reviewCount || null,
+      brand: rawData.brand || null
     }
   };
 }
@@ -215,7 +218,6 @@ export function normalizePriceComparison(rawData) {
   let cheapest = null;
   
   if (availablePrices.length > 0) {
-    // Convertir tout en EUR pour comparer (simplifié)
     const rates = { USD: 0.92, GBP: 1.17, CAD: 0.67, JPY: 0.0062, EUR: 1 };
     
     cheapest = availablePrices.reduce((best, current) => {
@@ -227,7 +229,6 @@ export function normalizePriceComparison(rawData) {
   
   return {
     asin: rawData.asin,
-    source: 'amazon',
     comparison,
     summary: {
       total: comparison.length,
@@ -238,25 +239,4 @@ export function normalizePriceComparison(rawData) {
       } : null
     }
   };
-}
-
-/**
- * Construit le sous-titre avec le prix
- */
-function buildPriceSubtitle(item) {
-  const parts = [];
-  
-  if (item.priceValue && item.price) {
-    parts.push(item.price);
-  }
-  
-  if (item.isPrime) {
-    parts.push('Prime');
-  }
-  
-  if (item.rating) {
-    parts.push(`${item.rating}/5`);
-  }
-  
-  return parts.join(' • ') || null;
 }
