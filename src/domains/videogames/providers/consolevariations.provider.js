@@ -236,10 +236,12 @@ export async function getConsoleVariationsDetails(slug, options = {}) {
           const imagesData = JSON.parse(jsonStr);
           
           for (const img of imagesData) {
+            // Nettoyer les \/ résiduels dans les URLs après JSON.parse
+            const cleanUrl = (u) => u ? u.replace(/\\\//g, '/') : null;
             images.push({
               id: img.id,
-              url: img.original_url || img.preview_url,
-              thumbnail: img.preview_url,
+              url: cleanUrl(img.original_url || img.preview_url),
+              thumbnail: cleanUrl(img.preview_url),
               alt: img.alt_text || '',
               isMain: images.length === 0
             });
