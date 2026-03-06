@@ -30,17 +30,17 @@ function extractText(value) {
  */
 function normalizeCardImages(images) {
   if (!images) {
-    return { main: null, thumbnail: null, all: [] };
+    return { primary: null, thumbnail: null, gallery: [] };
   }
 
-  const all = [];
-  if (images.hd) all.push(images.hd);
-  if (images.thumbnail && images.thumbnail !== images.hd) all.push(images.thumbnail);
+  const gallery = [];
+  if (images.hd) gallery.push(images.hd);
+  if (images.thumbnail && images.thumbnail !== images.hd) gallery.push(images.thumbnail);
 
   return {
-    main: images.hd || images.thumbnail || null,
+    primary: images.hd || images.thumbnail || null,
     thumbnail: images.thumbnail || images.hd || null,
-    all
+    gallery
   };
 }
 
@@ -56,30 +56,36 @@ function normalizeCardImages(images) {
 export function normalizeSearchItem(item) {
   if (!item) return null;
 
-  const sourceId = String(item.sourceId || item.id || 'unknown');
+  // Utiliser item.id (clé primaire DB) comme identifiant fiable
+  // item.sourceId est l'ID du site original, qui peut entrer en collision avec les PK d'autres cartes
+  const sourceId = String(item.id || 'unknown');
 
   return {
-    id: `carddass_${sourceId}`,
-    provider: 'carddass',
-    provider_id: sourceId,
+    id: `carddass:${sourceId}`,
     type: 'collectible',
-
-    name: `${item.license || 'Carddass'} - ${item.series || 'Unknown'} #${item.cardNumber || '?'}`,
-    cardNumber: item.cardNumber || null,
-    rarity: item.rarity || null,
-    rarityColor: item.rarityColor || null,
-
-    license: item.license || null,
-    collection: item.collection || null,
-    series: item.series || null,
-
+    source: 'carddass',
+    sourceId: sourceId,
+    title: `${item.license || 'Carddass'} - ${item.series || 'Unknown'} #${item.cardNumber || '?'}`,
+    titleOriginal: null,
+    description: null,
+    year: null,
     images: {
-      main: item.hd || item.thumbnail || null,
+      primary: item.hd || item.thumbnail || null,
       thumbnail: item.thumbnail || null,
-      all: [item.hd, item.thumbnail].filter(Boolean)
+      gallery: [item.hd, item.thumbnail].filter(Boolean)
     },
-
-    url: null
+    urls: {
+      source: null,
+      detail: `/api/collectibles/carddass/cards/${sourceId}`
+    },
+    details: {
+      cardNumber: item.cardNumber || null,
+      rarity: item.rarity || null,
+      rarityColor: item.rarityColor || null,
+      license: item.license || null,
+      collection: item.collection || null,
+      series: item.series || null
+    }
   };
 }
 
@@ -119,53 +125,47 @@ export function normalizeSearchResults(response) {
 export function normalizeDetails(data) {
   if (!data) return null;
 
-  const sourceId = String(data.sourceId || data.id || 'unknown');
+  // Utiliser data.id (clé primaire DB) comme identifiant fiable
+  const sourceId = String(data.id || 'unknown');
 
   return {
-    id: `carddass_${sourceId}`,
-    provider: 'carddass',
-    provider_id: sourceId,
+    id: `carddass:${sourceId}`,
     type: 'collectible',
-
-    name: buildCardName(data),
-    cardNumber: data.cardNumber || null,
-
-    description: null,
-
-    // Classification
-    rarity: data.rarity || null,
-    rarityColor: data.rarityColor || null,
-    license: data.license || null,
-    collection: data.collection || null,
-    series: data.series || null,
-
-    // Hiérarchie
-    hierarchy: data.hierarchy || null,
-
-    // Images
-    images: normalizeCardImages(data.images),
-
-    // Images supplémentaires (verso, variantes, etc.)
-    extraImages: (data.extraImages || []).map(img => ({
-      id: img.id,
-      sourceId: img.sourceId,
-      label: img.label || null,
-      thumbnail: img.thumbnail || null,
-      hd: img.hd || null
-    })),
-
-    // Packagings
-    packagings: (data.packagings || []).map(pack => ({
-      id: pack.id,
-      sourceId: pack.sourceId,
-      label: pack.label || null,
-      image: pack.image || null
-    })),
-
-    // Métadonnées
     source: 'carddass',
-    dataSource: 'database',
-    originalSite: 'animecollection.fr'
+    sourceId: sourceId,
+    title: buildCardName(data),
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: normalizeCardImages(data.images),
+    urls: {
+      source: null,
+      detail: `/api/collectibles/carddass/cards/${sourceId}`
+    },
+    details: {
+      cardNumber: data.cardNumber || null,
+      rarity: data.rarity || null,
+      rarityColor: data.rarityColor || null,
+      license: data.license || null,
+      collection: data.collection || null,
+      series: data.series || null,
+      hierarchy: data.hierarchy || null,
+      extraImages: (data.extraImages || []).map(img => ({
+        id: img.id,
+        sourceId: img.sourceId,
+        label: img.label || null,
+        thumbnail: img.thumbnail || null,
+        hd: img.hd || null
+      })),
+      packagings: (data.packagings || []).map(pack => ({
+        id: pack.id,
+        sourceId: pack.sourceId,
+        label: pack.label || null,
+        image: pack.image || null
+      })),
+      dataSource: 'database',
+      originalSite: data.sourceSite === 'dbzcollection' ? 'dbzcollection.fr' : 'animecollection.fr'
+    }
   };
 }
 

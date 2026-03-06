@@ -451,18 +451,21 @@ export async function getCards(seriesId, options = {}) {
 export async function getCardById(cardId) {
   ensureConnected();
 
-  const row = await queryOne(
-    `SELECT ca.*, 
+  const cardDetailSql = `SELECT ca.*, 
             s.source_id as series_source_id, s.name as series_name,
             c.source_id as collection_source_id, c.name as collection_name,
             l.source_id as license_source_id, l.name as license_name
      FROM carddass_cards ca
      JOIN carddass_series s ON s.id = ca.series_id
      JOIN carddass_collections c ON c.id = s.collection_id
-     JOIN carddass_licenses l ON l.id = c.license_id
-     WHERE ca.id = $1 OR ca.source_id = $1`,
-    [cardId]
-  );
+     JOIN carddass_licenses l ON l.id = c.license_id`;
+
+  // Priorité : chercher par clé primaire d'abord, puis par source_id en fallback
+  // Évite les collisions quand un id PK d'une carte = source_id d'une autre
+  let row = await queryOne(`${cardDetailSql} WHERE ca.id = $1`, [cardId]);
+  if (!row) {
+    row = await queryOne(`${cardDetailSql} WHERE ca.source_id = $1`, [cardId]);
+  }
 
   if (!row) return null;
 
