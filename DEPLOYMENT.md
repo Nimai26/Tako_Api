@@ -1,7 +1,7 @@
 # 🚀 Tako API - Déploiement
 
-> **Dernière mise à jour** : 4 mars 2026  
-> **Version** : 2.6.0  
+> **Dernière mise à jour** : 6 mars 2026  
+> **Version** : 2.6.1  
 > **Statut** : ✅ Production Ready
 
 ---
@@ -57,6 +57,7 @@ Le projet inclut un `docker-compose.yaml` complet avec :
 - **Tako API** — application Node.js
 - **PostgreSQL** (`tako_db`) — cache + données internes (MEGA, KRE-O)
 - **FlareSolverr** — scraping anti-bot (Cloudflare bypass)
+- **Gluetun** — VPN proxy HTTP (PIA OpenVPN) pour Amazon et scraping résistant au blocage
 
 Au démarrage, l'API :
 1. Se connecte à PostgreSQL
@@ -109,6 +110,10 @@ FILE_BASE_URL=https://your-domain.com/files
 
 # Scraping
 FSR_URL=http://flaresolverr:8191/v1
+
+# VPN Proxy (Amazon et scraping anti-blocage)
+VPN_PROXY_URL=http://gluetun:8888
+GLUETUN_CONTROL_URL=http://gluetun:8000
 
 # APIs (optionnelles mais recommandées)
 BRICKSET_API_KEY=your_key
@@ -291,7 +296,7 @@ docker compose up -d
 ### Migration toys_api → Tako_Api
 
 - ✅ **11 domaines** migrés (100%)
-- ✅ **35 providers** fonctionnels (100%)
+- ✅ **36 providers** fonctionnels (100%)
 - ✅ **Auto-migration** des tables au démarrage
 - ✅ **Auto-seed** des données (MEGA + KRE-O + Carddass) au démarrage
 - ✅ **Migrations externes** : DBS Card Game tables + multi-sources Carddass
@@ -301,7 +306,7 @@ docker compose up -d
 
 | Domaine | Providers | Status |
 |---------|-----------|--------|
-| Construction Toys | 6 providers | ✅ Complet |
+| Construction Toys | 7 providers | ✅ Complet |
 | Books | 2 providers | ✅ Complet |
 | Comics | 2 providers | ✅ Complet |
 | Anime-Manga | 2 providers | ✅ Complet |
@@ -340,6 +345,26 @@ FSR_TIMEOUT=60000
 docker compose restart flaresolverr
 ```
 
+### Amazon retourne 0 résultats
+
+Amazon bloque les requêtes sans VPN. Le service Gluetun fournit un proxy HTTP via PIA VPN :
+
+```bash
+# Vérifier que Gluetun est connecté
+docker logs tako_gluetun --tail 5
+
+# Vérifier l'IP VPN
+curl --proxy http://localhost:8889 https://httpbin.org/ip
+
+# Vérifier que l'API utilise le proxy
+docker exec tako_api env | grep VPN_PROXY_URL
+
+# Redémarrer Gluetun si déconnecté
+docker compose restart gluetun
+```
+
+La première requête Amazon déclenche un challenge AWS WAF que FlareSolverr résout automatiquement via warm-up session (5s). Les requêtes suivantes passent instantanément grâce aux cookies de session.
+
 ### Erreur PostgreSQL
 
 ```bash
@@ -376,4 +401,4 @@ Voir fichier LICENSE dans le repository.
 
 ---
 
-**Déployé avec ❤️ — version 2.6.0 (4 mars 2026)**
+**Déployé avec ❤️ — version 2.6.1 (6 mars 2026)**

@@ -2912,7 +2912,8 @@ curl "http://localhost:3000/api/ecommerce/amazon/health"
 > **Source** : Amazon multi-marketplaces (8 pays)  
 > **API Key** : ❌ Non requise (scraping via FlareSolverr)  
 > **Rate Limit** : Recommandé : 1 requête / 3 secondes  
-> **Note** : Version simplifiée sans Gluetun VPN. Utilise FlareSolverr pour contourner les protections anti-bot.
+> **VPN** : Gluetun (PIA OpenVPN) — proxy HTTP pour contourner le blocage IP Amazon  
+> **Anti-WAF** : Détection automatique AWS WAF challenge + warm-up session + retry
 
 #### 📊 Marketplaces supportés
 
@@ -2973,42 +2974,51 @@ curl "http://localhost:3000/api/ecommerce/amazon/health"
 
 ```json
 {
-  "success": true,
-  "provider": "amazon",
   "data": [
     {
-      "id": "B01N6CJ1QW",
-      "source": "amazon",
-      "collection": "Amazon France",
+      "id": "amazon:B01N6CJ1QW",
+      "sourceId": "B01N6CJ1QW",
       "title": "LEGO Botanicals 10343 Miniature Orchid",
-      "subtitle": "€19.99 • Prime • 4.8/5",
       "description": "Description du produit...",
-      "image": "https://m.media-amazon.com/images/I/71EeFX1HCsL._SL500_.jpg",
-      "thumbnail": "https://m.media-amazon.com/images/I/71EeFX1HCsL._SL500_.jpg",
-      "year": null,
-      "metadata": {
+      "images": {
+        "primary": "https://m.media-amazon.com/images/I/71EeFX1HCsL._SL500_.jpg",
+        "thumbnail": "https://m.media-amazon.com/images/I/71EeFX1HCsL._SL160_.jpg"
+      },
+      "urls": {
+        "detail": "/api/ecommerce/amazon/product/B01N6CJ1QW",
+        "source": "https://www.amazon.fr/dp/B01N6CJ1QW"
+      },
+      "details": {
         "asin": "B01N6CJ1QW",
         "marketplace": "fr",
         "marketplaceName": "Amazon France",
-        "price": {
-          "value": 19.99,
-          "currency": "EUR",
-          "formatted": "€19.99"
-        },
+        "price": 19.99,
+        "priceFormatted": "€19,99",
+        "currency": "EUR",
         "isPrime": true,
         "rating": 4.8,
-        "reviewCount": 1234,
-        "url": "https://www.amazon.fr/dp/B01N6CJ1QW"
+        "reviewCount": 1234
       }
     }
   ],
-  "meta": {
-    "query": "lego",
-    "country": "fr",
-    "category": "all",
+  "domain": "ecommerce",
+  "provider": "amazon",
+  "query": "lego",
+  "total": 24,
+  "count": 20,
+  "pagination": {
     "page": 1,
-    "limit": 20,
-    "total": 3
+    "pageSize": 20,
+    "totalResults": 24,
+    "totalPages": 2,
+    "hasMore": true
+  },
+  "meta": {
+    "fetchedAt": "2026-03-06T13:07:11.956Z",
+    "lang": "fr",
+    "country": "fr",
+    "category": "Tous",
+    "autoTrad": false
   }
 }
 ```
@@ -3057,13 +3067,19 @@ curl "http://localhost:3000/api/ecommerce/amazon/health"
 ```
 
 **⚠️ Limitations** :
-- Version simplifiée sans Gluetun VPN ni Puppeteer Stealth
-- Pas de circuit breaker automatique
-- Pas de rotation IP automatique en cas de détection robot
-- Délai de réponse FlareSolverr : 3-10 secondes par requête
+- Délai de réponse FlareSolverr : 3-10 secondes par requête (warm-up session inclus)
+- La 1ère requête après redémarrage est plus lente (~8s, résolution WAF challenge)
 - Recommandation : Limiter à 1 requête / 3 secondes pour éviter détection
 - Parsing HTML fragile, peut casser si Amazon change sa structure
 - Certains produits peuvent ne pas être détectés correctement
+- Le VPN (Gluetun/PIA) est requis — sans VPN, Amazon bloque les requêtes
+
+**🛡️ Mécanisme anti-blocage** :
+1. **VPN Gluetun** : proxy HTTP via PIA OpenVPN (variable `VPN_PROXY_URL`)
+2. **Warm-up session** : `ensureSession()` visite le domaine Amazon (5s) pour résoudre le JS WAF et poser les cookies
+3. **Détection WAF** : `isWafChallenge()` détecte les pages `awsWafCookieDomainList` / `challenge.js`
+4. **Retry automatique** : si WAF toujours présent, attend 4s et retente (max 2 tentatives)
+5. **Détection blocage** : `detectAmazonBlock()` identifie bot_detection, CAPTCHA, error_page
 
 **💡 Conseils d'utilisation** :
 - Privilégier les recherches spécifiques plutôt que génériques

@@ -1,11 +1,11 @@
 # Tako API 🐙
 
-> **Version 2.6.0** - Architecture modulaire par domaines
+> **Version 2.6.1** - Architecture modulaire par domaines
 > 
 > **Migration toys_api ✅ Terminée** - 30 janvier 2026  
-> **Dernière mise à jour** : 4 mars 2026 (Dragon Ball : 90 515 cartes Carddass + 7 902 cartes DBS TCG)
+> **Dernière mise à jour** : 6 mars 2026 (Amazon VPN Gluetun + WAF auto-retry)
 
-API REST multi-sources pour rechercher et récupérer des informations produits depuis **35 providers** répartis en **11 domaines**.
+API REST multi-sources pour rechercher et récupérer des informations produits depuis **36 providers** répartis en **11 domaines**.
 
 ## 🏗️ Architecture
 
@@ -123,6 +123,30 @@ flaresolverr:
 
 Voir `src/infrastructure/scraping/FlareSolverrClient.js` pour le client partagé.
 
+## 🔒 Gluetun VPN — Proxy HTTP pour Amazon
+
+Amazon bloque les requêtes provenant d'IPs de datacenters. **Gluetun** fournit un tunnel VPN (PIA OpenVPN) avec un proxy HTTP que FlareSolverr utilise pour ses requêtes Chromium.
+
+| Composant | Rôle |
+|-----------|------|
+| **Gluetun** | Tunnel VPN PIA OpenVPN → proxy HTTP `:8888` |
+| **FlareSolverr** | Chromium headless, route via le proxy Gluetun |
+| **fetchAmazonPage()** | Warm-up session (5s) + détection WAF + retry auto |
+
+```yaml
+# docker-compose.yaml (extrait)
+gluetun:
+  image: qmcgaw/gluetun:latest
+  cap_add: [NET_ADMIN]
+  environment:
+    - VPN_SERVICE_PROVIDER=private internet access
+    - VPN_TYPE=openvpn
+    - HTTPPROXY=on
+    - HTTPPROXY_LISTENING_ADDRESS=:8888
+```
+
+La variable `VPN_PROXY_URL=http://gluetun:8888` est injectée dans l'API — le provider Amazon l'utilise automatiquement.
+
 ## ✨ Principes d'architecture
 
 ### 1. Séparation des responsabilités
@@ -217,7 +241,10 @@ FILE_BASE_URL=https://tako.snowmanprod.fr/files
 
 # Scraping
 FSR_URL=http://flaresolverr:8191/v1
+
+# VPN Proxy (requis pour Amazon)
 VPN_PROXY_URL=http://gluetun:8888
+GLUETUN_CONTROL_URL=http://gluetun:8000
 
 # APIs (optionnelles)
 BRICKSET_API_KEY=

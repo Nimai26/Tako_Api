@@ -7,6 +7,35 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### 🔧 Amazon — VPN Gluetun + détection AWS WAF + format Tako standard
+
+#### Added
+- **Gluetun VPN** intégré au stack Docker de production (PIA OpenVPN, proxy HTTP 8888)
+- `fetchAmazonPage()` — warm-up session FlareSolverr + retry automatique sur WAF challenge AWS
+- `isWafChallenge(html)` — détection des pages challenge AWS WAF (`awsWafCookieDomainList`, `challenge.js`)
+- `getAmazonFsrOptions()` — injection automatique du proxy VPN via `VPN_PROXY_URL`
+- `detectAmazonBlock(html)` — détection bot_detection, CAPTCHA, error_page
+- Variables d'environnement : `VPN_PROXY_URL`, `GLUETUN_CONTROL_URL`
+- `FlareSolverrClient.ensureSession()` accepte maintenant des options (proxy) et attend 5s pour résoudre le JS WAF
+- `FlareSolverrClient._request()` supporte le paramètre `proxy` (passé à Chromium via FlareSolverr)
+
+#### Changed
+- **Amazon normalizer** — réécriture complète au format Tako standard :
+  - `id: "amazon:{asin}"`, `sourceId`, `images: { primary, thumbnail, additional }`, `urls: { detail, source }`, `details: { asin, marketplace, price, priceFormatted, currency, isPrime, rating, reviewCount, brand }`
+  - Supprimé : `buildPriceSubtitle()`, anciens champs `metadata{}`, `collection`, `subtitle`, `source`, `year`
+- **Amazon routes** — enveloppe standard : `{ data[], domain, provider, query, total, count, pagination, meta }`
+- **ConsoleVariations normalizer** — champ `name` → `title`, format enveloppe `data[]`
+- **ConsoleVariations provider** — ajout `cleanUrl()` pour corriger les `\/` dans les URLs d'images
+- **Carddass normalizer** — renommage : `name` → `title`, `provider_id` → `sourceId`, `images.main` → `images.primary`
+- **Carddass provider** — correction collision ID dans `getCardById()` (priorité PK)
+
+#### Fixed
+- Amazon retournait 0 résultats (IP bloquée par Amazon, résolue via VPN Gluetun)
+- AWS WAF challenge (1990 bytes) bloquait la 1ère requête — résolu par warm-up session + retry
+- ConsoleVariations : backslashes `\/` dans les URLs d'images JSON
+- ConsoleVariations : format de réponse non standard (`items[]` → `data[]`)
+- Carddass : collision d'ID entre PK numériques et card_number
+
 ---
 
 ## [2.6.0] - 2026-03-04

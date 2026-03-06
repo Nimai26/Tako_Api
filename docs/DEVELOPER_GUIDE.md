@@ -1,8 +1,8 @@
 # Tako API — Guide du Développeur
 
-> **Version** : 2.6.0  
+> **Version** : 2.6.1  
 > **Base URL Production** : `https://tako.snowmanprod.fr`  
-> **Dernière mise à jour** : 4 mars 2026
+> **Dernière mise à jour** : 6 mars 2026
 
 ---
 
@@ -1089,7 +1089,7 @@ Les providers suivants sont également disponibles :
 
 #### Amazon
 
-> Source : 8 marketplaces Amazon (scraping)
+> Source : 8 marketplaces Amazon (scraping via FlareSolverr + VPN Gluetun)
 
 | Marketplace | Code | Devise |
 |-------------|------|--------|
@@ -1118,7 +1118,17 @@ GET /api/ecommerce/amazon/search?q=lego&country=fr&limit=10
 GET /api/ecommerce/amazon/compare/B01N6CJ1QW?countries=fr,us,uk,de
 ```
 
-> **Note** : Temps de réponse élevé (3–10s) dû au scraping. Limiter à 1 requête / 3 secondes.
+**Architecture anti-blocage** :
+
+Le provider Amazon utilise un mécanisme multi-couches pour contourner les protections :
+
+1. **VPN Gluetun** — proxy HTTP PIA OpenVPN (`VPN_PROXY_URL=http://gluetun:8888`)
+2. **FlareSolverr** — navigateur Chromium headless avec résolution Cloudflare
+3. **Warm-up session** — `fetchAmazonPage()` appelle `ensureSession()` (5s) avant chaque requête pour résoudre les challenges AWS WAF
+4. **Retry automatique** — si la réponse est un WAF challenge (`isWafChallenge()`), attend 4s et retente (max 2 tentatives)
+5. **Détection blocage** — `detectAmazonBlock()` distingue bot_detection, CAPTCHA et error_page
+
+> **Note** : Temps de réponse : ~8s (1ère requête avec warm-up WAF), ~3s ensuite (session réutilisée). Limiter à 1 requête / 3 secondes.
 
 ---
 
@@ -1240,7 +1250,8 @@ GET /api/anime-manga/jikan/top?type=anime&autoTrad=1&lang=fr
 | Endpoint discovery (cache) | ~11ms |
 | Recherche via API externe | 150ms–2s |
 | Endpoint scraping (FlareSolverr) | 3–18s |
-| Amazon (scraping) | 3–10s |
+| Amazon (1ère requête, warm-up WAF) | ~8s |
+| Amazon (requêtes suivantes) | 3–5s |
 
 ### Bonnes pratiques
 
