@@ -349,20 +349,7 @@ export class TmdbNormalizer extends BaseNormalizer {
       }
     };
 
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: options.lang || 'en',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
+    return data;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -568,20 +555,7 @@ export class TmdbNormalizer extends BaseNormalizer {
       }
     };
 
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: options.lang || 'en',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
+    return data;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -891,19 +865,6 @@ export class TmdbNormalizer extends BaseNormalizer {
       }
     };
 
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: options.lang || 'en',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
+    return data;
   }
 }
