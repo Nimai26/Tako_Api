@@ -87,7 +87,7 @@ router.get('/search', asyncHandler(async (req, res) => {
     source: 'igdb',
     query: searchQuery,
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -138,7 +138,7 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
     source: 'igdb',
     filters: { query, platforms, genres, themes, gameModes, minRating, releaseYear },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -328,7 +328,7 @@ router.get('/companies/search', asyncHandler(async (req, res) => {
     source: 'igdb',
     query: searchQuery,
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -379,7 +379,7 @@ router.get('/developer/:id/games', asyncHandler(async (req, res) => {
     source: 'igdb',
     developerId: parseInt(id),
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -405,7 +405,7 @@ router.get('/publisher/:id/games', asyncHandler(async (req, res) => {
     source: 'igdb',
     publisherId: parseInt(id),
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -436,7 +436,7 @@ router.get('/franchises/search', asyncHandler(async (req, res) => {
     source: 'igdb',
     query: searchQuery,
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -514,7 +514,7 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
     success: true,
     source: 'igdb',
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -592,7 +592,7 @@ router.get('/recent', asyncHandler(async (req, res) => {
     success: true,
     source: 'igdb',
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -616,7 +616,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     success: true,
     source: 'igdb',
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 

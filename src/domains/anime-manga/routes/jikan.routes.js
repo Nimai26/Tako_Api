@@ -90,75 +90,49 @@ async function enrichWithBackdrops(data) {
 }
 
 /**
- * Traduit les champs synopsis d'un résultat détaillé
+ * Traduit les champs d'un résultat détaillé (Format B canonique)
+ * - description (anciennement synopsis / about)
+ * - details.background (anciennement background plat)
+ * - details.genres (tableau de strings, anciennement objets avec .name)
  */
 async function translateDetailResult(result, targetLang, autoTradEnabled) {
   if (!autoTradEnabled || !targetLang || !result) return result;
 
   const translated = { ...result };
 
-  // Traduire synopsis si présent
-  if (result.synopsis) {
-    const { text, translated: wasTranslated } = await translateText(result.synopsis, targetLang, { enabled: true });
+  // Traduire description si présent (anciennement synopsis / about)
+  if (result.description) {
+    const { text, translated: wasTranslated } = await translateText(result.description, targetLang, { enabled: true });
     if (wasTranslated) {
-      translated.synopsisOriginal = result.synopsis;
-      translated.synopsis = text;
-      translated.synopsisTranslated = true;
+      translated.descriptionOriginal = result.description;
+      translated.description = text;
+      translated.descriptionTranslated = true;
     }
   }
 
-  // Traduire background si présent
-  if (result.background) {
-    const { text, translated: wasTranslated } = await translateText(result.background, targetLang, { enabled: true });
+  // Traduire details.background si présent
+  if (result.details?.background) {
+    const { text, translated: wasTranslated } = await translateText(result.details.background, targetLang, { enabled: true });
     if (wasTranslated) {
-      translated.backgroundOriginal = result.background;
-      translated.background = text;
-      translated.backgroundTranslated = true;
+      translated.details = translated.details || {};
+      translated.details.backgroundOriginal = result.details.background;
+      translated.details.background = text;
+      translated.details.backgroundTranslated = true;
     }
   }
 
-  // Traduire about (pour les personnages/personnes)
-  if (result.about) {
-    const { text, translated: wasTranslated } = await translateText(result.about, targetLang, { enabled: true });
-    if (wasTranslated) {
-      translated.aboutOriginal = result.about;
-      translated.about = text;
-      translated.aboutTranslated = true;
-    }
-  }
-
-  // Traduire les genres (utilise MEDIA_GENRES + fallback API)
-  // Les genres Jikan sont des objets {id, name, url} — on traduit le name
-  if (result.genres && Array.isArray(result.genres) && result.genres.length > 0) {
-    const isObjectGenres = typeof result.genres[0] === 'object' && result.genres[0].name;
-    
-    if (isObjectGenres) {
-      // Traduire les noms dans les objets genre
-      const translatedGenres = await Promise.all(
-        result.genres.map(async (genre) => {
-          const translatedName = await translateGenre(genre.name, targetLang);
-          if (translatedName !== genre.name) {
-            return { ...genre, nameOriginal: genre.name, name: translatedName };
-          }
-          return genre;
-        })
-      );
-      const wasTranslatedGenres = translatedGenres.some((g, i) => g.nameOriginal);
-      if (wasTranslatedGenres) {
-        translated.genres = translatedGenres;
-        translated.genresTranslated = true;
-      }
-    } else {
-      // Genres simples (strings)
-      const genreTranslations = await Promise.all(
-        result.genres.map(genre => translateGenre(genre, targetLang))
-      );
-      const wasTranslatedGenres = genreTranslations.some((g, i) => g !== result.genres[i]);
-      if (wasTranslatedGenres) {
-        translated.genresOriginal = result.genres;
-        translated.genres = genreTranslations;
-        translated.genresTranslated = true;
-      }
+  // Traduire les genres (strings dans details.genres)
+  if (result.details?.genres?.length > 0) {
+    const genreNames = result.details.genres;
+    const translatedGenres = await Promise.all(
+      genreNames.map(genre => translateGenre(genre, targetLang))
+    );
+    const wasTranslatedGenres = translatedGenres.some((g, i) => g !== genreNames[i]);
+    if (wasTranslatedGenres) {
+      translated.details = translated.details || {};
+      translated.details.genresOriginal = genreNames;
+      translated.details.genres = translatedGenres;
+      translated.details.genresTranslated = true;
     }
   }
 
@@ -217,25 +191,15 @@ router.get('/search', asyncHandler(async (req, res) => {
     maxResults: parseInt(maxResults)
   });
 
-  // Traduction des synopsis si autoTrad activé
+  // Traduction des descriptions si autoTrad activé
   if (autoTradEnabled && targetLang) {
     result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
+      fieldsToTranslate: ['description'],
       enabled: true
     });
   }
 
-  res.json({
-    success: true,
-    provider: 'jikan',
-    domain: 'anime-manga',
-    ...result,
-    meta: {
-      lang,
-      autoTrad: autoTradEnabled,
-      note: 'Contenu adulte NON filtré'
-    }
-  });
+  res.json(result);
 }));
 
 /**
@@ -288,20 +252,7 @@ router.get('/search/anime', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
-  res.json({
-    success: true,
-    provider: 'jikan',
-    domain: 'anime-manga',
-    ...result,
-    meta: {
-      lang,
-      autoTrad: autoTradEnabled,
-      sfw,
-      note: sfw === 'all' ? 'Tout contenu inclus (hentai compris)' : 
-            sfw === 'sfw' ? 'Contenu sûr uniquement (sans hentai)' : 
-            'Hentai uniquement'
-    }
-  });
+  res.json(result);
 }));
 
 /**
@@ -348,20 +299,7 @@ router.get('/search/manga', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
-  res.json({
-    success: true,
-    provider: 'jikan',
-    domain: 'anime-manga',
-    ...result,
-    meta: {
-      lang,
-      autoTrad: autoTradEnabled,
-      sfw,
-      note: sfw === 'all' ? 'Tout contenu inclus (hentai compris)' : 
-            sfw === 'sfw' ? 'Contenu sûr uniquement (sans hentai)' : 
-            'Hentai uniquement'
-    }
-  });
+  res.json(result);
 }));
 
 /**
@@ -388,13 +326,7 @@ router.get('/search/characters', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
-  res.json({
-    success: true,
-    provider: 'jikan',
-    domain: 'anime-manga',
-    ...result,
-    meta: { lang, autoTrad: autoTradEnabled }
-  });
+  res.json(result);
 }));
 
 /**
@@ -421,13 +353,7 @@ router.get('/search/people', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
-  res.json({
-    success: true,
-    provider: 'jikan',
-    domain: 'anime-manga',
-    ...result,
-    meta: { lang, autoTrad: autoTradEnabled }
-  });
+  res.json(result);
 }));
 
 /**
@@ -454,13 +380,7 @@ router.get('/search/producers', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
   }
 
-  res.json({
-    success: true,
-    provider: 'jikan',
-    domain: 'anime-manga',
-    ...result,
-    meta: { lang, autoTrad: autoTradEnabled }
-  });
+  res.json(result);
 }));
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -777,7 +697,7 @@ router.get('/seasons/now', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang) {
     result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
+      fieldsToTranslate: ['description'],
       enabled: true
     });
   }
@@ -823,7 +743,7 @@ router.get('/seasons/:year/:season', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang) {
     result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
+      fieldsToTranslate: ['description'],
       enabled: true
     });
   }
@@ -868,7 +788,7 @@ router.get('/top/anime', asyncHandler(async (req, res) => {
 
       if (autoTradEnabled && targetLang) {
         result = await translateSearchResults(result, targetLang, {
-          fieldsToTranslate: ['synopsis'],
+          fieldsToTranslate: ['description'],
           enabled: true
         });
       }
@@ -965,7 +885,7 @@ router.get('/schedules', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang) {
     result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
+      fieldsToTranslate: ['description'],
       enabled: true
     });
   }
@@ -1004,7 +924,7 @@ router.get('/schedules/:day', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang) {
     result = await translateSearchResults(result, targetLang, {
-      fieldsToTranslate: ['synopsis'],
+      fieldsToTranslate: ['description'],
       enabled: true
     });
   }

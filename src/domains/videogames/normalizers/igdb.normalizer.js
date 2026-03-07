@@ -1,11 +1,15 @@
 /**
- * Normalizer IGDB
- * 
- * Transforme les données IGDB en format Tako standardisé
+ * Normalizer IGDB — Format Canonique B
+ *
+ * Transforme les données IGDB en format Tako standardisé.
  * La traduction est gérée au niveau des routes, pas ici.
- * 
+ *
  * @module domains/videogames/normalizers/igdb
  */
+
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 /**
  * Génère l'URL d'une image IGDB
@@ -16,30 +20,70 @@ function getImageUrl(imageId, size = 't_cover_big') {
 }
 
 /**
+ * Extrait l'année depuis un timestamp UNIX (secondes)
+ */
+function yearFromTimestamp(ts) {
+  if (!ts) return null;
+  return new Date(ts * 1000).getFullYear();
+}
+
+/**
+ * Convertit un timestamp UNIX (secondes) en date ISO (YYYY-MM-DD)
+ */
+function dateFromTimestamp(ts) {
+  if (!ts) return null;
+  return new Date(ts * 1000).toISOString().split('T')[0];
+}
+
+/**
+ * Convertit un timestamp UNIX (secondes) en datetime ISO
+ */
+function datetimeFromTimestamp(ts) {
+  if (!ts) return null;
+  return new Date(ts * 1000).toISOString();
+}
+
+// ============================================================================
+// ITEM NORMALIZERS
+// ============================================================================
+
+/**
  * Normalise un jeu depuis les résultats de recherche IGDB
  */
 export function normalizeSearchResult(game) {
+  const sourceId = String(game.id);
+
   return {
-    id: `igdb-${game.id}`,
-    sourceId: game.id,
+    id: `igdb:${sourceId}`,
+    type: 'videogame',
     source: 'igdb',
+    sourceId,
     title: game.name,
-    slug: game.slug || null,
-    summary: game.summary || null,
-    releaseDate: game.first_release_date 
-      ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
-      : null,
-    rating: game.total_rating ? Math.round(game.total_rating * 10) / 10 : null,
-    ratingCount: game.total_rating_count || 0,
-    cover: game.cover?.image_id 
-      ? getImageUrl(game.cover.image_id, 't_cover_big')
-      : null,
-    coverThumb: game.cover?.image_id 
-      ? getImageUrl(game.cover.image_id, 't_thumb')
-      : null,
-    platforms: game.platforms?.map(p => p.name || p) || [],
-    genres: game.genres?.map(g => g.name || g) || [],
-    category: mapCategory(game.category)
+    titleOriginal: null,
+    description: game.summary || null,
+    year: yearFromTimestamp(game.first_release_date),
+    images: {
+      primary: game.cover?.image_id
+        ? getImageUrl(game.cover.image_id, 't_cover_big')
+        : null,
+      thumbnail: game.cover?.image_id
+        ? getImageUrl(game.cover.image_id, 't_thumb')
+        : null,
+      gallery: []
+    },
+    urls: {
+      source: game.slug ? `https://www.igdb.com/games/${game.slug}` : null,
+      detail: `/api/videogames/igdb/${sourceId}`
+    },
+    details: {
+      slug: game.slug || null,
+      releaseDate: dateFromTimestamp(game.first_release_date),
+      rating: game.total_rating ? Math.round(game.total_rating * 10) / 10 : null,
+      ratingCount: game.total_rating_count || 0,
+      platforms: game.platforms?.map(p => p.name || p) || [],
+      genres: game.genres?.map(g => g.name || g) || [],
+      category: mapCategory(game.category)
+    }
   };
 }
 
@@ -47,155 +91,170 @@ export function normalizeSearchResult(game) {
  * Normalise un jeu avec tous les détails
  */
 export function normalizeGame(game) {
+  const sourceId = String(game.id);
+
+  const screenshots = game.screenshots?.map(s => ({
+    id: s.id,
+    url: getImageUrl(s.image_id, 't_screenshot_huge'),
+    thumb: getImageUrl(s.image_id, 't_screenshot_med')
+  })) || [];
+
+  const artworks = game.artworks?.map(a => ({
+    id: a.id,
+    url: getImageUrl(a.image_id, 't_1080p'),
+    thumb: getImageUrl(a.image_id, 't_screenshot_med')
+  })) || [];
+
+  const gallery = [
+    ...screenshots.map(s => s.url),
+    ...artworks.map(a => a.url)
+  ].filter(Boolean);
+
   return {
-    id: `igdb-${game.id}`,
-    sourceId: game.id,
+    id: `igdb:${sourceId}`,
+    type: 'videogame',
     source: 'igdb',
-    
-    // Informations de base
+    sourceId,
     title: game.name,
-    slug: game.slug || null,
-    summary: game.summary || null,
-    storyline: game.storyline || null,
-    
-    // Dates
-    releaseDate: game.first_release_date 
-      ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
-      : null,
-    createdAt: game.created_at 
-      ? new Date(game.created_at * 1000).toISOString()
-      : null,
-    updatedAt: game.updated_at 
-      ? new Date(game.updated_at * 1000).toISOString()
-      : null,
-    
-    // Notes
-    rating: game.total_rating ? Math.round(game.total_rating * 10) / 10 : null,
-    ratingCount: game.total_rating_count || 0,
-    criticRating: game.aggregated_rating ? Math.round(game.aggregated_rating * 10) / 10 : null,
-    criticRatingCount: game.aggregated_rating_count || 0,
-    userRating: game.rating ? Math.round(game.rating * 10) / 10 : null,
-    userRatingCount: game.rating_count || 0,
-    hypes: game.hypes || 0,
-    follows: game.follows || 0,
-    
-    // Classification
-    category: mapCategory(game.category),
-    status: mapStatus(game.status),
-    ageRatings: normalizeAgeRatings(game.age_ratings),
-    
-    // Médias
-    cover: game.cover?.image_id 
-      ? getImageUrl(game.cover.image_id, 't_cover_big')
-      : null,
-    coverThumb: game.cover?.image_id 
-      ? getImageUrl(game.cover.image_id, 't_thumb')
-      : null,
-    screenshots: game.screenshots?.map(s => ({
-      id: s.id,
-      url: getImageUrl(s.image_id, 't_screenshot_huge'),
-      thumb: getImageUrl(s.image_id, 't_screenshot_med')
-    })) || [],
-    artworks: game.artworks?.map(a => ({
-      id: a.id,
-      url: getImageUrl(a.image_id, 't_1080p'),
-      thumb: getImageUrl(a.image_id, 't_screenshot_med')
-    })) || [],
-    videos: game.videos?.map(v => ({
-      id: v.id,
-      name: v.name,
-      videoId: v.video_id,
-      url: `https://www.youtube.com/watch?v=${v.video_id}`,
-      thumbnail: `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`
-    })) || [],
-    
-    // Taxonomie
-    genres: game.genres?.map(g => g.name || g) || [],
-    themes: game.themes?.map(t => t.name || t) || [],
-    keywords: game.keywords?.map(k => k.name || k) || [],
-    gameModes: game.game_modes?.map(m => m.name || m) || [],
-    playerPerspectives: game.player_perspectives?.map(p => p.name || p) || [],
-    
-    // Plateformes
-    platforms: game.platforms?.map(p => ({
-      id: p.id,
-      name: p.name || p,
-      abbreviation: p.abbreviation || null,
-      slug: p.slug || null
-    })) || [],
-    
-    // Relations
-    involvedCompanies: game.involved_companies?.map(ic => ({
-      id: ic.company?.id || ic.id,
-      name: ic.company?.name || null,
-      developer: ic.developer || false,
-      publisher: ic.publisher || false,
-      porting: ic.porting || false,
-      supporting: ic.supporting || false
-    })) || [],
-    
-    // Déduire développeurs et éditeurs
-    developers: game.involved_companies
-      ?.filter(ic => ic.developer)
-      .map(ic => ic.company?.name || null)
-      .filter(Boolean) || [],
-    publishers: game.involved_companies
-      ?.filter(ic => ic.publisher)
-      .map(ic => ic.company?.name || null)
-      .filter(Boolean) || [],
-    
-    // Franchises et collections
-    franchise: game.franchise ? {
-      id: game.franchise.id || game.franchise,
-      name: game.franchise.name || null
-    } : null,
-    franchises: game.franchises?.map(f => ({
-      id: f.id || f,
-      name: f.name || null
-    })) || [],
-    collection: game.collection ? {
-      id: game.collection.id || game.collection,
-      name: game.collection.name || null
-    } : null,
-    
-    // Jeux liés
-    parentGame: game.parent_game ? {
-      id: game.parent_game.id || game.parent_game,
-      name: game.parent_game.name || null
-    } : null,
-    dlcs: game.dlcs?.map(d => ({
-      id: d.id || d,
-      name: d.name || null
-    })) || [],
-    expansions: game.expansions?.map(e => ({
-      id: e.id || e,
-      name: e.name || null
-    })) || [],
-    remakes: game.remakes?.map(r => ({
-      id: r.id || r,
-      name: r.name || null
-    })) || [],
-    remasters: game.remasters?.map(r => ({
-      id: r.id || r,
-      name: r.name || null
-    })) || [],
-    similarGames: game.similar_games?.map(s => ({
-      id: s.id || s,
-      name: s.name || null,
-      cover: s.cover?.image_id ? getImageUrl(s.cover.image_id, 't_cover_small') : null
-    })) || [],
-    
-    // Sites et liens
-    websites: game.websites?.map(w => ({
-      category: mapWebsiteCategory(w.category),
-      url: w.url,
-      trusted: w.trusted || false
-    })) || [],
-    
-    // URLs directes
-    url: `https://www.igdb.com/games/${game.slug}`
+    titleOriginal: null,
+    description: game.summary || null,
+    year: yearFromTimestamp(game.first_release_date),
+    images: {
+      primary: game.cover?.image_id
+        ? getImageUrl(game.cover.image_id, 't_cover_big')
+        : null,
+      thumbnail: game.cover?.image_id
+        ? getImageUrl(game.cover.image_id, 't_thumb')
+        : null,
+      gallery
+    },
+    urls: {
+      source: game.slug ? `https://www.igdb.com/games/${game.slug}` : null,
+      detail: `/api/videogames/igdb/${sourceId}`
+    },
+    details: {
+      // Basic info
+      slug: game.slug || null,
+      storyline: game.storyline || null,
+
+      // Dates
+      releaseDate: dateFromTimestamp(game.first_release_date),
+      createdAt: datetimeFromTimestamp(game.created_at),
+      updatedAt: datetimeFromTimestamp(game.updated_at),
+
+      // Ratings
+      rating: game.total_rating ? Math.round(game.total_rating * 10) / 10 : null,
+      ratingCount: game.total_rating_count || 0,
+      criticRating: game.aggregated_rating ? Math.round(game.aggregated_rating * 10) / 10 : null,
+      criticRatingCount: game.aggregated_rating_count || 0,
+      userRating: game.rating ? Math.round(game.rating * 10) / 10 : null,
+      userRatingCount: game.rating_count || 0,
+      hypes: game.hypes || 0,
+      follows: game.follows || 0,
+
+      // Classification
+      category: mapCategory(game.category),
+      status: mapStatus(game.status),
+      ageRatings: normalizeAgeRatings(game.age_ratings),
+
+      // Media
+      screenshots,
+      artworks,
+      videos: game.videos?.map(v => ({
+        id: v.id,
+        name: v.name,
+        videoId: v.video_id,
+        url: `https://www.youtube.com/watch?v=${v.video_id}`,
+        thumbnail: `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`
+      })) || [],
+
+      // Taxonomy
+      genres: game.genres?.map(g => g.name || g) || [],
+      themes: game.themes?.map(t => t.name || t) || [],
+      keywords: game.keywords?.map(k => k.name || k) || [],
+      gameModes: game.game_modes?.map(m => m.name || m) || [],
+      playerPerspectives: game.player_perspectives?.map(p => p.name || p) || [],
+
+      // Platforms
+      platforms: game.platforms?.map(p => ({
+        id: p.id,
+        name: p.name || p,
+        abbreviation: p.abbreviation || null,
+        slug: p.slug || null
+      })) || [],
+
+      // Companies
+      involvedCompanies: game.involved_companies?.map(ic => ({
+        id: ic.company?.id || ic.id,
+        name: ic.company?.name || null,
+        developer: ic.developer || false,
+        publisher: ic.publisher || false,
+        porting: ic.porting || false,
+        supporting: ic.supporting || false
+      })) || [],
+      developers: game.involved_companies
+        ?.filter(ic => ic.developer)
+        .map(ic => ic.company?.name || null)
+        .filter(Boolean) || [],
+      publishers: game.involved_companies
+        ?.filter(ic => ic.publisher)
+        .map(ic => ic.company?.name || null)
+        .filter(Boolean) || [],
+
+      // Franchises & collections
+      franchise: game.franchise ? {
+        id: game.franchise.id || game.franchise,
+        name: game.franchise.name || null
+      } : null,
+      franchises: game.franchises?.map(f => ({
+        id: f.id || f,
+        name: f.name || null
+      })) || [],
+      collection: game.collection ? {
+        id: game.collection.id || game.collection,
+        name: game.collection.name || null
+      } : null,
+
+      // Related games
+      parentGame: game.parent_game ? {
+        id: game.parent_game.id || game.parent_game,
+        name: game.parent_game.name || null
+      } : null,
+      dlcs: game.dlcs?.map(d => ({
+        id: d.id || d,
+        name: d.name || null
+      })) || [],
+      expansions: game.expansions?.map(e => ({
+        id: e.id || e,
+        name: e.name || null
+      })) || [],
+      remakes: game.remakes?.map(r => ({
+        id: r.id || r,
+        name: r.name || null
+      })) || [],
+      remasters: game.remasters?.map(r => ({
+        id: r.id || r,
+        name: r.name || null
+      })) || [],
+      similarGames: game.similar_games?.map(s => ({
+        id: s.id || s,
+        name: s.name || null,
+        cover: s.cover?.image_id ? getImageUrl(s.cover.image_id, 't_cover_small') : null
+      })) || [],
+
+      // Websites
+      websites: game.websites?.map(w => ({
+        category: mapWebsiteCategory(w.category),
+        url: w.url,
+        trusted: w.trusted || false
+      })) || []
+    }
   };
 }
+
+// ============================================================================
+// ENTITY NORMALIZERS (genres, platforms, companies, etc.)
+// ============================================================================
 
 /**
  * Normalise un genre IGDB
@@ -220,7 +279,7 @@ export function normalizePlatform(platform) {
     alternativeName: platform.alternative_name || null,
     generation: platform.generation || null,
     summary: platform.summary || null,
-    logo: platform.platform_logo?.image_id 
+    logo: platform.platform_logo?.image_id
       ? getImageUrl(platform.platform_logo.image_id, 't_logo_med')
       : null
   };
@@ -236,10 +295,10 @@ export function normalizeCompany(company) {
     slug: company.slug || null,
     description: company.description || null,
     country: company.country || null,
-    startDate: company.start_date 
-      ? new Date(company.start_date * 1000).toISOString().split('T')[0]
+    startDate: company.start_date
+      ? dateFromTimestamp(company.start_date)
       : null,
-    logo: company.logo?.image_id 
+    logo: company.logo?.image_id
       ? getImageUrl(company.logo.image_id, 't_logo_med')
       : null,
     websites: company.websites?.map(w => ({
@@ -289,12 +348,16 @@ export function normalizeCollection(collection) {
   };
 }
 
+// ============================================================================
+// MAPPING HELPERS
+// ============================================================================
+
 /**
  * Normalise les classifications d'âge
  */
 function normalizeAgeRatings(ageRatings) {
   if (!ageRatings) return [];
-  
+
   return ageRatings.map(ar => ({
     category: mapAgeRatingCategory(ar.category),
     rating: mapAgeRatingValue(ar.category, ar.rating),
@@ -403,7 +466,7 @@ function mapAgeRatingValue(category, rating) {
     };
     return esrb[rating] || 'Unknown';
   }
-  
+
   // PEGI
   if (category === 2) {
     const pegi = {
@@ -415,11 +478,14 @@ function mapAgeRatingValue(category, rating) {
     };
     return pegi[rating] || 'Unknown';
   }
-  
+
   return rating?.toString() || 'Unknown';
 }
 
-// Export par défaut pour compatibilité
+// ============================================================================
+// DEFAULT EXPORT
+// ============================================================================
+
 export default {
   normalizeSearchResult,
   normalizeGame,

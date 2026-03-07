@@ -74,7 +74,7 @@ export class KreoNormalizer extends BaseNormalizer {
 
       return {
         ...base,
-        ...details
+        details
       };
 
     } catch (error) {

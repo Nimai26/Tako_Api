@@ -52,7 +52,6 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       
       // Dates & métriques
       year: this.parseYear(this.extractYear(raw)),
-      ageRange: this.extractAgeRange(raw),
       
       // Visuels
       images: this.normalizeImages(this.extractImages(raw)),
@@ -61,26 +60,14 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       urls: {
         source: this.parseUrl(this.extractSourceUrl(raw)),
         detail: this.buildDetailUrl(sourceId)
-      },
-      
-      // Prix (encyclopédie = pas de prix)
-      price: null,
-      listPrice: null,
-      onSale: false,
-      
-      // Disponibilité (encyclopédie = info limitée)
-      availability: 'unknown',
-      
-      // Instructions (format unifié)
-      instructions: this.extractInstructions(raw),
-      instructionsUrl: null
+      }
     };
 
     // Extract provider-specific details
     const details = this.extractDetails(raw);
 
-    // Flatten: merge base + details at root level
-    return { ...base, ...details };
+    // Format canonique : noyau commun + details imbriqué
+    return { ...base, details };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -234,6 +221,21 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       pieces: null, // Klickypedia ne fournit pas le nombre de pièces
       minifigs: this.parseInt(raw.figureCount),
 
+      // Âge recommandé
+      ageRange: this.extractAgeRange(raw),
+
+      // Prix (encyclopédie = pas de prix)
+      price: null,
+      listPrice: null,
+      onSale: false,
+
+      // Disponibilité (encyclopédie = info limitée)
+      availability: 'unknown',
+
+      // Instructions (format unifié)
+      instructions: this.extractInstructions(raw),
+      instructionsUrl: null,
+
       // Codes (spécifiques Klickypedia)
       productCode: raw.productCode || raw.id,
       slug: raw.slug || this.generateSlug(raw.name),
@@ -267,58 +269,8 @@ export class KlickypediaNormalizer extends BaseNormalizer {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE RECHERCHE
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Normaliser la réponse de recherche Klickypedia
-   */
-  normalizeSearchResponse(products, metadata = {}) {
-    const { query, total = products.length, pagination, lang = 'fr' } = metadata;
-
-    return {
-      query,
-      total,
-      pagination: pagination || {
-        page: 1,
-        pageSize: products.length,
-        totalResults: total,
-        hasMore: false
-      },
-      lang,
-      data: products.map(product => this.normalizeSearchItem(product, lang)),
-      source: 'klickypedia',
-      note: 'Encyclopédie Playmobil communautaire - données non commerciales'
-    };
-  }
-
-  /**
-   * Normaliser un item de recherche
-   */
-  normalizeSearchItem(product, lang) {
-    return {
-      sourceId: product.id || product.productCode,
-      provider: 'klickypedia',
-      brand: 'Playmobil',
-      
-      name: product.name || product.displayName,
-      productCode: product.productCode || product.id,
-      slug: product.slug || this.generateSlug(product.name),
-      
-      src_url: product.url,
-      src_image_url: this.cleanImageUrl(product.thumb),
-      
-      released: product.released,
-      discontinued: product.discontinued,
-      
-      metadata: {
-        position: product.position,
-        fullName: product.fullName,
-        source: 'klickypedia'
-      }
-    };
-  }
+  // normalizeSearchResponse() and normalizeSearchItem() removed
+  // → inherited from BaseNormalizer (canonical Format B)
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS

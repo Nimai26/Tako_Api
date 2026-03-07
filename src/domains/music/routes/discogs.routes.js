@@ -29,26 +29,28 @@ async function applyTranslation(data, req) {
   if (!autoTrad) return data;
   
   const targetLang = extractLangCode(lang);
-  const result = { ...data };
+  const result = { ...data, details: { ...data.details } };
   
   try {
     // Champs texte à traduire pour les albums/releases
-    const fieldsToTranslate = ['notes', 'profile'];
-    const translated = await translateFields(result, fieldsToTranslate, lang);
-    Object.assign(result, translated);
+    if (result.details) {
+      const fieldsToTranslate = ['notes', 'profile'];
+      const translated = await translateFields(result.details, fieldsToTranslate, lang);
+      Object.assign(result.details, translated);
+    }
     
     // Traduire les genres musicaux
-    if (result.genres && result.genres.length > 0) {
-      const { terms: translatedGenres, termsOriginal } = await translateMusicGenres(result.genres, targetLang);
-      result.genres = translatedGenres;
-      if (termsOriginal) result.genresOriginal = termsOriginal;
+    if (result.details?.genres && result.details.genres.length > 0) {
+      const { terms: translatedGenres, termsOriginal } = await translateMusicGenres(result.details.genres, targetLang);
+      result.details.genres = translatedGenres;
+      if (termsOriginal) result.details.genresOriginal = termsOriginal;
     }
     
     // Traduire les styles musicaux (mêmes dictionnaires)
-    if (result.styles && result.styles.length > 0) {
-      const { terms: translatedStyles, termsOriginal } = await translateMusicGenres(result.styles, targetLang);
-      result.styles = translatedStyles;
-      if (termsOriginal) result.stylesOriginal = termsOriginal;
+    if (result.details?.styles && result.details.styles.length > 0) {
+      const { terms: translatedStyles, termsOriginal } = await translateMusicGenres(result.details.styles, targetLang);
+      result.details.styles = translatedStyles;
+      if (termsOriginal) result.details.stylesOriginal = termsOriginal;
     }
     
     return result;
@@ -121,13 +123,7 @@ router.get('/search', async (req, res) => {
     
     const normalized = discogsNormalizer.normalizeSearchResponse(data, q, type);
     
-    res.json({
-      success: true,
-      provider: 'discogs',
-      domain: 'music',
-      ...normalized,
-      source: 'discogs'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Search failed', { error: error.message });
     res.status(500).json({
@@ -159,13 +155,7 @@ router.get('/search/albums', async (req, res) => {
     
     const normalized = discogsNormalizer.normalizeSearchResponse(data, q, 'release');
     
-    res.json({
-      success: true,
-      provider: 'discogs',
-      domain: 'music',
-      ...normalized,
-      source: 'discogs'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Album search failed', { error: error.message });
     res.status(500).json({
@@ -197,13 +187,7 @@ router.get('/search/masters', async (req, res) => {
     
     const normalized = discogsNormalizer.normalizeSearchResponse(data, q, 'master');
     
-    res.json({
-      success: true,
-      provider: 'discogs',
-      domain: 'music',
-      ...normalized,
-      source: 'discogs'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Master search failed', { error: error.message });
     res.status(500).json({
@@ -235,13 +219,7 @@ router.get('/search/artists', async (req, res) => {
     
     const normalized = discogsNormalizer.normalizeSearchResponse(data, q, 'artist');
     
-    res.json({
-      success: true,
-      provider: 'discogs',
-      domain: 'music',
-      ...normalized,
-      source: 'discogs'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Artist search failed', { error: error.message });
     res.status(500).json({
@@ -273,13 +251,7 @@ router.get('/search/labels', async (req, res) => {
     
     const normalized = discogsNormalizer.normalizeSearchResponse(data, q, 'label');
     
-    res.json({
-      success: true,
-      provider: 'discogs',
-      domain: 'music',
-      ...normalized,
-      source: 'discogs'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Label search failed', { error: error.message });
     res.status(500).json({
@@ -304,13 +276,7 @@ router.get('/barcode/:barcode', async (req, res) => {
     const data = await discogsProvider.searchByBarcode(barcode);
     const normalized = discogsNormalizer.normalizeBarcodeSearch(data, barcode);
     
-    res.json({
-      success: true,
-      provider: 'discogs',
-      domain: 'music',
-      ...normalized,
-      source: 'discogs'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Barcode search failed', { error: error.message });
     res.status(500).json({

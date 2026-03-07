@@ -1,7 +1,11 @@
 /**
- * Google Books Normalizer
+ * Google Books Normalizer — Format Canonique Tako
  * 
- * Transforme les données de l'API Google Books vers le format Tako.
+ * Transforme les données de l'API Google Books vers le format canonique :
+ * { id, type, source, sourceId, title, titleOriginal, description, year,
+ *   images: { primary, thumbnail, gallery },
+ *   urls: { source, detail },
+ *   details: { ...domain-specific } }
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -17,149 +21,6 @@ export class GoogleBooksNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE RECHERCHE
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  normalizeSearchResponse(books, metadata = {}) {
-    const { query, searchType, total, pagination, lang } = metadata;
-
-    return {
-      query,
-      searchType,
-      total,
-      pagination: pagination || {
-        page: 1,
-        pageSize: books.length,
-        totalResults: total,
-        hasMore: false
-      },
-      lang,
-      data: books.map((book, index) => this.normalizeSearchItem(book, index + 1)),
-      source: 'googlebooks'
-    };
-  }
-
-  normalizeSearchItem(book, position) {
-    return {
-      sourceId: book.id,
-      provider: 'googlebooks',
-      type: 'book',
-
-      title: book.title,
-      subtitle: book.subtitle || null,
-      authors: book.authors || [],
-      publisher: book.publisher || null,
-
-      publishedDate: book.publishedDate,
-      year: this.extractYear(book.publishedDate),
-
-      categories: book.categories || [],
-      language: book.language,
-
-      isbn: book.isbn,
-      isbn10: book.isbn10,
-      isbn13: book.isbn13,
-
-      pageCount: book.pageCount,
-
-      src_url: book.infoLink,
-      src_image_url: book.coverUrl,
-
-      metadata: {
-        position,
-        previewLink: book.previewLink,
-        source: 'googlebooks'
-      }
-    };
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE DÉTAILS
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  normalizeDetailResponse(book, options = {}) {
-    const { lang } = options;
-
-    const data = {
-      id: `${this.source}:${book.id}`,
-      sourceId: book.id,
-      source: this.source,
-      provider: 'googlebooks',
-      type: 'book',
-
-      // Titre
-      title: book.title,
-      subtitle: book.subtitle || null,
-      fullTitle: book.subtitle ? `${book.title}: ${book.subtitle}` : book.title,
-
-      // Auteurs et éditeur
-      authors: book.authors || [],
-      publisher: book.publisher || null,
-
-      // Dates
-      publishedDate: book.publishedDate,
-      year: this.extractYear(book.publishedDate),
-
-      // Classification
-      categories: book.categories || [],
-      language: book.language,
-
-      // Identifiants
-      isbn: book.isbn,
-      isbn10: book.isbn10,
-      isbn13: book.isbn13,
-      identifiers: book.identifiers || {},
-
-      // Contenu
-      pageCount: book.pageCount,
-      description: book.description || null,
-      synopsis: book.description || null,
-
-      // Images
-      images: this.normalizeImages(book),
-
-      // URLs
-      urls: {
-        source: book.infoLink,
-        detail: `/api/${this.domain}/${this.source}/${book.id}`
-      },
-      src_url: book.infoLink,
-      googlebooks_url: book.infoLink,
-      previewLink: book.previewLink,
-
-      // Évaluations
-      rating: book.averageRating ? {
-        value: book.averageRating,
-        count: book.ratingsCount || 0
-      } : null,
-
-      // Métadonnées internes
-      printType: book.printType,
-      maturityRating: book.maturityRating,
-
-      metadata: {
-        source: 'googlebooks',
-        lang
-      }
-    };
-
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: lang || 'en',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -169,31 +30,155 @@ export class GoogleBooksNormalizer extends BaseNormalizer {
     return match ? parseInt(match[1], 10) : null;
   }
 
-  normalizeImages(book) {
-    const images = [];
+  /**
+   * Construit l'objet images canonique { primary, thumbnail, gallery }
+   */
+  buildImages(book) {
+    const primary = book.coverUrl || book.covers?.extraLarge || book.covers?.large || null;
+    const thumbnail = book.covers?.thumbnail || book.covers?.small || (primary ? primary : null);
 
-    if (book.coverUrl) {
-      images.push({
-        url: book.coverUrl,
-        type: 'primary',
-        size: 'large'
-      });
-    }
-
+    const gallery = [];
     if (book.covers) {
       const sizes = ['extraLarge', 'large', 'medium', 'small', 'thumbnail'];
       for (const size of sizes) {
-        if (book.covers[size] && book.covers[size] !== book.coverUrl) {
-          images.push({
-            url: book.covers[size],
-            type: 'cover',
-            size
-          });
+        if (book.covers[size] && book.covers[size] !== primary) {
+          gallery.push(book.covers[size]);
         }
       }
     }
 
-    return images;
+    return { primary, thumbnail, gallery };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RECHERCHE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  normalizeSearchResponse(books, metadata = {}) {
+    const { query, searchType, total, pagination, lang } = metadata;
+    const items = books.map((book, index) => this.normalizeSearchItem(book, index + 1));
+
+    return {
+      success: true,
+      provider: 'googlebooks',
+      domain: 'books',
+      query,
+      searchType,
+      total,
+      count: items.length,
+      data: items,
+      pagination: pagination || {
+        page: 1,
+        pageSize: items.length,
+        totalResults: total,
+        hasMore: false
+      },
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: lang || 'en',
+        cached: false,
+        cacheAge: null
+      }
+    };
+  }
+
+  normalizeSearchItem(book, position) {
+    const sourceId = String(book.id);
+    const images = this.buildImages(book);
+
+    return {
+      id: `googlebooks:${sourceId}`,
+      type: 'book',
+      source: 'googlebooks',
+      sourceId,
+      title: book.title,
+      titleOriginal: null,
+      description: book.description || null,
+      year: this.extractYear(book.publishedDate),
+      images,
+      urls: {
+        source: book.infoLink || null,
+        detail: `/api/books/googlebooks/${sourceId}`
+      },
+      details: {
+        subtitle: book.subtitle || null,
+        authors: book.authors || [],
+        publisher: book.publisher || null,
+        publishedDate: book.publishedDate || null,
+        categories: book.categories || [],
+        language: book.language || null,
+        isbn: book.isbn || null,
+        isbn10: book.isbn10 || null,
+        isbn13: book.isbn13 || null,
+        pageCount: book.pageCount || null,
+        previewLink: book.previewLink || null,
+        position
+      }
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DÉTAILS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  normalizeDetailResponse(book, options = {}) {
+    const { lang } = options;
+    const sourceId = String(book.id);
+    const images = this.buildImages(book);
+    const year = this.extractYear(book.publishedDate);
+
+    const data = {
+      id: `googlebooks:${sourceId}`,
+      type: 'book',
+      source: 'googlebooks',
+      sourceId,
+      title: book.title,
+      titleOriginal: null,
+      description: book.description || null,
+      year,
+      images,
+      urls: {
+        source: book.infoLink || null,
+        detail: `/api/books/googlebooks/${sourceId}`
+      },
+      details: {
+        subtitle: book.subtitle || null,
+        fullTitle: book.subtitle ? `${book.title}: ${book.subtitle}` : book.title,
+        authors: book.authors || [],
+        publisher: book.publisher || null,
+        publishedDate: book.publishedDate || null,
+        categories: book.categories || [],
+        language: book.language || null,
+        isbn: book.isbn || null,
+        isbn10: book.isbn10 || null,
+        isbn13: book.isbn13 || null,
+        identifiers: book.identifiers || {},
+        pageCount: book.pageCount || null,
+        synopsis: book.description || null,
+        rating: book.averageRating ? {
+          value: book.averageRating,
+          count: book.ratingsCount || 0
+        } : null,
+        printType: book.printType || null,
+        maturityRating: book.maturityRating || null,
+        previewLink: book.previewLink || null,
+        covers: book.covers || null
+      }
+    };
+
+    return {
+      success: true,
+      provider: 'googlebooks',
+      domain: 'books',
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
+      }
+    };
   }
 }
 

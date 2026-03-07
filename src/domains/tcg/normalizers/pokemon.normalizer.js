@@ -1,6 +1,6 @@
 /**
  * Normalizer Pokémon TCG
- * Normalise les données de l'API pokemontcg.io vers le format Tako_Api
+ * Normalise les données de l'API pokemontcg.io vers le format canonique Tako_Api (Format B)
  */
 
 import { translateText } from '../../../shared/utils/translator.js';
@@ -18,7 +18,7 @@ function extractText(value) {
 }
 
 /**
- * Normalise les résultats de recherche Pokemon TCG
+ * Normalise les résultats de recherche Pokemon TCG (Format B)
  */
 export async function normalizeSearchResults(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -32,16 +32,26 @@ export async function normalizeSearchResults(rawData, options = {}) {
     const year = card.set?.releaseDate ? parseInt(card.set.releaseDate.split('-')[0]) : null;
 
     return {
-      id: card.id,
+      id: `pokemon:${card.id}`,
+      type: 'tcg_card',
       source: 'pokemon',
-      collection: 'Pokémon TCG',
+      sourceId: String(card.id),
       title: card.name,
-      subtitle: card.supertype || null,
+      titleOriginal: null,
       description: card.flavorText || null,
-      image: card.images?.small || null,
-      thumbnail: card.images?.small || card.images?.large || null,
       year,
-      metadata: {
+      images: {
+        primary: card.images?.small || null,
+        thumbnail: card.images?.small || card.images?.large || null,
+        gallery: []
+      },
+      urls: {
+        source: null,
+        detail: `/api/tcg/pokemon/card/${card.id}`
+      },
+      details: {
+        collection: 'Pokémon TCG',
+        subtitle: card.supertype || null,
         set: {
           id: card.set?.id || null,
           name: card.set?.name || null,
@@ -53,8 +63,7 @@ export async function normalizeSearchResults(rawData, options = {}) {
         types: card.types || [],
         hp: card.hp || null,
         artist: card.artist || null
-      },
-      detailUrl: `/api/tcg/pokemon/card/${card.id}`
+      }
     };
   });
 
@@ -62,7 +71,7 @@ export async function normalizeSearchResults(rawData, options = {}) {
 }
 
 /**
- * Normalise les détails d'une carte Pokemon TCG
+ * Normalise les détails d'une carte Pokemon TCG (Format B)
  */
 export async function normalizeCardDetails(rawCard, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -71,10 +80,10 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     throw new Error('Aucune donnée de carte fournie');
   }
 
-  // Images
-  const images = [];
+  // Gallery images
+  const gallery = [];
   if (rawCard.images?.large) {
-    images.push({
+    gallery.push({
       url: rawCard.images.large,
       thumbnail: rawCard.images.small || rawCard.images.large,
       caption: 'Carte normale',
@@ -167,15 +176,27 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
 
   return {
-    id: rawCard.id,
+    id: `pokemon:${rawCard.id}`,
+    type: 'tcg_card',
     source: 'pokemon',
+    sourceId: String(rawCard.id),
     title: rawCard.name,
-    subtitle: rawCard.supertype || null,
+    titleOriginal: null,
     description,
-    flavorText,
-    images,
     year,
-    metadata: {
+    images: {
+      primary: rawCard.images?.large || rawCard.images?.small || null,
+      thumbnail: rawCard.images?.small || rawCard.images?.large || null,
+      gallery
+    },
+    urls: {
+      source: rawCard.tcgplayer?.url || rawCard.cardmarket?.url || null,
+      detail: `/api/tcg/pokemon/card/${rawCard.id}`
+    },
+    details: {
+      subtitle: rawCard.supertype || null,
+      flavorText,
+
       // Informations du set
       set: {
         id: rawCard.set?.id || null,
@@ -218,18 +239,22 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       legalities: rawCard.legalities || {},
       
       // Identifiants
-      nationalPokedexNumbers: rawCard.nationalPokedexNumbers || []
-    },
-    prices,
-    externalLinks: {
-      tcgplayer: rawCard.tcgplayer?.url || null,
-      cardmarket: rawCard.cardmarket?.url || null
+      nationalPokedexNumbers: rawCard.nationalPokedexNumbers || [],
+
+      // Prix
+      prices,
+
+      // Liens externes
+      externalLinks: {
+        tcgplayer: rawCard.tcgplayer?.url || null,
+        cardmarket: rawCard.cardmarket?.url || null
+      }
     }
   };
 }
 
 /**
- * Normalise la liste des sets Pokemon TCG
+ * Normalise la liste des sets Pokemon TCG (Format B)
  */
 export async function normalizeSets(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -242,15 +267,25 @@ export async function normalizeSets(rawData, options = {}) {
     const year = set.releaseDate ? parseInt(set.releaseDate.split('-')[0]) : null;
 
     return {
-      id: set.id,
+      id: `pokemon:${set.id}`,
+      type: 'tcg_set',
       source: 'pokemon',
+      sourceId: String(set.id),
       title: set.name,
-      subtitle: set.series || null,
+      titleOriginal: null,
       description: null,
-      image: set.images?.logo || set.images?.symbol || null,
-      thumbnail: set.images?.symbol || set.images?.logo || null,
       year,
-      metadata: {
+      images: {
+        primary: set.images?.logo || set.images?.symbol || null,
+        thumbnail: set.images?.symbol || set.images?.logo || null,
+        gallery: []
+      },
+      urls: {
+        source: null,
+        detail: `/api/tcg/pokemon/sets/${set.id}`
+      },
+      details: {
+        subtitle: set.series || null,
         total: set.total || set.printedTotal || 0,
         printedTotal: set.printedTotal || null,
         releaseDate: set.releaseDate || null,

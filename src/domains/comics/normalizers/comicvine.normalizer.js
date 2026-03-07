@@ -1,7 +1,13 @@
 /**
- * ComicVine Normalizer
+ * ComicVine Normalizer — Format Canonique Tako
  * 
- * Transforme les données de l'API ComicVine vers le format Tako.
+ * Transforme les données de l'API ComicVine vers le format canonique :
+ * { id, type, source, sourceId, title, titleOriginal, description, year,
+ *   images: { primary, thumbnail, gallery },
+ *   urls: { source, detail },
+ *   details: { ...domain-specific } }
+ * 
+ * Gère volumes, issues, characters, publishers, creators.
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -17,29 +23,114 @@ export class ComicVineNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE RECHERCHE
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extrait l'URL de l'image depuis l'objet image ComicVine
+   */
+  extractImage(imageObj) {
+    if (!imageObj) return null;
+    return imageObj.original_url || imageObj.medium_url || imageObj.small_url || null;
+  }
+
+  /**
+   * Construit l'objet images canonique depuis l'objet image ComicVine
+   */
+  buildImages(imageObj) {
+    if (!imageObj) return { primary: null, thumbnail: null, gallery: [] };
+    const primary = imageObj.original_url || imageObj.medium_url || null;
+    const thumbnail = imageObj.small_url || imageObj.thumb_url || imageObj.medium_url || null;
+    const gallery = [
+      imageObj.original_url,
+      imageObj.super_url,
+      imageObj.medium_url,
+      imageObj.screen_url,
+      imageObj.screen_large_url
+    ].filter(Boolean);
+    // Dédupliquer
+    return { primary, thumbnail, gallery: [...new Set(gallery)] };
+  }
+
+  /**
+   * Nettoie le HTML des descriptions
+   */
+  cleanHtml(html) {
+    if (!html) return null;
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Parse les aliases (séparés par \n ou ;)
+   */
+  parseAliases(aliases) {
+    if (!aliases) return [];
+    return aliases
+      .split(/[\n;]/)
+      .map(a => a.trim())
+      .filter(a => a.length > 0);
+  }
+
+  /**
+   * Normalise le genre
+   */
+  normalizeGender(gender) {
+    if (!gender) return null;
+    const genderMap = { 1: 'male', 2: 'female', 3: 'other' };
+    return genderMap[gender] || null;
+  }
+
+  /**
+   * Extrait l'année d'une date
+   */
+  extractYear(dateStr) {
+    if (!dateStr) return null;
+    const match = String(dateStr).match(/^(\d{4})/);
+    return match ? parseInt(match[1]) : null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RECHERCHE
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeSearchResponse(results, metadata = {}) {
     const { query, searchType, total, pagination } = metadata;
+    const items = results.map((item, index) =>
+      this.normalizeSearchItem(item, searchType, index + 1)
+    );
 
     return {
+      success: true,
+      provider: 'comicvine',
+      domain: 'comics',
       query,
       searchType,
       total,
+      count: items.length,
+      data: items,
       pagination: pagination || {
         page: 1,
-        pageSize: results.length,
+        pageSize: items.length,
         totalResults: total,
         hasMore: false
       },
-      data: results.map((item, index) => this.normalizeSearchItem(item, searchType, index + 1)),
-      source: 'comicvine'
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        source: 'comicvine'
+      }
     };
   }
 
   normalizeSearchItem(item, resourceType, position) {
-    // Dispatcher selon le type de ressource
     switch (resourceType) {
       case 'issue':
         return this.normalizeIssueItem(item, position);
@@ -60,30 +151,31 @@ export class ComicVineNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeVolumeItem(volume, position = null) {
+    const sourceId = String(volume.id);
+    const images = this.buildImages(volume.image);
+
     return {
-      sourceId: String(volume.id),
-      provider: 'comicvine',
+      id: `comicvine:${sourceId}`,
       type: 'volume',
-      resourceType: 'volume',
-
+      source: 'comicvine',
+      sourceId,
       title: volume.name,
+      titleOriginal: null,
       description: this.cleanHtml(volume.deck),
-      
-      startYear: volume.start_year,
       year: volume.start_year ? parseInt(volume.start_year) : null,
-      
-      publisher: volume.publisher?.name || null,
-      publisherId: volume.publisher?.id || null,
-      
-      issueCount: volume.count_of_issues || 0,
-
-      src_url: volume.site_detail_url,
-      src_image_url: this.extractImage(volume.image),
-
-      metadata: {
-        position,
-        apiDetailUrl: volume.api_detail_url,
-        source: 'comicvine'
+      images,
+      urls: {
+        source: volume.site_detail_url || null,
+        detail: `/api/comics/comicvine/${sourceId}`
+      },
+      details: {
+        resourceType: 'volume',
+        startYear: volume.start_year || null,
+        publisher: volume.publisher?.name || null,
+        publisherId: volume.publisher?.id || null,
+        issueCount: volume.count_of_issues || 0,
+        apiDetailUrl: volume.api_detail_url || null,
+        position
       }
     };
   }
@@ -93,44 +185,36 @@ export class ComicVineNormalizer extends BaseNormalizer {
 
     const data = {
       ...base,
-      id: `${this.source}:${base.sourceId}`,
-      source: this.source,
       description: this.cleanHtml(volume.description) || base.description,
-      aliases: this.parseAliases(volume.aliases),
-      
-      firstIssue: volume.first_issue ? {
-        id: volume.first_issue.id,
-        name: volume.first_issue.name,
-        issueNumber: volume.first_issue.issue_number
-      } : null,
-      
-      lastIssue: volume.last_issue ? {
-        id: volume.last_issue.id,
-        name: volume.last_issue.name,
-        issueNumber: volume.last_issue.issue_number
-      } : null,
-
-      issues: volume.issues?.map(issue => ({
-        id: issue.id,
-        name: issue.name,
-        issueNumber: issue.issue_number
-      })) || [],
-
-      urls: {
-        source: base.src_url,
-        detail: `/api/${this.domain}/${this.source}/${base.sourceId}`
-      },
-
-      metadata: {
-        ...base.metadata,
-        detailLevel: 'full'
+      details: {
+        ...base.details,
+        aliases: this.parseAliases(volume.aliases),
+        firstIssue: volume.first_issue ? {
+          id: volume.first_issue.id,
+          name: volume.first_issue.name,
+          issueNumber: volume.first_issue.issue_number
+        } : null,
+        lastIssue: volume.last_issue ? {
+          id: volume.last_issue.id,
+          name: volume.last_issue.name,
+          issueNumber: volume.last_issue.issue_number
+        } : null,
+        issues: volume.issues?.map(issue => ({
+          id: issue.id,
+          name: issue.name,
+          issueNumber: issue.issue_number
+        })) || [],
+        detailLevel: 'full',
+        position: undefined
       }
     };
+    // Clean up position from detail
+    delete data.details.position;
 
     return {
       success: true,
-      provider: this.source,
-      domain: this.domain,
+      provider: 'comicvine',
+      domain: 'comics',
       id: data.id,
       data,
       meta: {
@@ -147,32 +231,34 @@ export class ComicVineNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeIssueItem(issue, position = null) {
+    const sourceId = String(issue.id);
+    const images = this.buildImages(issue.image);
+
     return {
-      sourceId: String(issue.id),
-      provider: 'comicvine',
+      id: `comicvine:${sourceId}`,
       type: 'issue',
-      resourceType: 'issue',
-
+      source: 'comicvine',
+      sourceId,
       title: issue.name || `#${issue.issue_number}`,
-      issueNumber: issue.issue_number,
+      titleOriginal: null,
       description: this.cleanHtml(issue.deck),
-
-      coverDate: issue.cover_date,
-      storeDate: issue.store_date,
       year: this.extractYear(issue.cover_date),
-
-      volume: issue.volume ? {
-        id: issue.volume.id,
-        name: issue.volume.name
-      } : null,
-
-      src_url: issue.site_detail_url,
-      src_image_url: this.extractImage(issue.image),
-
-      metadata: {
-        position,
-        apiDetailUrl: issue.api_detail_url,
-        source: 'comicvine'
+      images,
+      urls: {
+        source: issue.site_detail_url || null,
+        detail: `/api/comics/comicvine/${sourceId}`
+      },
+      details: {
+        resourceType: 'issue',
+        issueNumber: issue.issue_number || null,
+        coverDate: issue.cover_date || null,
+        storeDate: issue.store_date || null,
+        volume: issue.volume ? {
+          id: issue.volume.id,
+          name: issue.volume.name
+        } : null,
+        apiDetailUrl: issue.api_detail_url || null,
+        position
       }
     };
   }
@@ -182,46 +268,36 @@ export class ComicVineNormalizer extends BaseNormalizer {
 
     const data = {
       ...base,
-      id: `${this.source}:${base.sourceId}`,
-      source: this.source,
       description: this.cleanHtml(issue.description) || base.description,
-
-      characters: issue.character_credits?.map(c => ({
-        id: c.id,
-        name: c.name
-      })) || [],
-
-      creators: issue.person_credits?.map(p => ({
-        id: p.id,
-        name: p.name,
-        role: p.role
-      })) || [],
-
-      teams: issue.team_credits?.map(t => ({
-        id: t.id,
-        name: t.name
-      })) || [],
-
-      storyArcs: issue.story_arc_credits?.map(sa => ({
-        id: sa.id,
-        name: sa.name
-      })) || [],
-
-      urls: {
-        source: base.src_url,
-        detail: `/api/${this.domain}/${this.source}/${base.sourceId}`
-      },
-
-      metadata: {
-        ...base.metadata,
-        detailLevel: 'full'
+      details: {
+        ...base.details,
+        characters: issue.character_credits?.map(c => ({
+          id: c.id,
+          name: c.name
+        })) || [],
+        creators: issue.person_credits?.map(p => ({
+          id: p.id,
+          name: p.name,
+          role: p.role
+        })) || [],
+        teams: issue.team_credits?.map(t => ({
+          id: t.id,
+          name: t.name
+        })) || [],
+        storyArcs: issue.story_arc_credits?.map(sa => ({
+          id: sa.id,
+          name: sa.name
+        })) || [],
+        detailLevel: 'full',
+        position: undefined
       }
     };
+    delete data.details.position;
 
     return {
       success: true,
-      provider: this.source,
-      domain: this.domain,
+      provider: 'comicvine',
+      domain: 'comics',
       id: data.id,
       data,
       meta: {
@@ -235,13 +311,26 @@ export class ComicVineNormalizer extends BaseNormalizer {
 
   normalizeIssuesList(issues, metadata = {}) {
     const { volumeId, total, pagination } = metadata;
+    const items = issues.map((issue, index) => this.normalizeIssueItem(issue, index + 1));
 
     return {
+      success: true,
+      provider: 'comicvine',
+      domain: 'comics',
       volumeId,
       total,
-      pagination,
-      data: issues.map((issue, index) => this.normalizeIssueItem(issue, index + 1)),
-      source: 'comicvine'
+      count: items.length,
+      data: items,
+      pagination: pagination || {
+        page: 1,
+        pageSize: items.length,
+        totalResults: total,
+        hasMore: false
+      },
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        source: 'comicvine'
+      }
     };
   }
 
@@ -250,67 +339,81 @@ export class ComicVineNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeCharacterItem(character, position = null) {
+    const sourceId = String(character.id);
+    const images = this.buildImages(character.image);
+
     return {
-      sourceId: String(character.id),
-      provider: 'comicvine',
+      id: `comicvine:${sourceId}`,
       type: 'character',
-      resourceType: 'character',
-
-      name: character.name,
-      realName: character.real_name || null,
+      source: 'comicvine',
+      sourceId,
+      title: character.name,
+      titleOriginal: null,
       description: this.cleanHtml(character.deck),
-
-      publisher: character.publisher?.name || null,
-      publisherId: character.publisher?.id || null,
-
-      firstAppearance: character.first_appeared_in_issue ? {
-        id: character.first_appeared_in_issue.id,
-        name: character.first_appeared_in_issue.name,
-        issueNumber: character.first_appeared_in_issue.issue_number
-      } : null,
-
-      src_url: character.site_detail_url,
-      src_image_url: this.extractImage(character.image),
-
-      metadata: {
-        position,
-        apiDetailUrl: character.api_detail_url,
-        source: 'comicvine'
+      year: null,
+      images,
+      urls: {
+        source: character.site_detail_url || null,
+        detail: `/api/comics/comicvine/${sourceId}`
+      },
+      details: {
+        resourceType: 'character',
+        realName: character.real_name || null,
+        publisher: character.publisher?.name || null,
+        publisherId: character.publisher?.id || null,
+        firstAppearance: character.first_appeared_in_issue ? {
+          id: character.first_appeared_in_issue.id,
+          name: character.first_appeared_in_issue.name,
+          issueNumber: character.first_appeared_in_issue.issue_number
+        } : null,
+        apiDetailUrl: character.api_detail_url || null,
+        position
       }
     };
   }
 
-  normalizeCharacterDetail(character) {
+  normalizeCharacterDetail(character, options = {}) {
     const base = this.normalizeCharacterItem(character);
 
-    return {
+    const data = {
       ...base,
       description: this.cleanHtml(character.description) || base.description,
-      aliases: this.parseAliases(character.aliases),
-      birth: character.birth,
-      gender: this.normalizeGender(character.gender),
-      origin: character.origin?.name || null,
+      details: {
+        ...base.details,
+        aliases: this.parseAliases(character.aliases),
+        birth: character.birth || null,
+        gender: this.normalizeGender(character.gender),
+        origin: character.origin?.name || null,
+        powers: character.powers?.map(p => p.name) || [],
+        teams: character.teams?.map(t => ({
+          id: t.id,
+          name: t.name
+        })) || [],
+        enemies: character.enemies?.map(e => ({
+          id: e.id,
+          name: e.name
+        })) || [],
+        friends: character.friends?.map(f => ({
+          id: f.id,
+          name: f.name
+        })) || [],
+        detailLevel: 'full',
+        position: undefined
+      }
+    };
+    delete data.details.position;
 
-      powers: character.powers?.map(p => p.name) || [],
-      
-      teams: character.teams?.map(t => ({
-        id: t.id,
-        name: t.name
-      })) || [],
-
-      enemies: character.enemies?.map(e => ({
-        id: e.id,
-        name: e.name
-      })) || [],
-
-      friends: character.friends?.map(f => ({
-        id: f.id,
-        name: f.name
-      })) || [],
-
-      metadata: {
-        ...base.metadata,
-        detailLevel: 'full'
+    return {
+      success: true,
+      provider: 'comicvine',
+      domain: 'comics',
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
@@ -320,26 +423,30 @@ export class ComicVineNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizePublisherItem(publisher, position = null) {
+    const sourceId = String(publisher.id);
+    const images = this.buildImages(publisher.image);
+
     return {
-      sourceId: String(publisher.id),
-      provider: 'comicvine',
+      id: `comicvine:${sourceId}`,
       type: 'publisher',
-      resourceType: 'publisher',
-
-      name: publisher.name,
+      source: 'comicvine',
+      sourceId,
+      title: publisher.name,
+      titleOriginal: null,
       description: this.cleanHtml(publisher.deck),
-
-      location: [publisher.location_city, publisher.location_state]
-        .filter(Boolean)
-        .join(', ') || null,
-
-      src_url: publisher.site_detail_url,
-      src_image_url: this.extractImage(publisher.image),
-
-      metadata: {
-        position,
-        apiDetailUrl: publisher.api_detail_url,
-        source: 'comicvine'
+      year: null,
+      images,
+      urls: {
+        source: publisher.site_detail_url || null,
+        detail: `/api/comics/comicvine/${sourceId}`
+      },
+      details: {
+        resourceType: 'publisher',
+        location: [publisher.location_city, publisher.location_state]
+          .filter(Boolean)
+          .join(', ') || null,
+        apiDetailUrl: publisher.api_detail_url || null,
+        position
       }
     };
   }
@@ -349,152 +456,123 @@ export class ComicVineNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeCreatorItem(person, position = null) {
+    const sourceId = String(person.id);
+    const images = this.buildImages(person.image);
+
     return {
-      sourceId: String(person.id),
-      provider: 'comicvine',
+      id: `comicvine:${sourceId}`,
       type: 'creator',
-      resourceType: 'person',
-
-      name: person.name,
+      source: 'comicvine',
+      sourceId,
+      title: person.name,
+      titleOriginal: null,
       description: this.cleanHtml(person.deck),
-
-      birth: person.birth || null,
-      death: person.death || null,
-      hometown: person.hometown || null,
-      country: person.country || null,
-
-      issueCount: person.count_of_issue_appearances || 0,
-
-      src_url: person.site_detail_url,
-      src_image_url: this.extractImage(person.image),
-
-      metadata: {
-        position,
-        apiDetailUrl: person.api_detail_url,
-        source: 'comicvine'
+      year: null,
+      images,
+      urls: {
+        source: person.site_detail_url || null,
+        detail: `/api/comics/comicvine/${sourceId}`
+      },
+      details: {
+        resourceType: 'person',
+        birth: person.birth || null,
+        death: person.death || null,
+        hometown: person.hometown || null,
+        country: person.country || null,
+        issueCount: person.count_of_issue_appearances || 0,
+        apiDetailUrl: person.api_detail_url || null,
+        position
       }
     };
   }
 
-  normalizeCreatorDetail(person) {
+  normalizeCreatorDetail(person, options = {}) {
     const base = this.normalizeCreatorItem(person);
 
-    return {
+    const data = {
       ...base,
       description: this.cleanHtml(person.description) || base.description,
-      aliases: this.parseAliases(person.aliases),
-      gender: this.normalizeGender(person.gender),
-      website: person.website || null,
+      details: {
+        ...base.details,
+        aliases: this.parseAliases(person.aliases),
+        gender: this.normalizeGender(person.gender),
+        website: person.website || null,
+        volumeCount: person.volume_credits?.length || 0,
+        issueCount: person.issue_credits?.length || person.count_of_issue_appearances || 0,
+        characterCount: person.created_characters?.length || 0,
+        createdCharacters: person.created_characters?.map(c => ({
+          id: c.id,
+          name: c.name
+        })) || [],
+        detailLevel: 'full',
+        position: undefined
+      }
+    };
+    delete data.details.position;
 
-      // Compteurs
-      volumeCount: person.volume_credits?.length || 0,
-      issueCount: person.issue_credits?.length || person.count_of_issue_appearances || 0,
-      characterCount: person.created_characters?.length || 0,
-
-      // Personnages créés
-      createdCharacters: person.created_characters?.map(c => ({
-        id: c.id,
-        name: c.name
-      })) || [],
-
-      metadata: {
-        ...base.metadata,
-        detailLevel: 'full'
+    return {
+      success: true,
+      provider: 'comicvine',
+      domain: 'comics',
+      id: data.id,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: options.lang || 'en',
+        cached: options.cached || false,
+        cacheAge: options.cacheAge || null
       }
     };
   }
 
   normalizeCreatorWorks(volumes, metadata = {}) {
     const { creatorId, total, pagination } = metadata;
+    const items = volumes.map((vol, index) => {
+      const sourceId = String(vol.id);
+      const images = this.buildImages(vol.image);
+      const basePosition = ((pagination?.page - 1) * (pagination?.pageSize || 0)) || 0;
+
+      return {
+        id: `comicvine:${sourceId}`,
+        type: 'volume',
+        source: 'comicvine',
+        sourceId,
+        title: vol.name,
+        titleOriginal: null,
+        description: null,
+        year: vol.start_year ? parseInt(vol.start_year) : null,
+        images,
+        urls: {
+          source: vol.site_detail_url || null,
+          detail: `/api/comics/comicvine/${sourceId}`
+        },
+        details: {
+          resourceType: 'volume',
+          startYear: vol.start_year || null,
+          issueCount: vol.count_of_issues || 0,
+          position: index + 1 + basePosition
+        }
+      };
+    });
 
     return {
+      success: true,
+      provider: 'comicvine',
+      domain: 'comics',
       creatorId,
       total,
-      pagination,
-      data: volumes.map((vol, index) => ({
-        sourceId: String(vol.id),
-        provider: 'comicvine',
-        type: 'volume',
-        resourceType: 'volume',
-        
-        title: vol.name,
-        startYear: vol.start_year,
-        year: vol.start_year ? parseInt(vol.start_year) : null,
-        
-        issueCount: vol.count_of_issues || 0,
-        
-        src_url: vol.site_detail_url,
-        src_image_url: this.extractImage(vol.image),
-
-        metadata: {
-          position: index + 1 + ((pagination?.page - 1) * pagination?.pageSize || 0),
-          source: 'comicvine'
-        }
-      })),
-      source: 'comicvine'
+      count: items.length,
+      data: items,
+      pagination: pagination || {
+        page: 1,
+        pageSize: items.length,
+        totalResults: total,
+        hasMore: false
+      },
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        source: 'comicvine'
+      }
     };
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // UTILITAIRES
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Extrait l'URL de l'image depuis l'objet image ComicVine
-   */
-  extractImage(imageObj) {
-    if (!imageObj) return null;
-    // Préférer l'image originale, sinon medium, sinon small
-    return imageObj.original_url || imageObj.medium_url || imageObj.small_url || null;
-  }
-
-  /**
-   * Nettoie le HTML des descriptions
-   */
-  cleanHtml(html) {
-    if (!html) return null;
-    return html
-      .replace(/<[^>]*>/g, '')           // Supprime les tags HTML
-      .replace(/&nbsp;/g, ' ')           // Remplace &nbsp;
-      .replace(/&amp;/g, '&')            // Remplace &amp;
-      .replace(/&lt;/g, '<')             // Remplace &lt;
-      .replace(/&gt;/g, '>')             // Remplace &gt;
-      .replace(/&quot;/g, '"')           // Remplace &quot;
-      .replace(/&#39;/g, "'")            // Remplace &#39;
-      .replace(/\s+/g, ' ')              // Normalise les espaces
-      .trim();
-  }
-
-  /**
-   * Parse les aliases (séparés par \n ou ;)
-   */
-  parseAliases(aliases) {
-    if (!aliases) return [];
-    return aliases
-      .split(/[\n;]/)
-      .map(a => a.trim())
-      .filter(a => a.length > 0);
-  }
-
-  /**
-   * Normalise le genre
-   */
-  normalizeGender(gender) {
-    if (!gender) return null;
-    const genderMap = {
-      1: 'male',
-      2: 'female',
-      3: 'other'
-    };
-    return genderMap[gender] || null;
-  }
-
-  /**
-   * Extrait l'année d'une date
-   */
-  extractYear(dateStr) {
-    if (!dateStr) return null;
-    const match = String(dateStr).match(/^(\d{4})/);
-    return match ? parseInt(match[1]) : null;
   }
 }

@@ -162,13 +162,7 @@ router.get('/search/albums', async (req, res) => {
     });
     const normalized = itunesNormalizer.normalizeAlbumSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'itunes',
-      domain: 'music',
-      ...normalized,
-      source: 'itunes'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Album search failed', { error: error.message });
     res.status(500).json({
@@ -199,13 +193,7 @@ router.get('/search/artists', async (req, res) => {
     });
     const normalized = itunesNormalizer.normalizeArtistSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'itunes',
-      domain: 'music',
-      ...normalized,
-      source: 'itunes'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Artist search failed', { error: error.message });
     res.status(500).json({
@@ -236,13 +224,7 @@ router.get('/search/tracks', async (req, res) => {
     });
     const normalized = itunesNormalizer.normalizeTrackSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'itunes',
-      domain: 'music',
-      ...normalized,
-      source: 'itunes'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Track search failed', { error: error.message });
     res.status(500).json({
@@ -271,12 +253,12 @@ router.get('/albums/:id', async (req, res) => {
     // Traduire le genre si demandé
     const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
     const lang = req.query.lang;
-    if (autoTrad && lang && normalized.genre) {
+    if (autoTrad && lang && normalized.details?.genre) {
       const targetLang = extractLangCode(lang);
-      const translatedGenre = await translateGenre(normalized.genre, targetLang);
-      if (translatedGenre !== normalized.genre) {
-        normalized.genreOriginal = normalized.genre;
-        normalized.genre = translatedGenre;
+      const translatedGenre = await translateGenre(normalized.details.genre, targetLang);
+      if (translatedGenre !== normalized.details.genre) {
+        normalized.details.genreOriginal = normalized.details.genre;
+        normalized.details.genre = translatedGenre;
       }
     }
     
@@ -317,12 +299,12 @@ router.get('/artists/:id', async (req, res) => {
     // Traduire le genre si demandé
     const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
     const lang = req.query.lang;
-    if (autoTrad && lang && normalized.genre) {
+    if (autoTrad && lang && normalized.details?.genre) {
       const targetLang = extractLangCode(lang);
-      const translatedGenre = await translateGenre(normalized.genre, targetLang);
-      if (translatedGenre !== normalized.genre) {
-        normalized.genreOriginal = normalized.genre;
-        normalized.genre = translatedGenre;
+      const translatedGenre = await translateGenre(normalized.details.genre, targetLang);
+      if (translatedGenre !== normalized.details.genre) {
+        normalized.details.genreOriginal = normalized.details.genre;
+        normalized.details.genre = translatedGenre;
       }
     }
     

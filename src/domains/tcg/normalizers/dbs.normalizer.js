@@ -31,9 +31,9 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   const base = normalizeCard(rawCard);
 
   // Enrichir avec données complètes
-  const images = [];
+  const gallery = [];
   if (rawCard.image_url) {
-    images.push({
+    gallery.push({
       url: rawCard.image_url,
       thumbnail: rawCard.image_url,
       caption: 'Front',
@@ -41,13 +41,16 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     });
   }
   if (rawCard.image_back_url) {
-    images.push({
+    gallery.push({
       url: rawCard.image_back_url,
       thumbnail: rawCard.image_back_url,
       caption: 'Back',
       type: 'back',
     });
   }
+
+  const primaryImage = gallery[0]?.url || null;
+  const thumbnailImage = gallery[0]?.thumbnail || primaryImage;
 
   // Parse JSON fields safely
   const traits = safeJsonParse(rawCard.card_traits);
@@ -63,9 +66,13 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   return {
     ...base,
     description: rawCard.card_skill_text || rawCard.card_skill || null,
-    images,
-    metadata: {
-      ...base.metadata,
+    images: {
+      primary: primaryImage,
+      thumbnail: thumbnailImage,
+      gallery,
+    },
+    details: {
+      ...base.details,
       traits,
       character,
       era,
@@ -108,11 +115,29 @@ export async function normalizeSets(rawData, options = {}) {
   if (!rawData || !rawData.sets) return [];
 
   return rawData.sets.map(set => ({
-    id: set.set_code,
-    name: set.name,
-    game: set.game,
-    cardCount: set.card_count || 0,
-    source: set.source,
+    id: `dbs:${set.set_code}`,
+    type: 'tcg_set',
+    source: 'dbs',
+    sourceId: String(set.set_code),
+    title: set.name,
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: {
+      primary: null,
+      thumbnail: null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: null
+    },
+    details: {
+      subtitle: set.game || null,
+      game: set.game,
+      cardCount: set.card_count || 0,
+      source: set.source,
+    }
   }));
 }
 
@@ -123,11 +148,29 @@ export async function normalizeSetDetails(rawData, options = {}) {
   if (!rawData) return null;
 
   return {
-    id: rawData.set_code,
-    name: rawData.name,
-    game: rawData.game,
-    cardCount: rawData.card_count || 0,
-    source: rawData.source,
+    id: `dbs:${rawData.set_code}`,
+    type: 'tcg_set',
+    source: 'dbs',
+    sourceId: String(rawData.set_code),
+    title: rawData.name,
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: {
+      primary: null,
+      thumbnail: null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: null
+    },
+    details: {
+      subtitle: rawData.game || null,
+      game: rawData.game,
+      cardCount: rawData.card_count || 0,
+      source: rawData.source,
+    },
     cards: (rawData.cards || []).map(card => normalizeCard(card)),
   };
 }
@@ -140,17 +183,27 @@ function normalizeCard(card) {
   const gameLabel = card.game === 'masters' ? 'DBS Masters' : 'Fusion World';
 
   return {
-    id: card.card_number,
-    internalId: card.id,
+    id: `dbs:${card.card_number}`,
+    type: 'tcg_card',
     source: 'dbs',
-    collection: `Dragon Ball Super - ${gameLabel}`,
+    sourceId: String(card.card_number),
     title: card.card_name,
-    subtitle: [card.card_type, card.card_color].filter(Boolean).join(' · '),
+    titleOriginal: null,
     description: card.card_skill_text || null,
-    image: card.image_url || null,
-    thumbnail: card.image_url || null,
     year: null,
-    metadata: {
+    images: {
+      primary: card.image_url || null,
+      thumbnail: card.image_url || null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: `/api/tcg/dbs/card/${encodeURIComponent(card.card_number)}${card.game ? `?game=${card.game}` : ''}`
+    },
+    details: {
+      collection: `Dragon Ball Super - ${gameLabel}`,
+      subtitle: [card.card_type, card.card_color].filter(Boolean).join(' · '),
+      internalId: card.id,
       game: card.game,
       cardNumber: card.card_number,
       cardType: card.card_type,
@@ -159,7 +212,6 @@ function normalizeCard(card) {
       power: card.card_power,
       setCode: card.set_code,
     },
-    detailUrl: `/api/tcg/dbs/card/${encodeURIComponent(card.card_number)}${card.game ? `?game=${card.game}` : ''}`,
   };
 }
 

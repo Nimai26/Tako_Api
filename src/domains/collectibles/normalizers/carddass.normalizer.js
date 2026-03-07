@@ -97,19 +97,30 @@ export function normalizeSearchItem(item) {
 export function normalizeSearchResults(response) {
   if (!response) {
     return {
-      query: '',
+      success: true,
       provider: 'carddass',
-      total_results: 0,
-      results: []
+      domain: 'collectibles',
+      query: '',
+      total: 0,
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
     };
   }
 
+  const items = (response.items || []).map(normalizeSearchItem).filter(Boolean);
+
   return {
-    query: response.query || '',
+    success: true,
     provider: 'carddass',
-    total_results: response.total || 0,
-    results: (response.items || []).map(normalizeSearchItem).filter(Boolean),
-    pagination: response.pagination || null
+    domain: 'collectibles',
+    query: response.query || '',
+    total: response.total || 0,
+    count: items.length,
+    data: items,
+    pagination: response.pagination || null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 
@@ -180,25 +191,31 @@ export function normalizeDetails(data) {
  */
 export function normalizeLicenses(response) {
   if (!response) {
-    return { provider: 'carddass', total: 0, items: [], pagination: null };
+    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
+  const items = (response.items || []).map(item => ({
+    id: item.id,
+    sourceId: item.sourceId,
+    sourceSite: item.sourceSite || null,
+    name: item.name,
+    description: item.description || null,
+    image: item.image || null,
+    banner: item.banner || null,
+    collectionCount: item.collectionCount || undefined,
+    cardCount: item.cardCount || undefined,
+    url: item.url || null
+  }));
+
   return {
+    success: true,
     provider: 'carddass',
+    domain: 'collectibles',
     total: response.total || 0,
-    items: (response.items || []).map(item => ({
-      id: item.id,
-      sourceId: item.sourceId,
-      sourceSite: item.sourceSite || null,
-      name: item.name,
-      description: item.description || null,
-      image: item.image || null,
-      banner: item.banner || null,
-      collectionCount: item.collectionCount || undefined,
-      cardCount: item.cardCount || undefined,
-      url: item.url || null
-    })),
-    pagination: response.pagination || null
+    count: items.length,
+    data: items,
+    pagination: response.pagination || null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 
@@ -209,23 +226,29 @@ export function normalizeLicenses(response) {
  */
 export function normalizeCollections(response) {
   if (!response) {
-    return { provider: 'carddass', total: 0, items: [], pagination: null };
+    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
+  const items = (response.items || []).map(item => ({
+    id: item.id,
+    sourceId: item.sourceId,
+    sourceSite: item.sourceSite || null,
+    name: item.name,
+    seriesCount: item.seriesCount || 0,
+    cardCount: item.cardCount || 0,
+    url: item.url || null
+  }));
+
   return {
+    success: true,
     provider: 'carddass',
+    domain: 'collectibles',
     license: response.license || null,
     total: response.total || 0,
-    items: (response.items || []).map(item => ({
-      id: item.id,
-      sourceId: item.sourceId,
-      sourceSite: item.sourceSite || null,
-      name: item.name,
-      seriesCount: item.seriesCount || 0,
-      cardCount: item.cardCount || 0,
-      url: item.url || null
-    })),
-    pagination: response.pagination || null
+    count: items.length,
+    data: items,
+    pagination: response.pagination || null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 
@@ -236,26 +259,32 @@ export function normalizeCollections(response) {
  */
 export function normalizeSeries(response) {
   if (!response) {
-    return { provider: 'carddass', total: 0, items: [], pagination: null };
+    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
+  const items = (response.items || []).map(item => ({
+    id: item.id,
+    sourceId: item.sourceId,
+    sourceSite: item.sourceSite || null,
+    name: item.name,
+    description: item.description || null,
+    capsule: item.capsule || null,
+    cardCount: item.cardCount || 0,
+    packagingCount: item.packagingCount || 0,
+    url: item.url || null
+  }));
+
   return {
+    success: true,
     provider: 'carddass',
+    domain: 'collectibles',
     license: response.license || null,
     collection: response.collection || null,
     total: response.total || 0,
-    items: (response.items || []).map(item => ({
-      id: item.id,
-      sourceId: item.sourceId,
-      sourceSite: item.sourceSite || null,
-      name: item.name,
-      description: item.description || null,
-      capsule: item.capsule || null,
-      cardCount: item.cardCount || 0,
-      packagingCount: item.packagingCount || 0,
-      url: item.url || null
-    })),
-    pagination: response.pagination || null
+    count: items.length,
+    data: items,
+    pagination: response.pagination || null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 
@@ -266,28 +295,34 @@ export function normalizeSeries(response) {
  */
 export function normalizeCards(response) {
   if (!response) {
-    return { provider: 'carddass', total: 0, items: [], pagination: null };
+    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
+  const items = (response.items || []).map(item => ({
+    id: item.id,
+    sourceId: item.sourceId,
+    sourceSite: item.sourceSite || null,
+    cardNumber: item.cardNumber,
+    rarity: item.rarity || null,
+    rarityColor: item.rarityColor || null,
+    images: item.images || null,
+    license: item.license || null,
+    collection: item.collection || null,
+    series: item.series || null
+  }));
+
   return {
+    success: true,
     provider: 'carddass',
+    domain: 'collectibles',
     license: response.license || null,
     collection: response.collection || null,
     series: response.series || null,
     total: response.total || 0,
-    items: (response.items || []).map(item => ({
-      id: item.id,
-      sourceId: item.sourceId,
-      sourceSite: item.sourceSite || null,
-      cardNumber: item.cardNumber,
-      rarity: item.rarity || null,
-      rarityColor: item.rarityColor || null,
-      images: item.images || null,
-      license: item.license || null,
-      collection: item.collection || null,
-      series: item.series || null
-    })),
-    pagination: response.pagination || null
+    count: items.length,
+    data: items,
+    pagination: response.pagination || null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 

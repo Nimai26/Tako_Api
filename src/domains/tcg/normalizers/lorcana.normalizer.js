@@ -58,16 +58,26 @@ async function normalizeCardSummary(rawCard, options = {}) {
   const thumbnailUrl = rawCard.images?.thumbnail || imageUrl;
   
   return {
-    id: rawCard.fullIdentifier || String(rawCard.id),
+    id: `lorcana:${rawCard.fullIdentifier || String(rawCard.id)}`,
+    type: 'tcg_card',
     source: 'lorcana',
-    collection: 'Disney Lorcana',
+    sourceId: String(rawCard.fullIdentifier || rawCard.id),
     title: rawCard.fullName || rawCard.name,
-    subtitle,
+    titleOriginal: null,
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
-    image: imageUrl,
-    thumbnail: thumbnailUrl,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: imageUrl || null,
+      thumbnail: thumbnailUrl || null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: `/api/tcg/lorcana/card/${rawCard.fullIdentifier || rawCard.id}`
+    },
+    details: {
+      collection: 'Disney Lorcana',
+      subtitle,
       name: rawCard.name,
       version: rawCard.version,
       type: rawCard.type,
@@ -82,8 +92,7 @@ async function normalizeCardSummary(rawCard, options = {}) {
       ...(rawCard.strength !== undefined && { strength: rawCard.strength }),
       ...(rawCard.willpower !== undefined && { willpower: rawCard.willpower }),
       ...(rawCard.lore !== undefined && { lore: rawCard.lore })
-    },
-    detailUrl: `/api/tcg/lorcana/card/${rawCard.fullIdentifier || rawCard.id}`
+    }
   };
 }
 
@@ -137,15 +146,27 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
   
   return {
-    id: rawCard.fullIdentifier || String(rawCard.id),
+    id: `lorcana:${rawCard.fullIdentifier || String(rawCard.id)}`,
+    type: 'tcg_card',
     source: 'lorcana',
+    sourceId: String(rawCard.fullIdentifier || rawCard.id),
     title: rawCard.fullName || rawCard.name,
-    subtitle: rawCard.version ? `${rawCard.version} - ${rawCard.type}` : rawCard.type,
+    titleOriginal: null,
     description: abilities.map(a => a.text).join('\n\n'),
-    flavorText,
-    images,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: images[0]?.url || null,
+      thumbnail: images[0]?.thumbnail || images[0]?.url || null,
+      gallery: images
+    },
+    urls: {
+      source: rawCard.fullIdentifier ? `https://lorcanajson.org/cards/${rawCard.fullIdentifier}` : null,
+      detail: `/api/tcg/lorcana/card/${rawCard.fullIdentifier || rawCard.id}`
+    },
+    details: {
+      subtitle: rawCard.version ? `${rawCard.version} - ${rawCard.type}` : rawCard.type,
+      flavorText,
+
       // Informations de base
       name: rawCard.name,
       version: rawCard.version,
@@ -195,12 +216,14 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       
       // Franchise d'origine
       franchise: rawCard.franchise,
-      franchiseIcon: rawCard.franchiseIcon
-    },
-    externalLinks: {
-      lorcanajson: `https://lorcanajson.org/cards/${rawCard.fullIdentifier}`,
-      dreamborn: rawCard.fullName ? 
-        `https://dreamborn.ink/cards/${rawCard.fullName.toLowerCase().replace(/\s+/g, '-')}` : null
+      franchiseIcon: rawCard.franchiseIcon,
+
+      // Liens externes
+      externalLinks: {
+        lorcanajson: `https://lorcanajson.org/cards/${rawCard.fullIdentifier}`,
+        dreamborn: rawCard.fullName ? 
+          `https://dreamborn.ink/cards/${rawCard.fullName.toLowerCase().replace(/\s+/g, '-')}` : null
+      }
     }
   };
 }
@@ -216,15 +239,25 @@ export async function normalizeSets(rawData, options = {}) {
   }
   
   return rawData.map(set => ({
-    id: set.code,
+    id: `lorcana:${set.code}`,
+    type: 'tcg_set',
     source: 'lorcana',
+    sourceId: String(set.code),
     title: set.name,
-    subtitle: 'Set',
+    titleOriginal: null,
     description: null,
-    image: set.icon || null,
-    thumbnail: set.icon || null,
     year: extractYearFromDate(set.releaseDate),
-    metadata: {
+    images: {
+      primary: set.icon || null,
+      thumbnail: set.icon || null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: null
+    },
+    details: {
+      subtitle: 'Set',
       code: set.code,
       name: set.name,
       releaseDate: set.releaseDate,

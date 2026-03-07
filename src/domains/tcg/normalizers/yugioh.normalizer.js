@@ -1,6 +1,6 @@
 /**
  * Normalizer Yu-Gi-Oh! (YGOPRODeck API)
- * Transforme les réponses YGOPRODeck en format Tako API unifié
+ * Transforme les réponses YGOPRODeck en format Tako API unifié (Format B)
  */
 
 import { translateText } from '../../../shared/utils/translator.js';
@@ -51,16 +51,26 @@ async function normalizeCardSummary(rawCard, options = {}) {
   const thumbnailUrl = rawCard.card_images?.[0]?.image_url_small || imageUrl;
   
   return {
-    id: String(rawCard.id),
+    id: `yugioh:${rawCard.id}`,
+    type: 'tcg_card',
     source: 'yugioh',
-    collection: 'Yu-Gi-Oh! Trading Card Game',
+    sourceId: String(rawCard.id),
     title: rawCard.name,
-    subtitle,
+    titleOriginal: null,
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
-    image: imageUrl,
-    thumbnail: thumbnailUrl,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: imageUrl || null,
+      thumbnail: thumbnailUrl || null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: `/api/tcg/yugioh/card/${rawCard.id}`
+    },
+    details: {
+      collection: 'Yu-Gi-Oh! Trading Card Game',
+      subtitle,
       type: rawCard.type,
       race: rawCard.race, // Dragon, Spellcaster, etc.
       archetype: rawCard.archetype,
@@ -74,8 +84,7 @@ async function normalizeCardSummary(rawCard, options = {}) {
       ...(rawCard.linkmarkers && { linkmarkers: rawCard.linkmarkers }),
       // Pour les Pendulum
       ...(rawCard.scale !== undefined && { scale: rawCard.scale })
-    },
-    detailUrl: `/api/tcg/yugioh/card/${rawCard.id}`
+    }
   };
 }
 
@@ -103,23 +112,38 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
   
   // Images multiples (normal, cropped, small)
-  const images = rawCard.card_images?.map((img, index) => ({
+  const gallery = rawCard.card_images?.map((img, index) => ({
     url: img.image_url,
     thumbnail: img.image_url_small,
     cropped: img.image_url_cropped,
     caption: index === 0 ? 'Carte' : `Alternative ${index}`,
     isMain: index === 0
   })) || [];
+
+  const primaryImage = gallery[0]?.url || null;
+  const thumbnailImage = gallery[0]?.thumbnail || primaryImage;
   
   return {
-    id: String(rawCard.id),
+    id: `yugioh:${rawCard.id}`,
+    type: 'tcg_card',
     source: 'yugioh',
+    sourceId: String(rawCard.id),
     title: rawCard.name,
-    subtitle: rawCard.type,
+    titleOriginal: null,
     description,
-    images,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: primaryImage,
+      thumbnail: thumbnailImage,
+      gallery
+    },
+    urls: {
+      source: rawCard.ygoprodeck_url || null,
+      detail: `/api/tcg/yugioh/card/${rawCard.id}`
+    },
+    details: {
+      subtitle: rawCard.type,
+
       // Informations de base
       type: rawCard.type,
       frameType: rawCard.frameType, // normal, effect, ritual, fusion, synchro, xyz, link
@@ -159,14 +183,18 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       // Misc
       ygoprodeckUrl: rawCard.ygoprodeck_url,
       betaId: rawCard.id,
-      betaName: rawCard.beta_name
-    },
-    prices: extractPrices(rawCard),
-    externalLinks: {
-      ygoprodeck: rawCard.ygoprodeck_url,
-      cardmarket: rawCard.card_images?.[0]?.image_url ? 
-        `https://www.cardmarket.com/en/YuGiOh/Products/Search?searchString=${encodeURIComponent(rawCard.name)}` : null,
-      tcgplayer: `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(rawCard.name)}`
+      betaName: rawCard.beta_name,
+
+      // Prix
+      prices: extractPrices(rawCard),
+
+      // Liens externes
+      externalLinks: {
+        ygoprodeck: rawCard.ygoprodeck_url,
+        cardmarket: rawCard.card_images?.[0]?.image_url ? 
+          `https://www.cardmarket.com/en/YuGiOh/Products/Search?searchString=${encodeURIComponent(rawCard.name)}` : null,
+        tcgplayer: `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(rawCard.name)}`
+      }
     }
   };
 }
@@ -182,15 +210,25 @@ export async function normalizeSets(rawData, options = {}) {
   }
   
   return rawData.map(set => ({
-    id: set.set_name,
+    id: `yugioh:${set.set_name}`,
+    type: 'tcg_set',
     source: 'yugioh',
+    sourceId: String(set.set_name),
     title: set.set_name,
-    subtitle: 'Set',
+    titleOriginal: null,
     description: null,
-    image: null,
-    thumbnail: null,
     year: extractYearFromSetName(set.set_name),
-    metadata: {
+    images: {
+      primary: null,
+      thumbnail: null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: null
+    },
+    details: {
+      subtitle: 'Set',
       name: set.set_name,
       numOfCards: set.num_of_cards,
       tcgDate: set.tcg_date,

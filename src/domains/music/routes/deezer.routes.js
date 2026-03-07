@@ -81,13 +81,7 @@ router.get('/search', async (req, res) => {
       normalized = deezerNormalizer.normalizeAlbumSearchResponse(data, q);
     }
     
-    res.json({
-      success: true,
-      provider: 'deezer',
-      domain: 'music',
-      ...normalized,
-      source: 'deezer'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Search failed', { error: error.message });
     res.status(500).json({
@@ -115,13 +109,7 @@ router.get('/search/albums', async (req, res) => {
     const data = await deezerProvider.searchAlbums(q, { limit: parseInt(limit) });
     const normalized = deezerNormalizer.normalizeAlbumSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'deezer',
-      domain: 'music',
-      ...normalized,
-      source: 'deezer'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Album search failed', { error: error.message });
     res.status(500).json({
@@ -149,13 +137,7 @@ router.get('/search/artists', async (req, res) => {
     const data = await deezerProvider.searchArtists(q, { limit: parseInt(limit) });
     const normalized = deezerNormalizer.normalizeArtistSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'deezer',
-      domain: 'music',
-      ...normalized,
-      source: 'deezer'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Artist search failed', { error: error.message });
     res.status(500).json({
@@ -183,13 +165,7 @@ router.get('/search/tracks', async (req, res) => {
     const data = await deezerProvider.searchTracks(q, { limit: parseInt(limit) });
     const normalized = deezerNormalizer.normalizeTrackSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'deezer',
-      domain: 'music',
-      ...normalized,
-      source: 'deezer'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Track search failed', { error: error.message });
     res.status(500).json({
@@ -217,11 +193,11 @@ router.get('/albums/:id', async (req, res) => {
     // Traduire les genres si demandé
     const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
     const lang = req.query.lang;
-    if (autoTrad && lang && normalized.genres && normalized.genres.length > 0) {
+    if (autoTrad && lang && normalized.details?.genres && normalized.details.genres.length > 0) {
       const targetLang = extractLangCode(lang);
-      const { terms: translatedGenres, termsOriginal } = await translateMusicGenres(normalized.genres, targetLang);
-      normalized.genres = translatedGenres;
-      if (termsOriginal) normalized.genresOriginal = termsOriginal;
+      const { terms: translatedGenres, termsOriginal } = await translateMusicGenres(normalized.details.genres, targetLang);
+      normalized.details.genres = translatedGenres;
+      if (termsOriginal) normalized.details.genresOriginal = termsOriginal;
     }
     
     res.json({

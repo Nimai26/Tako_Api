@@ -142,7 +142,7 @@ export class KlickypediaProvider extends BaseProvider {
     }
 
     // Récupérer la page de détails
-    const productUrl = `${product.src_url}?elang=${normalizedLang}`;
+    const productUrl = `${product.urls?.source}?elang=${normalizedLang}`;
 
     const response = await this.fetchWithRetry(productUrl, {
       headers: {

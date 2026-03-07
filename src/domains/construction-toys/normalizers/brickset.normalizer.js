@@ -96,10 +96,10 @@ export class BricksetNormalizer extends BaseNormalizer {
       // Extraire les détails spécifiques et les aplatir directement
       const details = this.extractDetails(raw);
 
-      // Fusionner base + details en structure plate
+      // Format canonique : noyau commun + details imbriqué
       const normalized = {
         ...base,
-        ...details  // ✅ Aplatissement : tous les champs de details au même niveau
+        details
       };
 
       // Ajouter les données brutes si demandé (debug)

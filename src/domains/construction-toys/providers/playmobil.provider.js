@@ -124,8 +124,8 @@ export class PlaymobilProvider extends BaseProvider {
         p.sourceId === cleanId ||
         p.productCode === cleanId
       );
-      if (found && found.src_url) {
-        productUrl = found.src_url;
+      if (found && found.urls?.source) {
+        productUrl = found.urls.source;
       }
     }
 

@@ -297,37 +297,37 @@ router.get('/sets/:id', asyncHandler(async (req, res) => {
   });
 
   // Traduction automatique si activée
-  if (autoTradEnabled && result) {
+  if (autoTradEnabled && result?.data) {
     // Traduire le nom
-    if (result.name) {
-      const nameResult = await translateText(result.name, targetLang, { 
+    if (result.data.title) {
+      const nameResult = await translateText(result.data.title, targetLang, { 
         enabled: true, 
         sourceLang: 'en' 
       });
       if (nameResult.translated) {
-        result.nameOriginal = result.name;
-        result.name = nameResult.text;
+        result.data.titleOriginal = result.data.title;
+        result.data.title = nameResult.text;
       }
     }
     
     // Traduire la description si présente
-    if (result.description) {
-      const descResult = await translateText(result.description, targetLang, { 
+    if (result.data.description) {
+      const descResult = await translateText(result.data.description, targetLang, { 
         enabled: true, 
         sourceLang: 'en' 
       });
       if (descResult.translated) {
-        result.descriptionOriginal = result.description;
-        result.description = descResult.text;
+        result.data.descriptionOriginal = result.data.description;
+        result.data.description = descResult.text;
       }
     }
     
     // Traduire le thème
-    if (result.theme) {
-      const translated = await translateToyCategories([result.theme], targetLang);
+    if (result.data.details?.theme) {
+      const translated = await translateToyCategories([result.data.details.theme], targetLang);
       if (translated.termsTranslated) {
-        result.themeOriginal = result.theme;
-        result.theme = translated.terms[0];
+        result.data.details.themeOriginal = result.data.details.theme;
+        result.data.details.theme = translated.terms[0];
       }
     }
   }

@@ -1,10 +1,14 @@
 /**
  * Normalizer Deezer
  * 
- * Transforme les réponses Deezer au format Tako standardisé
+ * Transforme les réponses Deezer au format Tako canonique (Format B)
  * 
  * @module domains/music/normalizers/deezer
  */
+
+const SOURCE = 'deezer';
+const DOMAIN = 'music';
+const BASE_DETAIL = '/api/music/deezer';
 
 // ============================================================================
 // HELPERS
@@ -28,6 +32,73 @@ function getLargeImageUrl(url) {
             .replace('/artist/', '/artist/500x500/');
 }
 
+/**
+ * Extrait l'année numérique d'une date string
+ */
+function extractYear(dateStr) {
+  if (!dateStr) return null;
+  const y = parseInt(dateStr.substring(0, 4), 10);
+  return isNaN(y) ? null : y;
+}
+
+/**
+ * Construit le bloc meta par défaut
+ */
+function buildMeta() {
+  return {
+    fetchedAt: new Date().toISOString(),
+    lang: null,
+    cached: false,
+    cacheAge: null
+  };
+}
+
+/**
+ * Construit les images Deezer (covers) au format canonique
+ */
+function buildCoverImages(item, prefix = 'cover') {
+  const small = item[`${prefix}_small`] || item[prefix];
+  const medium = item[`${prefix}_medium`] || item[prefix];
+  const big = item[`${prefix}_big`];
+  const xl = item[`${prefix}_xl`];
+
+  const gallery = [
+    small  ? { size: 'small',  url: small }  : null,
+    medium ? { size: 'medium', url: medium } : null,
+    big    ? { size: 'large',  url: big }    : null,
+    xl     ? { size: 'xl',     url: xl }     : null
+  ].filter(Boolean);
+
+  return {
+    primary: medium || small || null,
+    thumbnail: small || medium || null,
+    gallery
+  };
+}
+
+/**
+ * Construit les images Deezer (pictures d'artiste) au format canonique
+ */
+function buildPictureImages(item) {
+  const small = item.picture_small || item.picture;
+  const medium = item.picture_medium || item.picture;
+  const big = item.picture_big;
+  const xl = item.picture_xl;
+
+  const gallery = [
+    small  ? { size: 'small',  url: small }  : null,
+    medium ? { size: 'medium', url: medium } : null,
+    big    ? { size: 'large',  url: big }    : null,
+    xl     ? { size: 'xl',     url: xl }     : null
+  ].filter(Boolean);
+
+  return {
+    primary: medium || small || null,
+    thumbnail: small || medium || null,
+    gallery
+  };
+}
+
 // ============================================================================
 // SEARCH NORMALIZERS
 // ============================================================================
@@ -37,49 +108,50 @@ function getLargeImageUrl(url) {
  */
 export function normalizeAlbumSearchResponse(data, query) {
   const results = (data.data || []).map((item, index) => normalizeAlbumSearchItem(item, index + 1));
-  
+
   return {
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
     query,
-    searchType: 'album',
     total: data.total || results.length,
+    count: results.length,
+    data: results,
     pagination: {
       page: 1,
       pageSize: results.length,
       totalResults: data.total || results.length,
-      hasMore: data.next ? true : false
+      hasMore: !!data.next
     },
-    data: results
+    meta: buildMeta()
   };
 }
 
 /**
- * Normalise un album de recherche
+ * Normalise un album de recherche → format canonique
  */
 export function normalizeAlbumSearchItem(item, position = null) {
   return {
-    id: `deezer:album:${item.id}`,
+    id: `${SOURCE}:${item.id}`,
+    type: 'music_album',
+    source: SOURCE,
     sourceId: String(item.id),
-    provider: 'deezer',
-    type: 'album',
-    position,
-    
     title: item.title,
-    artist: item.artist?.name || null,
-    artistId: item.artist?.id ? `deezer:artist:${item.artist.id}` : null,
-    
-    poster: item.cover_medium || item.cover,
-    posterLarge: item.cover_xl || item.cover_big,
-    images: [
-      { type: 'small', url: item.cover_small || item.cover },
-      { type: 'medium', url: item.cover_medium || item.cover },
-      { type: 'large', url: item.cover_big },
-      { type: 'xl', url: item.cover_xl }
-    ].filter(img => img.url),
-    
-    trackCount: item.nb_tracks || null,
-    explicit: item.explicit_lyrics || false,
-    
-    url: item.link
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: buildCoverImages(item),
+    urls: {
+      source: item.link || null,
+      detail: `${BASE_DETAIL}/albums/${item.id}`
+    },
+    details: {
+      artist: item.artist?.name || null,
+      artistId: item.artist?.id ? `${SOURCE}:${item.artist.id}` : null,
+      trackCount: item.nb_tracks || null,
+      explicit: item.explicit_lyrics || false,
+      position
+    }
   };
 }
 
@@ -88,47 +160,48 @@ export function normalizeAlbumSearchItem(item, position = null) {
  */
 export function normalizeArtistSearchResponse(data, query) {
   const results = (data.data || []).map((item, index) => normalizeArtistSearchItem(item, index + 1));
-  
+
   return {
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
     query,
-    searchType: 'artist',
     total: data.total || results.length,
+    count: results.length,
+    data: results,
     pagination: {
       page: 1,
       pageSize: results.length,
       totalResults: data.total || results.length,
-      hasMore: data.next ? true : false
+      hasMore: !!data.next
     },
-    data: results
+    meta: buildMeta()
   };
 }
 
 /**
- * Normalise un artiste de recherche
+ * Normalise un artiste de recherche → format canonique
  */
 export function normalizeArtistSearchItem(item, position = null) {
   return {
-    id: `deezer:artist:${item.id}`,
+    id: `${SOURCE}:${item.id}`,
+    type: 'music_artist',
+    source: SOURCE,
     sourceId: String(item.id),
-    provider: 'deezer',
-    type: 'artist',
-    position,
-    
-    name: item.name,
-    
-    image: item.picture_medium || item.picture,
-    imageLarge: item.picture_xl || item.picture_big,
-    images: [
-      { type: 'small', url: item.picture_small || item.picture },
-      { type: 'medium', url: item.picture_medium || item.picture },
-      { type: 'large', url: item.picture_big },
-      { type: 'xl', url: item.picture_xl }
-    ].filter(img => img.url),
-    
-    nbAlbums: item.nb_album || null,
-    nbFans: item.nb_fan || null,
-    
-    url: item.link
+    title: item.name,
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: buildPictureImages(item),
+    urls: {
+      source: item.link || null,
+      detail: `${BASE_DETAIL}/artists/${item.id}`
+    },
+    details: {
+      nbAlbums: item.nb_album || null,
+      nbFans: item.nb_fan || null,
+      position
+    }
   };
 }
 
@@ -137,47 +210,62 @@ export function normalizeArtistSearchItem(item, position = null) {
  */
 export function normalizeTrackSearchResponse(data, query) {
   const results = (data.data || []).map((item, index) => normalizeTrackSearchItem(item, index + 1));
-  
+
   return {
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
     query,
-    searchType: 'track',
     total: data.total || results.length,
+    count: results.length,
+    data: results,
     pagination: {
       page: 1,
       pageSize: results.length,
       totalResults: data.total || results.length,
-      hasMore: data.next ? true : false
+      hasMore: !!data.next
     },
-    data: results
+    meta: buildMeta()
   };
 }
 
 /**
- * Normalise un track de recherche
+ * Normalise un track de recherche → format canonique
  */
 export function normalizeTrackSearchItem(item, position = null) {
+  const albumCover = item.album?.cover_medium || item.album?.cover || null;
+  const albumThumb = item.album?.cover_small || item.album?.cover || null;
+
   return {
-    id: `deezer:track:${item.id}`,
+    id: `${SOURCE}:${item.id}`,
+    type: 'music_track',
+    source: SOURCE,
     sourceId: String(item.id),
-    provider: 'deezer',
-    type: 'track',
-    position,
-    
     title: item.title,
-    artist: item.artist?.name || null,
-    artistId: item.artist?.id ? `deezer:artist:${item.artist.id}` : null,
-    album: item.album?.title || null,
-    albumId: item.album?.id ? `deezer:album:${item.album.id}` : null,
-    
-    duration: item.duration || null,
-    durationFormatted: item.duration ? formatDuration(item.duration) : null,
-    
-    poster: item.album?.cover_medium || item.album?.cover,
-    preview: item.preview || null,
-    explicit: item.explicit_lyrics || false,
-    rank: item.rank || null,
-    
-    url: item.link
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: {
+      primary: albumCover,
+      thumbnail: albumThumb,
+      gallery: []
+    },
+    urls: {
+      source: item.link || null,
+      detail: `${BASE_DETAIL}/tracks/${item.id}`
+    },
+    details: {
+      artist: item.artist?.name || null,
+      artistId: item.artist?.id ? `${SOURCE}:${item.artist.id}` : null,
+      album: item.album?.title || null,
+      albumId: item.album?.id ? `${SOURCE}:${item.album.id}` : null,
+      duration: item.duration || null,
+      durationFormatted: item.duration ? formatDuration(item.duration) : null,
+      preview: item.preview || null,
+      explicit: item.explicit_lyrics || false,
+      rank: item.rank || null,
+      position
+    }
   };
 }
 
@@ -186,12 +274,12 @@ export function normalizeTrackSearchItem(item, position = null) {
 // ============================================================================
 
 /**
- * Normalise les détails d'un album
+ * Normalise les détails d'un album → format canonique
  */
 export function normalizeAlbumDetail(album) {
   const tracks = (album.tracks?.data || []).map((t, idx) => ({
     position: idx + 1,
-    id: `deezer:track:${t.id}`,
+    id: `${SOURCE}:${t.id}`,
     sourceId: String(t.id),
     title: t.title,
     duration: t.duration || null,
@@ -199,65 +287,55 @@ export function normalizeAlbumDetail(album) {
     preview: t.preview || null,
     explicit: t.explicit_lyrics || false
   }));
-  
+
   const contributors = (album.contributors || []).map(c => ({
-    id: `deezer:artist:${c.id}`,
+    id: `${SOURCE}:${c.id}`,
     sourceId: String(c.id),
     name: c.name,
     role: c.role || null,
     image: c.picture_medium || c.picture
   }));
-  
+
   return {
-    id: `deezer:album:${album.id}`,
+    id: `${SOURCE}:${album.id}`,
+    type: 'music_album',
+    source: SOURCE,
     sourceId: String(album.id),
-    provider: 'deezer',
-    type: 'album',
-    
     title: album.title,
-    upc: album.upc || null,
-    
-    artist: album.artist?.name || null,
-    artistId: album.artist?.id ? `deezer:artist:${album.artist.id}` : null,
-    artistImage: album.artist?.picture_medium || null,
-    
-    releaseDate: album.release_date || null,
-    year: album.release_date?.substring(0, 4) || null,
-    
-    genres: (album.genres?.data || []).map(g => g.name),
-    label: album.label || null,
-    
-    duration: album.duration || null,
-    durationFormatted: album.duration ? formatDuration(album.duration) : null,
-    
-    tracks,
-    trackCount: album.nb_tracks || tracks.length,
-    
-    contributors,
-    
-    explicit: album.explicit_lyrics || false,
-    fans: album.fans || 0,
-    
-    poster: album.cover_medium || album.cover,
-    posterLarge: album.cover_xl || album.cover_big,
-    images: [
-      { type: 'small', url: album.cover_small || album.cover },
-      { type: 'medium', url: album.cover_medium || album.cover },
-      { type: 'large', url: album.cover_big },
-      { type: 'xl', url: album.cover_xl }
-    ].filter(img => img.url),
-    
-    url: album.link
+    titleOriginal: null,
+    description: null,
+    year: extractYear(album.release_date),
+    images: buildCoverImages(album),
+    urls: {
+      source: album.link || null,
+      detail: `${BASE_DETAIL}/albums/${album.id}`
+    },
+    details: {
+      upc: album.upc || null,
+      artist: album.artist?.name || null,
+      artistId: album.artist?.id ? `${SOURCE}:${album.artist.id}` : null,
+      artistImage: album.artist?.picture_medium || null,
+      releaseDate: album.release_date || null,
+      genres: (album.genres?.data || []).map(g => g.name),
+      label: album.label || null,
+      duration: album.duration || null,
+      durationFormatted: album.duration ? formatDuration(album.duration) : null,
+      tracks,
+      trackCount: album.nb_tracks || tracks.length,
+      contributors,
+      explicit: album.explicit_lyrics || false,
+      fans: album.fans || 0
+    }
   };
 }
 
 /**
- * Normalise les détails d'un artiste
+ * Normalise les détails d'un artiste → format canonique
  */
 export function normalizeArtistDetail(artist, topTracks = [], albums = []) {
   const normalizedTopTracks = (topTracks.data || topTracks || []).map((t, idx) => ({
     position: idx + 1,
-    id: `deezer:track:${t.id}`,
+    id: `${SOURCE}:${t.id}`,
     sourceId: String(t.id),
     title: t.title,
     duration: t.duration || null,
@@ -267,87 +345,88 @@ export function normalizeArtistDetail(artist, topTracks = [], albums = []) {
     preview: t.preview || null,
     rank: t.rank || null
   }));
-  
+
   const normalizedAlbums = (albums.data || albums || []).map((a, idx) => ({
     position: idx + 1,
-    id: `deezer:album:${a.id}`,
+    id: `${SOURCE}:${a.id}`,
     sourceId: String(a.id),
     title: a.title,
-    poster: a.cover_medium || a.cover,
+    cover: a.cover_medium || a.cover,
     releaseDate: a.release_date || null,
-    year: a.release_date?.substring(0, 4) || null,
+    year: extractYear(a.release_date),
     type: a.record_type || 'album'
   }));
-  
+
   return {
-    id: `deezer:artist:${artist.id}`,
+    id: `${SOURCE}:${artist.id}`,
+    type: 'music_artist',
+    source: SOURCE,
     sourceId: String(artist.id),
-    provider: 'deezer',
-    type: 'artist',
-    
-    name: artist.name,
-    
-    image: artist.picture_medium || artist.picture,
-    imageLarge: artist.picture_xl || artist.picture_big,
-    images: [
-      { type: 'small', url: artist.picture_small || artist.picture },
-      { type: 'medium', url: artist.picture_medium || artist.picture },
-      { type: 'large', url: artist.picture_big },
-      { type: 'xl', url: artist.picture_xl }
-    ].filter(img => img.url),
-    
-    nbAlbums: artist.nb_album || normalizedAlbums.length,
-    nbFans: artist.nb_fan || 0,
-    
-    topTracks: normalizedTopTracks,
-    albums: normalizedAlbums,
-    
-    url: artist.link
+    title: artist.name,
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: buildPictureImages(artist),
+    urls: {
+      source: artist.link || null,
+      detail: `${BASE_DETAIL}/artists/${artist.id}`
+    },
+    details: {
+      nbAlbums: artist.nb_album || normalizedAlbums.length,
+      nbFans: artist.nb_fan || 0,
+      topTracks: normalizedTopTracks,
+      albums: normalizedAlbums
+    }
   };
 }
 
 /**
- * Normalise les détails d'un track
+ * Normalise les détails d'un track → format canonique
  */
 export function normalizeTrackDetail(track) {
+  const albumCover = track.album?.cover_medium || null;
+  const albumThumb = track.album?.cover_small || null;
+
   return {
-    id: `deezer:track:${track.id}`,
+    id: `${SOURCE}:${track.id}`,
+    type: 'music_track',
+    source: SOURCE,
     sourceId: String(track.id),
-    provider: 'deezer',
-    type: 'track',
-    
     title: track.title,
-    
-    artist: track.artist?.name || null,
-    artistId: track.artist?.id ? `deezer:artist:${track.artist.id}` : null,
-    
-    album: track.album?.title || null,
-    albumId: track.album?.id ? `deezer:album:${track.album.id}` : null,
-    albumCover: track.album?.cover_medium || null,
-    
-    duration: track.duration || null,
-    durationFormatted: track.duration ? formatDuration(track.duration) : null,
-    
-    discNumber: track.disk_number || 1,
-    trackNumber: track.track_position || null,
-    
-    releaseDate: track.release_date || null,
-    
-    bpm: track.bpm || null,
-    gain: track.gain || null,
-    
-    preview: track.preview || null,
-    explicit: track.explicit_lyrics || false,
-    
-    isrc: track.isrc || null,
-    
-    contributors: (track.contributors || []).map(c => ({
-      id: `deezer:artist:${c.id}`,
-      name: c.name,
-      role: c.role
-    })),
-    
-    url: track.link
+    titleOriginal: null,
+    description: null,
+    year: extractYear(track.release_date),
+    images: {
+      primary: albumCover,
+      thumbnail: albumThumb,
+      gallery: []
+    },
+    urls: {
+      source: track.link || null,
+      detail: `${BASE_DETAIL}/tracks/${track.id}`
+    },
+    details: {
+      artist: track.artist?.name || null,
+      artistId: track.artist?.id ? `${SOURCE}:${track.artist.id}` : null,
+      album: track.album?.title || null,
+      albumId: track.album?.id ? `${SOURCE}:${track.album.id}` : null,
+      albumCover,
+      duration: track.duration || null,
+      durationFormatted: track.duration ? formatDuration(track.duration) : null,
+      discNumber: track.disk_number || 1,
+      trackNumber: track.track_position || null,
+      releaseDate: track.release_date || null,
+      bpm: track.bpm || null,
+      gain: track.gain || null,
+      preview: track.preview || null,
+      explicit: track.explicit_lyrics || false,
+      isrc: track.isrc || null,
+      contributors: (track.contributors || []).map(c => ({
+        id: `${SOURCE}:${c.id}`,
+        name: c.name,
+        role: c.role
+      }))
+    }
   };
 }
 
@@ -378,7 +457,7 @@ export function normalizeChart(data, type) {
       return normalizeTrackSearchItem(item, idx + 1);
     }
   });
-  
+
   return {
     type,
     total: data.total || items.length,

@@ -1,10 +1,14 @@
 /**
- * src/domains/collectibles/normalizers/coleka.normalizer.js - Normalizer Coleka
+ * Coleka Normalizer
  * 
- * Transforme les données brutes de Coleka en format standard Tako_Api
+ * Normalizes Coleka data to canonical Format B.
  * 
  * @module domains/collectibles/normalizers/coleka
  */
+
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 /**
  * Extrait le texte d'une valeur qui peut être une chaîne ou un objet de traduction
@@ -30,79 +34,104 @@ const parseYear = (value) => {
   return match ? parseInt(match[0]) : null;
 };
 
-/**
- * Normalise un résultat de recherche individuel
- * @param {Object} item - Item brut
- * @returns {Object} - Item normalisé
- */
-export function normalizeSearchResult(item) {
-  const providerId = item.id || item.path?.split('/').pop() || 'unknown';
-  
-  return {
-    id: `coleka_${providerId}`,
-    provider: 'coleka',
-    provider_id: providerId,
-    type: 'collectible',
-    
-    name: extractText(item.name_translated) || extractText(item.name) || '',
-    name_original: extractText(item.name) || null,
-    name_translated: extractText(item.name_translated) || null,
-    
-    brand: null,
-    series: null,
-    category: item.category || null,
-    collection: item.collection || null,
-    
-    images: {
-      thumbnail: item.image || null,
-      main: item.image || null,
-      all: item.image ? [item.image] : []
-    },
-    
-    url: item.url || null,
-    detailUrl: item.url ? `coleka://item${item.path || '/' + item.id}` : null
-  };
-}
+// ============================================================================
+// ITEM NORMALIZATION — Canonical Format B
+// ============================================================================
 
 /**
- * Normalise une réponse de recherche Coleka
- * @param {Object} rawData - Données brutes de la recherche
- * @returns {Object} - Résultat normalisé
+ * Normalise un résultat de recherche individuel en Format B canonical
+ * @param {Object} item - Item brut
+ * @returns {Object|null} - Item normalisé Format B
  */
-export function normalizeSearchResults(rawData) {
-  if (!rawData) {
-    return {
-      query: '',
-      provider: 'coleka',
-      totalResults: 0,
-      items: [],
-      metadata: {
-        source: 'coleka'
-      }
-    };
-  }
+export function normalizeSearchItem(item) {
+  if (!item) return null;
+
+  const sourceId = String(item.id || item.path?.split('/').pop() || 'unknown');
   
   return {
-    query: rawData.query || '',
-    provider: 'coleka',
-    totalResults: rawData.total || rawData.products?.length || 0,
-    items: (rawData.products || []).map(normalizeSearchResult),
-    metadata: {
-      category: rawData.category || null,
-      source: 'coleka'
+    id: `coleka:${sourceId}`,
+    type: 'collectible',
+    source: 'coleka',
+    sourceId,
+    title: extractText(item.name_translated) || extractText(item.name) || '',
+    titleOriginal: extractText(item.name) || null,
+    description: null,
+    year: null,
+    images: {
+      primary: item.image || null,
+      thumbnail: item.image || null,
+      gallery: item.image ? [item.image] : []
+    },
+    urls: {
+      source: item.url || null,
+      detail: `/api/collectibles/coleka/item/${sourceId}`
+    },
+    details: {
+      nameTranslated: extractText(item.name_translated) || null,
+      category: item.category || null,
+      collection: item.collection || null
     }
   };
 }
 
+// Backward compatibility alias
+export { normalizeSearchItem as normalizeSearchResult };
+
+// ============================================================================
+// SEARCH NORMALIZATION — Canonical Search Response
+// ============================================================================
+
 /**
- * Normalise les détails d'un item Coleka
+ * Normalise une réponse de recherche Coleka en wrapper canonical
+ * @param {Object} rawData - Données brutes de la recherche
+ * @returns {Object} - Wrapper canonical
+ */
+export function normalizeSearchResults(rawData) {
+  if (!rawData) {
+    return {
+      success: true,
+      provider: 'coleka',
+      domain: 'collectibles',
+      query: '',
+      total: 0,
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
+    };
+  }
+  
+  const items = (rawData.products || []).map(normalizeSearchItem).filter(Boolean);
+  
+  return {
+    success: true,
+    provider: 'coleka',
+    domain: 'collectibles',
+    query: rawData.query || '',
+    total: rawData.total || items.length,
+    count: items.length,
+    data: items,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString(),
+      category: rawData.category || null
+    }
+  };
+}
+
+// ============================================================================
+// DETAIL NORMALIZATION — Canonical Format B
+// ============================================================================
+
+/**
+ * Normalise les détails d'un item Coleka en Format B canonical
  * @param {Object} rawData - Données brutes de l'item
- * @returns {Object} - Détails normalisés
+ * @returns {Object|null} - Détails normalisés Format B
  */
 export function normalizeDetails(rawData) {
   if (!rawData) return null;
   
-  const providerId = rawData.id || rawData.url?.split('/').pop() || 'unknown';
+  const sourceId = String(rawData.id || rawData.url?.split('/').pop() || 'unknown');
   
   // Extraire le nombre de pièces depuis les attributs
   let piecesCount = null;
@@ -114,57 +143,52 @@ export function normalizeDetails(rawData) {
   
   // Construire le tableau d'images avec déduplication
   const allImages = rawData.images || [];
-  const mainImage = allImages.length > 0 ? allImages[0] : null;
-  const thumbnail = mainImage;
+  const primaryImage = allImages.length > 0 ? allImages[0] : null;
   
   return {
-    id: `coleka_${providerId}`,
-    provider: 'coleka',
-    provider_id: providerId,
+    id: `coleka:${sourceId}`,
     type: 'collectible',
-    
-    name: extractText(rawData.name) || '',
-    name_original: extractText(rawData.name_original) || null,
-    name_translated: extractText(rawData.name_translated) || null,
-    
+    source: 'coleka',
+    sourceId,
+    title: extractText(rawData.name) || '',
+    titleOriginal: extractText(rawData.name_original) || null,
     description: extractText(rawData.description) || null,
-    description_original: extractText(rawData.description_original) || null,
-    description_translated: extractText(rawData.description_translated) || null,
-    
-    brand: rawData.brand || (rawData.brands && rawData.brands[0]) || null,
-    brands: rawData.brands || [],
-    manufacturer: rawData.brand || null,
-    series: rawData.series || null,
-    subseries: rawData.collection || null,
-    category: rawData.category || null,
-    
-    reference: rawData.reference || null,
-    barcode: rawData.barcode || null,
     year: parseYear(rawData.year),
-    
-    condition: 'unknown',
-    availability: 'unknown',
-    
-    pricing: null,
-    
     images: {
-      thumbnail,
-      main: mainImage,
-      all: allImages
+      primary: primaryImage,
+      thumbnail: primaryImage,
+      gallery: allImages
     },
-    
-    attributes: {
-      pieces_count: piecesCount,
-      ...rawData.attributes
+    urls: {
+      source: rawData.url || null,
+      detail: `/api/collectibles/coleka/item/${sourceId}`
     },
-    
-    metadata: {
-      source: 'coleka',
-      url: rawData.url || null,
-      lastUpdated: new Date().toISOString()
+    details: {
+      nameTranslated: extractText(rawData.name_translated) || null,
+      descriptionOriginal: extractText(rawData.description_original) || null,
+      descriptionTranslated: extractText(rawData.description_translated) || null,
+      brand: rawData.brand || (rawData.brands && rawData.brands[0]) || null,
+      brands: rawData.brands || [],
+      manufacturer: rawData.brand || null,
+      series: rawData.series || null,
+      subseries: rawData.collection || null,
+      category: rawData.category || null,
+      reference: rawData.reference || null,
+      barcode: rawData.barcode || null,
+      condition: 'unknown',
+      availability: 'unknown',
+      pricing: null,
+      attributes: {
+        pieces_count: piecesCount,
+        ...rawData.attributes
+      }
     }
   };
 }
+
+// ============================================================================
+// CATEGORIES
+// ============================================================================
 
 /**
  * Normalise la liste des catégories

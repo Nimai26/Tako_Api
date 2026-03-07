@@ -53,16 +53,26 @@ export async function normalizeSearchResults(rawData, options = {}) {
     }
     
     return {
-      id: card.id,
+      id: `mtg:${card.id}`,
+      type: 'tcg_card',
       source: 'mtg',
-      collection: 'Magic: The Gathering',
+      sourceId: String(card.id),
       title: name,
-      subtitle: card.type_line || null,
+      titleOriginal: null,
       description,
-      image: thumbnail,
-      thumbnail,
       year: card.released_at ? parseInt(card.released_at.split('-')[0]) : null,
-      metadata: {
+      images: {
+        primary: thumbnail,
+        thumbnail,
+        gallery: []
+      },
+      urls: {
+        source: null,
+        detail: `/api/tcg/mtg/card/${card.id}`
+      },
+      details: {
+        collection: 'Magic: The Gathering',
+        subtitle: card.type_line || null,
         set: {
           name: card.set_name || null,
           code: card.set || null
@@ -72,14 +82,13 @@ export async function normalizeSearchResults(rawData, options = {}) {
         manaCost: card.mana_cost || null,
         cmc: card.cmc || 0,
         artist: card.artist || null,
-        collectorNumber: card.collector_number || null
-      },
-      prices: {
-        usd: card.prices?.usd || null,
-        eur: card.prices?.eur || null,
-        tix: card.prices?.tix || null
-      },
-      detailUrl: `/api/tcg/mtg/card/${card.id}`
+        collectorNumber: card.collector_number || null,
+        prices: {
+          usd: card.prices?.usd || null,
+          eur: card.prices?.eur || null,
+          tix: card.prices?.tix || null
+        }
+      }
     };
   }));
   
@@ -151,16 +160,32 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   // Nom (localisé si disponible)
   const name = rawCard.printed_name || rawCard.name;
   
+  // Derive primary/thumbnail from gallery
+  const primaryImage = images[0]?.url || null;
+  const thumbnailImage = images[0]?.thumbnail || primaryImage;
+
   return {
-    id: rawCard.id,
+    id: `mtg:${rawCard.id}`,
+    type: 'tcg_card',
     source: 'mtg',
+    sourceId: String(rawCard.id),
     title: name,
-    subtitle: rawCard.type_line || null,
+    titleOriginal: null,
     description,
-    flavorText,
-    images,
     year: rawCard.released_at ? parseInt(rawCard.released_at.split('-')[0]) : null,
-    metadata: {
+    images: {
+      primary: primaryImage,
+      thumbnail: thumbnailImage,
+      gallery: images
+    },
+    urls: {
+      source: rawCard.scryfall_uri || null,
+      detail: `/api/tcg/mtg/card/${rawCard.id}`
+    },
+    details: {
+      subtitle: rawCard.type_line || null,
+      flavorText,
+
       // Set
       set: {
         id: rawCard.set_id || null,
@@ -221,25 +246,30 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       lang: rawCard.lang || 'en',
       printedName: rawCard.printed_name || null,
       printedTypeLine: rawCard.printed_type_line || null,
-      printedText: rawCard.printed_text || null
-    },
-    prices: {
-      usd: rawCard.prices?.usd || null,
-      usdFoil: rawCard.prices?.usd_foil || null,
-      eur: rawCard.prices?.eur || null,
-      eurFoil: rawCard.prices?.eur_foil || null,
-      tix: rawCard.prices?.tix || null,
-      currency: 'USD/EUR',
-      source: 'scryfall',
-      updatedAt: new Date().toISOString()
-    },
-    externalLinks: {
-      scryfall: rawCard.scryfall_uri || null,
-      tcgplayer: rawCard.purchase_uris?.tcgplayer || null,
-      cardmarket: rawCard.purchase_uris?.cardmarket || null,
-      cardhoarder: rawCard.purchase_uris?.cardhoarder || null
-    },
-    rulings: rawCard.rulings_uri || null
+      printedText: rawCard.printed_text || null,
+
+      // Prix
+      prices: {
+        usd: rawCard.prices?.usd || null,
+        usdFoil: rawCard.prices?.usd_foil || null,
+        eur: rawCard.prices?.eur || null,
+        eurFoil: rawCard.prices?.eur_foil || null,
+        tix: rawCard.prices?.tix || null,
+        currency: 'USD/EUR',
+        source: 'scryfall',
+        updatedAt: new Date().toISOString()
+      },
+
+      // Liens externes
+      externalLinks: {
+        scryfall: rawCard.scryfall_uri || null,
+        tcgplayer: rawCard.purchase_uris?.tcgplayer || null,
+        cardmarket: rawCard.purchase_uris?.cardmarket || null,
+        cardhoarder: rawCard.purchase_uris?.cardhoarder || null
+      },
+
+      rulings: rawCard.rulings_uri || null
+    }
   };
 }
 
@@ -257,15 +287,25 @@ export async function normalizeSets(rawData, options = {}) {
     const year = set.released_at ? parseInt(set.released_at.split('-')[0]) : null;
     
     return {
-      id: set.id,
+      id: `mtg:${set.id}`,
+      type: 'tcg_set',
       source: 'mtg',
+      sourceId: String(set.id),
       title: set.name,
-      subtitle: set.set_type || null,
+      titleOriginal: null,
       description: null,
-      image: set.icon_svg_uri || null,
-      thumbnail: set.icon_svg_uri || null,
       year,
-      metadata: {
+      images: {
+        primary: set.icon_svg_uri || null,
+        thumbnail: set.icon_svg_uri || null,
+        gallery: []
+      },
+      urls: {
+        source: set.scryfall_uri || null,
+        detail: null
+      },
+      details: {
+        subtitle: set.set_type || null,
         code: set.code || null,
         type: set.set_type || null,
         cardCount: set.card_count || 0,
@@ -276,11 +316,11 @@ export async function normalizeSets(rawData, options = {}) {
         releaseDate: set.released_at || null,
         block: set.block || null,
         blockCode: set.block_code || null,
-        parentSetCode: set.parent_set_code || null
-      },
-      externalLinks: {
-        scryfall: set.scryfall_uri || null,
-        searchUri: set.search_uri || null
+        parentSetCode: set.parent_set_code || null,
+        externalLinks: {
+          scryfall: set.scryfall_uri || null,
+          searchUri: set.search_uri || null
+        }
       }
     };
   });

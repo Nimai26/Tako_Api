@@ -54,16 +54,26 @@ async function normalizeCardSummary(rawCard, options = {}) {
   const imageUrl = `https://onepiece-cardgame.dev/images/cards/${rawCard.cid}.png`;
   
   return {
-    id: rawCard.cid,
+    id: `onepiece:${rawCard.cid}`,
+    type: 'tcg_card',
     source: 'onepiece',
-    collection: 'One Piece Card Game',
+    sourceId: String(rawCard.cid),
     title: rawCard.n, // n = name
-    subtitle,
+    titleOriginal: null,
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
-    image: imageUrl,
-    thumbnail: imageUrl,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: imageUrl,
+      thumbnail: imageUrl,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: `/api/tcg/onepiece/card/${encodeURIComponent(rawCard.cid)}`
+    },
+    details: {
+      collection: 'One Piece Card Game',
+      subtitle,
       cardId: rawCard.cid,
       type: rawCard.type_name,
       color: rawCard.color_name,
@@ -76,8 +86,7 @@ async function normalizeCardSummary(rawCard, options = {}) {
       ...(rawCard.attribute_name && rawCard.attribute_name !== 'N/A' && { attribute: rawCard.attribute_name }),
       // Trigger
       ...(rawCard.tr && { trigger: rawCard.tr }) // tr = trigger
-    },
-    detailUrl: `/api/tcg/onepiece/card/${encodeURIComponent(rawCard.cid)}`
+    }
   };
 }
 
@@ -120,14 +129,26 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
   
   return {
-    id: rawCard.cid,
+    id: `onepiece:${rawCard.cid}`,
+    type: 'tcg_card',
     source: 'onepiece',
+    sourceId: String(rawCard.cid),
     title: rawCard.n,
-    subtitle: buildSubtitle(rawCard),
+    titleOriginal: null,
     description: fullDescription,
-    images,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: imageUrl,
+      thumbnail: imageUrl,
+      gallery: images
+    },
+    urls: {
+      source: `https://onepiece-cardgame.dev/cards/${rawCard.cid}`,
+      detail: `/api/tcg/onepiece/card/${encodeURIComponent(rawCard.cid)}`
+    },
+    details: {
+      subtitle: buildSubtitle(rawCard),
+
       // Identifiants
       cardId: rawCard.cid,
       cardNumber: rawCard.cid,
@@ -156,10 +177,12 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       } : null,
       
       // Tags/Catégories
-      tags: parseCardTags(rawCard)
-    },
-    externalLinks: {
-      onePieceCardGame: `https://onepiece-cardgame.dev/cards/${rawCard.cid}`
+      tags: parseCardTags(rawCard),
+
+      // Liens externes
+      externalLinks: {
+        onePieceCardGame: `https://onepiece-cardgame.dev/cards/${rawCard.cid}`
+      }
     }
   };
 }

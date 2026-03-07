@@ -128,7 +128,7 @@ router.get('/search', asyncHandler(async (req, res) => {
       previous: results.previous || null
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -210,7 +210,7 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
       previous: results.previous || null
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -274,7 +274,7 @@ router.get('/game/:idOrSlug/screenshots', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -326,7 +326,7 @@ router.get('/game/:idOrSlug/series', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -360,7 +360,7 @@ router.get('/game/:idOrSlug/additions', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -388,7 +388,7 @@ router.get('/game/:idOrSlug/achievements', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -407,7 +407,7 @@ router.get('/game/:idOrSlug/movies', asyncHandler(async (req, res) => {
     source: 'rawg',
     gameId: idOrSlug,
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -633,7 +633,7 @@ router.get('/developer/:idOrSlug/games', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -711,7 +711,7 @@ router.get('/publisher/:idOrSlug/games', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -794,7 +794,7 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -826,7 +826,7 @@ router.get('/recent', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 
@@ -985,7 +985,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
       total: data.count || 0
     },
     count: normalized.length,
-    results: normalized
+    data: normalized
   });
 }));
 

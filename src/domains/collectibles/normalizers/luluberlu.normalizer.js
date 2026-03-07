@@ -1,8 +1,8 @@
 /**
- * @fileoverview Normalizer Lulu-Berlu - Normalisation des données
+ * @fileoverview Normalizer Lulu-Berlu - Canonical Format B
  * @module domains/collectibles/normalizers/luluberlu
  * 
- * Transforme les données brutes de Lulu-Berlu au format Tako_Api v3.0.0
+ * Transforme les données brutes de Lulu-Berlu au format canonical Format B
  */
 
 import { logger } from '../../../shared/utils/logger.js';
@@ -14,7 +14,7 @@ import { logger } from '../../../shared/utils/logger.js';
 /**
  * Extrait le texte d'un champ qui peut être string ou objet de traduction
  * @param {string|Object} value - Valeur brute ou traduite
- * @returns {string} Texte extrait
+ * @returns {string|null} Texte extrait
  */
 function extractText(value) {
   if (!value) return null;
@@ -60,16 +60,16 @@ function normalizeCondition(condition) {
 }
 
 /**
- * Normalise les images (array ou string unique)
+ * Normalise les images (array ou string unique) vers format canonical
  * @param {string|Array<string>} images - Image(s) brute(s)
- * @returns {Object} Images normalisées
+ * @returns {Object} Images normalisées { primary, thumbnail, gallery }
  */
 function normalizeImages(images) {
   if (!images) {
     return {
-      main: null,
+      primary: null,
       thumbnail: null,
-      all: []
+      gallery: []
     };
   }
 
@@ -77,92 +77,108 @@ function normalizeImages(images) {
   const validImages = imageArray.filter(img => img && typeof img === 'string');
 
   return {
-    main: validImages[0] || null,
+    primary: validImages[0] || null,
     thumbnail: validImages[0] || null,
-    all: validImages
+    gallery: validImages
   };
 }
 
 // ============================================================================
-// SEARCH NORMALIZATION
+// ITEM NORMALIZATION — Canonical Format B
 // ============================================================================
 
 /**
- * Normalise un item de résultat de recherche Lulu-Berlu
+ * Normalise un item de résultat de recherche Lulu-Berlu en Format B canonical
  * 
  * @param {Object} item - Item brut du provider
- * @returns {Object} Item normalisé Tako_Api v3.0.0
+ * @returns {Object|null} Item normalisé Format B
  */
 export function normalizeSearchItem(item) {
   if (!item) return null;
 
-  const providerId = String(item.id || 'unknown');
+  const sourceId = String(item.id || 'unknown');
   
   return {
-    id: `luluberlu_${providerId}`,
-    provider: 'lulu-berlu',
-    provider_id: providerId,
+    id: `luluberlu:${sourceId}`,
     type: 'collectible',
-    
-    name: extractText(item.name) || '',
-    brand: extractText(item.brand) || null,
-    series: null,
-    category: null,
+    source: 'luluberlu',
+    sourceId,
+    title: extractText(item.name) || '',
+    titleOriginal: null,
+    description: null,
     year: null,
-    
-    condition: 'unknown',
-    availability: normalizeAvailability(item.availability),
-    
-    pricing: item.price ? {
-      price: item.price,
-      currency: 'EUR'
-    } : null,
-    
     images: normalizeImages(item.image),
-    url: item.url || null
+    urls: {
+      source: item.url || null,
+      detail: `/api/collectibles/luluberlu/item/${sourceId}`
+    },
+    details: {
+      brand: extractText(item.brand) || null,
+      condition: 'unknown',
+      availability: normalizeAvailability(item.availability),
+      pricing: item.price ? {
+        price: item.price,
+        currency: 'EUR'
+      } : null
+    }
   };
 }
 
+// ============================================================================
+// SEARCH NORMALIZATION — Canonical Search Response
+// ============================================================================
+
 /**
- * Normalise les résultats de recherche Lulu-Berlu
+ * Normalise les résultats de recherche Lulu-Berlu en wrapper canonical
  * 
  * @param {Object} response - Réponse brute du provider
- * @returns {Object} Résultats normalisés Tako_Api v3.0.0
+ * @returns {Object} Wrapper canonical
  */
 export function normalizeSearchResults(response) {
   if (!response) {
     return {
+      success: true,
+      provider: 'luluberlu',
+      domain: 'collectibles',
       query: '',
-      provider: 'lulu-berlu',
-      total_results: 0,
-      results: []
+      total: 0,
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
     };
   }
 
   const products = response.products || [];
+  const items = products.map(normalizeSearchItem).filter(Boolean);
   
   return {
+    success: true,
+    provider: 'luluberlu',
+    domain: 'collectibles',
     query: response.query || '',
-    provider: 'lulu-berlu',
-    total_results: response.total || products.length || 0,
-    results: products.map(normalizeSearchItem).filter(Boolean)
+    total: response.total || items.length,
+    count: items.length,
+    data: items,
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 
 // ============================================================================
-// DETAILS NORMALIZATION
+// DETAIL NORMALIZATION — Canonical Format B
 // ============================================================================
 
 /**
- * Normalise les détails complets d'un item Lulu-Berlu
+ * Normalise les détails complets d'un item Lulu-Berlu en Format B canonical
  * 
  * @param {Object} data - Données brutes du provider
- * @returns {Object} Détails normalisés Tako_Api v3.0.0
+ * @returns {Object|null} Détails normalisés Format B
  */
 export function normalizeDetails(data) {
   if (!data) return null;
 
-  const providerId = String(data.id || 'unknown');
+  const sourceId = String(data.id || 'unknown');
   const attrs = data.attributes || {};
 
   // Extraire l'année depuis les attributs si disponible
@@ -191,48 +207,43 @@ export function normalizeDetails(data) {
     : (data.lang !== 'fr' ? description : null);
 
   return {
-    id: `luluberlu_${providerId}`,
-    provider: 'lulu-berlu',
-    provider_id: providerId,
+    id: `luluberlu:${sourceId}`,
     type: 'collectible',
-    
-    name: name || '',
-    name_original: nameOriginal,
-    name_translated: nameTranslated,
-    
+    source: 'luluberlu',
+    sourceId,
+    title: name || '',
+    titleOriginal: nameOriginal,
     description: description || null,
-    description_original: descriptionOriginal,
-    description_translated: descriptionTranslated,
-    
-    brand: extractText(data.brand) || null,
-    manufacturer: extractText(data.brand) || null,
-    series: null,
-    subseries: null,
-    category: attrs.type || null,
-    
-    reference: data.reference || null,
-    barcode: null,
     year: year,
-    
-    condition: conditionFromAttrs,
-    availability: normalizeAvailability(data.availability),
-    
-    pricing: data.price ? {
-      price: data.price,
-      currency: 'EUR'
-    } : null,
-    
-    attributes: {
-      type: attrs.type || null,
-      material: attrs.material || null,
-      size: attrs.size || null,
-      origin: attrs.origin || null,
-      condition_details: attrs.condition || null
-    },
-    
     images: normalizeImages(data.images),
-    
-    url: data.url || null
+    urls: {
+      source: data.url || null,
+      detail: `/api/collectibles/luluberlu/item/${sourceId}`
+    },
+    details: {
+      nameTranslated: nameTranslated,
+      descriptionOriginal: descriptionOriginal,
+      descriptionTranslated: descriptionTranslated,
+      brand: extractText(data.brand) || null,
+      manufacturer: extractText(data.brand) || null,
+      series: null,
+      subseries: null,
+      category: attrs.type || null,
+      reference: data.reference || null,
+      condition: conditionFromAttrs,
+      availability: normalizeAvailability(data.availability),
+      pricing: data.price ? {
+        price: data.price,
+        currency: 'EUR'
+      } : null,
+      attributes: {
+        type: attrs.type || null,
+        material: attrs.material || null,
+        size: attrs.size || null,
+        origin: attrs.origin || null,
+        condition_details: attrs.condition || null
+      }
+    }
   };
 }
 

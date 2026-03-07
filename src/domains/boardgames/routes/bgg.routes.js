@@ -33,22 +33,23 @@ async function translateGameContent(games, autoTrad, targetLang) {
     const translatedGame = { ...game };
     
     // Extract localized name from alternateNames
-    if (game.alternateNames && game.alternateNames.length > 0) {
-      const localizedName = bggNormalizer.findLocalizedName(game.alternateNames, targetLang);
+    if (game.details?.alternateNames && game.details.alternateNames.length > 0) {
+      const localizedName = bggNormalizer.findLocalizedName(game.details.alternateNames, targetLang);
       if (localizedName) {
         translatedGame.localizedName = localizedName;
       }
     }
     
     // Translate categories (BGG uses English)
-    if (game.categories && game.categories.length > 0) {
+    if (game.details?.categories && game.details.categories.length > 0) {
       const translated = await translateBoardGameCategories(
-        game.categories,
+        game.details.categories,
         targetLang
       );
-      translatedGame.categories = translated.terms;
+      translatedGame.details = { ...translatedGame.details };
+      translatedGame.details.categories = translated.terms;
       if (translated.termsOriginal) {
-        translatedGame.categoriesOriginal = translated.termsOriginal;
+        translatedGame.details.categoriesOriginal = translated.termsOriginal;
       }
     }
     
@@ -98,14 +99,14 @@ router.get('/search', async (req, res) => {
     
     // Translate if needed
     const results = await translateGameContent(
-      normalized.results,
+      normalized.data,
       autoTrad,
       targetLang
     );
     
     res.json({
       ...normalized,
-      results
+      data: results
     });
     
   } catch (error) {
@@ -141,14 +142,14 @@ router.get('/search/category', async (req, res) => {
     
     // Translate if needed
     const results = await translateGameContent(
-      normalized.results,
+      normalized.data,
       autoTrad,
       targetLang
     );
     
     res.json({
       ...normalized,
-      results
+      data: results
     });
     
   } catch (error) {
@@ -177,7 +178,14 @@ router.get('/game/:id', async (req, res) => {
     // Translate if needed
     const game = await translateGameContent(normalized, autoTrad, targetLang);
     
-    res.json(game);
+    res.json({
+      success: true,
+      provider: 'bgg',
+      domain: 'boardgames',
+      id: game.id,
+      data: game,
+      meta: { fetchedAt: new Date().toISOString() }
+    });
     
   } catch (error) {
     log.error(`[BGG] Get game error: ${error.message}`);

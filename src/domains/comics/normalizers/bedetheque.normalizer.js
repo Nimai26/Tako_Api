@@ -1,7 +1,13 @@
 /**
- * Bedetheque Normalizer
+ * Bedetheque Normalizer — Format Canonique Tako
  * 
- * Transforme les données scrapées de Bedetheque vers le format Tako.
+ * Transforme les données scrapées de Bedetheque vers le format canonique :
+ * { id, type, source, sourceId, title, titleOriginal, description, year,
+ *   images: { primary, thumbnail, gallery },
+ *   urls: { source, detail },
+ *   details: { ...domain-specific } }
+ * 
+ * Gère albums, séries, auteurs.
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -17,65 +23,115 @@ export class BedethequeNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE RECHERCHE
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extrait l'année d'une date
+   */
+  extractYear(dateStr) {
+    if (!dateStr) return null;
+    const match = String(dateStr).match(/(\d{4})/);
+    return match ? parseInt(match[1]) : null;
+  }
+
+  /**
+   * Construit l'objet images canonique
+   */
+  buildImages(imageUrl) {
+    return {
+      primary: imageUrl || null,
+      thumbnail: imageUrl || null,
+      gallery: imageUrl ? [imageUrl] : []
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RECHERCHE
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeSearchResponse(results, metadata = {}) {
     const { query, searchType, total, pagination } = metadata;
+    const items = results.map((item, index) => this.normalizeSearchItem(item, index + 1));
 
     return {
+      success: true,
+      provider: 'bedetheque',
+      domain: 'comics',
       query,
       searchType,
       total,
+      count: items.length,
+      data: items,
       pagination: pagination || {
         page: 1,
-        pageSize: results.length,
+        pageSize: items.length,
         totalResults: total,
         hasMore: false
       },
-      data: results.map((item, index) => this.normalizeSearchItem(item, index + 1)),
-      source: 'bedetheque'
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: 'fr',
+        cached: false,
+        cacheAge: null
+      }
     };
   }
 
   normalizeSearchItem(item, position) {
-    // Déterminer le type de l'item
     const itemType = item.type || 'album';
-    
-    const normalized = {
-      sourceId: String(item.id),
-      provider: 'bedetheque',
-      type: itemType,
-      resourceType: itemType,
-      
-      src_url: item.url,
-      // Ne pas utiliser le drapeau (item.flag) comme image par défaut
-      src_image_url: item.image || item.coverUrl || null,
+    const sourceId = String(item.id);
+    const imageUrl = item.image || item.coverUrl || null;
+    const images = this.buildImages(imageUrl);
 
-      metadata: {
-        position,
-        source: 'bedetheque'
+    const base = {
+      id: `bedetheque:${sourceId}`,
+      type: itemType,
+      source: 'bedetheque',
+      sourceId,
+      titleOriginal: null,
+      description: null,
+      year: null,
+      images,
+      urls: {
+        source: item.url || null,
+        detail: `/api/comics/bedetheque/${sourceId}`
       }
     };
 
-    // Propriétés spécifiques par type
     if (itemType === 'author') {
-      normalized.name = item.name || item.title;
-    } else {
-      normalized.title = item.title;
-      normalized.serie = item.serie || null;
-      normalized.tome = item.tome || null;
-      normalized.authors = item.author ? [item.author] : [];
+      return {
+        ...base,
+        title: item.name || item.title,
+        details: {
+          resourceType: 'author',
+          position
+        }
+      };
     }
 
-    return normalized;
+    return {
+      ...base,
+      title: item.title,
+      details: {
+        resourceType: itemType,
+        serie: item.serie || null,
+        tome: item.tome || null,
+        authors: item.author ? [item.author] : [],
+        position
+      }
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DE DÉTAILS
+  // DÉTAILS — ALBUMS
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeAlbumDetail(album, options = {}) {
+    const sourceId = String(album.id);
+    const year = this.extractYear(album.dateParution);
+    const images = this.buildImages(album.coverUrl);
+
     // Construire la liste des auteurs
     const authors = [];
     if (album.scenariste) {
@@ -88,49 +144,38 @@ export class BedethequeNormalizer extends BaseNormalizer {
       authors.push({ name: album.coloriste, role: 'coloriste' });
     }
 
-    // Extraire l'année
-    const year = this.extractYear(album.dateParution);
-
     const data = {
-      id: `${this.source}:${album.id}`,
-      sourceId: String(album.id),
-      source: this.source,
-      provider: 'bedetheque',
+      id: `bedetheque:${sourceId}`,
       type: 'album',
-      resourceType: 'album',
-
+      source: 'bedetheque',
+      sourceId,
       title: album.title,
-      serie: album.serie || null,
-      description: album.description,
-
-      authors,
-      publisher: album.editeur,
-
-      releaseDate: album.dateParution,
+      titleOriginal: null,
+      description: album.description || null,
       year,
-
-      isbn: album.isbn,
-      pages: album.pages,
-      format: album.format,
-
+      images,
       urls: {
-        source: album.url,
-        detail: `/api/${this.domain}/${this.source}/${album.id}`
+        source: album.url || null,
+        detail: `/api/comics/bedetheque/${sourceId}`
       },
-      src_url: album.url,
-      src_image_url: album.coverUrl,
-
-      metadata: {
+      details: {
+        resourceType: 'album',
+        serie: album.serie || null,
+        authors,
+        publisher: album.editeur || null,
+        releaseDate: album.dateParution || null,
+        isbn: album.isbn || null,
+        pages: album.pages || null,
+        format: album.format || null,
         detailLevel: 'full',
-        source: 'bedetheque',
         language: 'fr'
       }
     };
 
     return {
       success: true,
-      provider: this.source,
-      domain: this.domain,
+      provider: 'bedetheque',
+      domain: 'comics',
       id: data.id,
       data,
       meta: {
@@ -143,66 +188,47 @@ export class BedethequeNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // UTILITAIRES
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Extrait l'année d'une date
-   */
-  extractYear(dateStr) {
-    if (!dateStr) return null;
-    // Chercher un format français (janvier 2024, 01/2024, 2024)
-    const match = String(dateStr).match(/(\d{4})/);
-    return match ? parseInt(match[1]) : null;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DES SÉRIES
+  // DÉTAILS — SÉRIES
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeSerieDetail(serie, options = {}) {
+    const sourceId = String(serie.id);
+    const year = this.extractYear(serie.firstPublished);
+    const images = this.buildImages(serie.coverUrl);
+
     const data = {
-      id: `${this.source}:${serie.id}`,
-      sourceId: String(serie.id),
-      source: this.source,
-      provider: 'bedetheque',
+      id: `bedetheque:${sourceId}`,
       type: 'serie',
-      resourceType: 'serie',
-
+      source: 'bedetheque',
+      sourceId,
       title: serie.title,
-      description: serie.description,
-      
-      genre: serie.genre,
-      status: serie.status,
-      numberOfAlbums: serie.numberOfAlbums,
-      origin: serie.origin,
-      
-      firstPublished: serie.firstPublished,
-      year: this.extractYear(serie.firstPublished),
-      
-      publisher: serie.publisher,
-      authors: serie.authors || [],
-      
+      titleOriginal: null,
+      description: serie.description || null,
+      year,
+      images,
       urls: {
-        source: serie.url,
-        detail: `/api/${this.domain}/${this.source}/${serie.id}`
+        source: serie.url || null,
+        detail: `/api/comics/bedetheque/${sourceId}`
       },
-      src_url: serie.url,
-      src_image_url: serie.coverUrl,
-      
-      recommendations: serie.recommendations || [],
-
-      metadata: {
+      details: {
+        resourceType: 'serie',
+        genre: serie.genre || null,
+        status: serie.status || null,
+        numberOfAlbums: serie.numberOfAlbums || null,
+        origin: serie.origin || null,
+        firstPublished: serie.firstPublished || null,
+        publisher: serie.publisher || null,
+        authors: serie.authors || [],
+        recommendations: serie.recommendations || [],
         detailLevel: 'full',
-        source: 'bedetheque',
         language: 'fr'
       }
     };
 
     return {
       success: true,
-      provider: this.source,
-      domain: this.domain,
+      provider: 'bedetheque',
+      domain: 'comics',
       id: data.id,
       data,
       meta: {
@@ -215,43 +241,42 @@ export class BedethequeNormalizer extends BaseNormalizer {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // NORMALISATION DES AUTEURS
+  // DÉTAILS — AUTEURS
   // ═══════════════════════════════════════════════════════════════════════════
 
   normalizeAuthorDetail(author, options = {}) {
+    const sourceId = String(author.id);
+    const images = this.buildImages(author.photoUrl);
+
     const data = {
-      id: `${this.source}:${author.id}`,
-      sourceId: String(author.id),
-      source: this.source,
-      provider: 'bedetheque',
+      id: `bedetheque:${sourceId}`,
       type: 'author',
-      resourceType: 'author',
-
-      name: author.name,
-      title: author.name,  // Pour cohérence avec autres providers
-      biography: author.biography,
-      
-      birthDate: author.birthDate,
-      nationality: author.nationality,
-      
+      source: 'bedetheque',
+      sourceId,
+      title: author.name,
+      titleOriginal: null,
+      description: null,
+      year: null,
+      images,
       urls: {
-        source: author.url || `https://www.bedetheque.com/auteur/index/a/${author.id}`,
-        detail: `/api/${this.domain}/${this.source}/${author.id}`
+        source: author.url || `https://www.bedetheque.com/auteur/index/a/${sourceId}`,
+        detail: `/api/comics/bedetheque/${sourceId}`
       },
-      src_url: author.url || `https://www.bedetheque.com/auteur/index/a/${author.id}`,
-      src_image_url: author.photoUrl,
-
-      metadata: {
+      details: {
+        resourceType: 'author',
+        name: author.name,
+        biography: author.biography || null,
+        birthDate: author.birthDate || null,
+        nationality: author.nationality || null,
         detailLevel: 'full',
-        source: 'bedetheque',
         language: 'fr'
       }
     };
 
     return {
       success: true,
-      provider: this.source,
-      domain: this.domain,
+      provider: 'bedetheque',
+      domain: 'comics',
       id: data.id,
       data,
       meta: {

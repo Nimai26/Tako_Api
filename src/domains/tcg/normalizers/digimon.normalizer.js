@@ -56,16 +56,26 @@ async function normalizeCardSummary(rawCard, options = {}) {
   const imageUrl = rawCard.image_url || '';
   
   return {
-    id: rawCard.id || rawCard.cardnumber,
+    id: `digimon:${rawCard.id || rawCard.cardnumber}`,
+    type: 'tcg_card',
     source: 'digimon',
-    collection: 'Digimon Card Game',
+    sourceId: String(rawCard.id || rawCard.cardnumber),
     title: rawCard.name,
-    subtitle,
+    titleOriginal: null,
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
-    image: imageUrl,
-    thumbnail: imageUrl,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: imageUrl || null,
+      thumbnail: imageUrl || null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: `/api/tcg/digimon/card/${encodeURIComponent(rawCard.id || rawCard.cardnumber)}`
+    },
+    details: {
+      collection: 'Digimon Card Game',
+      subtitle,
       cardNumber: rawCard.cardnumber || rawCard.id,
       type: rawCard.type,
       color: rawCard.color,
@@ -79,8 +89,7 @@ async function normalizeCardSummary(rawCard, options = {}) {
       ...(rawCard.digivolvecost1 !== undefined && { digivolveCost: rawCard.digivolvecost1 }),
       ...(rawCard.digitype && { digiType: rawCard.digitype }),
       ...(rawCard.form && { form: rawCard.form })
-    },
-    detailUrl: `/api/tcg/digimon/card/${encodeURIComponent(rawCard.id || rawCard.cardnumber)}`
+    }
   };
 }
 
@@ -132,14 +141,26 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
   
   return {
-    id: rawCard.id || rawCard.cardnumber,
+    id: `digimon:${rawCard.id || rawCard.cardnumber}`,
+    type: 'tcg_card',
     source: 'digimon',
+    sourceId: String(rawCard.id || rawCard.cardnumber),
     title: rawCard.name,
-    subtitle: buildSubtitle(rawCard),
+    titleOriginal: null,
     description: fullDescription,
-    images,
     year: extractYear(rawCard),
-    metadata: {
+    images: {
+      primary: images[0]?.url || null,
+      thumbnail: images[0]?.thumbnail || images[0]?.url || null,
+      gallery: images
+    },
+    urls: {
+      source: rawCard.id ? `https://digimoncard.io/card/${rawCard.id}` : null,
+      detail: `/api/tcg/digimon/card/${encodeURIComponent(rawCard.id || rawCard.cardnumber)}`
+    },
+    details: {
+      subtitle: buildSubtitle(rawCard),
+
       // Identifiants
       cardNumber: rawCard.cardnumber || rawCard.id,
       id: rawCard.id,
@@ -177,10 +198,12 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       illustrator: rawCard.illustrator,
       
       // Notes de carte
-      notes: rawCard.notes
-    },
-    externalLinks: {
-      digimoncard: rawCard.id ? `https://digimoncard.io/card/${rawCard.id}` : null
+      notes: rawCard.notes,
+
+      // Liens externes
+      externalLinks: {
+        digimoncard: rawCard.id ? `https://digimoncard.io/card/${rawCard.id}` : null
+      }
     }
   };
 }

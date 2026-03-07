@@ -106,14 +106,14 @@ router.get('/search', async (req, res) => {
     
     // Translate
     const translated = await translateGameContent(
-      normalized.results,
+      normalized.data,
       autoTradEnabled,
       targetLang
     );
     
     res.json({
       ...normalized,
-      results: translated
+      data: translated
     });
     
   } catch (error) {
@@ -154,7 +154,14 @@ router.get('/game/:id', async (req, res) => {
       targetLang
     );
     
-    res.json(translated);
+    res.json({
+      success: true,
+      provider: 'jvc',
+      domain: 'videogames',
+      id: translated.id,
+      data: translated,
+      meta: { fetchedAt: new Date().toISOString() }
+    });
     
   } catch (error) {
     log.error(`Get game error: ${error.message}`);

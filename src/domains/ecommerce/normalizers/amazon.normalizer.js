@@ -1,20 +1,26 @@
 /**
- * Normalizer Amazon
- * Transforme les données brutes Amazon en format normalisé Tako API
+ * Amazon Normalizer — Canonical Format B
  * 
- * Format Tako standard pour chaque item :
- * - id: identifiant unique prefixé (amazon:{asin})
+ * Transforme les données brutes Amazon en format canonical Format B.
+ * 
+ * Format canonical pour chaque item :
+ * - id: `amazon:${asin}`
+ * - type: 'product'
+ * - source: 'amazon'
  * - sourceId: ASIN
- * - title: titre du produit
- * - description: description produit
- * - images: { primary, thumbnail, additional[] }
- * - urls: { detail (API), source (Amazon) }
+ * - title, titleOriginal, description
+ * - images: { primary, thumbnail, gallery }
+ * - urls: { source, detail }
  * - details: { price, marketplace, isPrime, rating, brand, ... }
  * 
  * @module domains/ecommerce/normalizers/amazon
  */
 
 import { translateText } from '../../../shared/utils/translator.js';
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
 /**
  * Informations des marketplaces
@@ -30,6 +36,10 @@ const MARKETPLACE_INFO = {
   ca: { code: 'ca', name: 'Amazon Canada', domain: 'www.amazon.ca', currency: 'CAD' }
 };
 
+// ============================================================================
+// HELPERS
+// ============================================================================
+
 /**
  * Récupère les infos d'un marketplace
  */
@@ -42,24 +52,37 @@ function getMarketplaceInfo(code) {
   };
 }
 
+// ============================================================================
+// ITEM NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalise un item de recherche au format Tako standard
+ * Normalise un item de recherche au format canonical Format B
+ * @param {object} item - Raw search item
+ * @param {object} marketplace - Marketplace info
+ * @returns {object} Canonical Format B item
  */
 function normalizeSearchItem(item, marketplace) {
   const asin = item.asin;
+  const sourceId = String(asin);
   
   return {
-    id: `amazon:${asin}`,
-    sourceId: asin,
+    id: `amazon:${sourceId}`,
+    type: 'product',
+    source: 'amazon',
+    sourceId,
     title: item.title || null,
+    titleOriginal: null,
     description: null,
+    year: null,
     images: {
       primary: item.image || null,
-      thumbnail: item.image || null
+      thumbnail: item.image || null,
+      gallery: item.image ? [item.image] : []
     },
     urls: {
-      detail: `/api/ecommerce/amazon/product/${asin}?country=${marketplace.code}`,
-      source: item.url || `https://${marketplace.domain}/dp/${asin}`
+      source: item.url || `https://${marketplace.domain}/dp/${asin}`,
+      detail: `/api/ecommerce/amazon/product/${asin}?country=${marketplace.code}`
     },
     details: {
       asin,
@@ -75,25 +98,44 @@ function normalizeSearchItem(item, marketplace) {
   };
 }
 
+// ============================================================================
+// SEARCH NORMALIZATION — Canonical Search Response
+// ============================================================================
+
 /**
- * Normalise les résultats de recherche Amazon
+ * Normalise les résultats de recherche Amazon en wrapper canonical
  * 
  * @param {object} rawData - Données brutes de searchAmazon
  * @param {object} options - Options de normalisation
  * @param {string} options.lang - Langue de sortie
  * @param {boolean} options.autoTrad - Active traduction automatique
- * @returns {Promise<Array>} - Résultats normalisés
+ * @returns {Promise<object>} - Wrapper canonical
  */
 export async function normalizeSearchResults(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
   
   if (!rawData || !rawData.results) {
-    return [];
+    return {
+      success: true,
+      provider: 'amazon',
+      domain: 'ecommerce',
+      query: rawData?.query || '',
+      total: 0,
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang,
+        country: rawData?.country || null,
+        autoTrad
+      }
+    };
   }
   
   const marketplace = getMarketplaceInfo(rawData.country);
   
-  const normalized = [];
+  const items = [];
   
   for (const item of rawData.results) {
     const norm = normalizeSearchItem(item, marketplace);
@@ -107,20 +149,42 @@ export async function normalizeSearchResults(rawData, options = {}) {
       }
     }
     
-    normalized.push(norm);
+    items.push(norm);
   }
   
-  return normalized;
+  const total = rawData.total || items.length;
+  
+  return {
+    success: true,
+    provider: 'amazon',
+    domain: 'ecommerce',
+    query: rawData.query || '',
+    total,
+    count: items.length,
+    data: items,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString(),
+      lang,
+      country: rawData.country,
+      category: rawData.category || null,
+      autoTrad
+    }
+  };
 }
 
+// ============================================================================
+// DETAIL NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalise les détails d'un produit Amazon au format Tako standard
+ * Normalise les détails d'un produit Amazon en Format B canonical
  * 
  * @param {object} rawData - Données brutes de getAmazonProduct
  * @param {object} options - Options de normalisation
  * @param {string} options.lang - Langue de sortie
  * @param {boolean} options.autoTrad - Active traduction automatique
- * @returns {Promise<object>} - Produit normalisé
+ * @returns {Promise<object|null>} - Produit normalisé Format B
  */
 export async function normalizeProductDetails(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -129,6 +193,7 @@ export async function normalizeProductDetails(rawData, options = {}) {
   
   const marketplace = getMarketplaceInfo(rawData.marketplace);
   const asin = rawData.asin;
+  const sourceId = String(asin);
   
   let title = rawData.title || null;
   let description = rawData.description || null;
@@ -143,27 +208,31 @@ export async function normalizeProductDetails(rawData, options = {}) {
     }
   }
   
-  // Construire les images
-  const imageList = [];
+  // Construire la gallery d'images
+  const gallery = [];
   if (rawData.images && Array.isArray(rawData.images)) {
-    imageList.push(...rawData.images);
+    gallery.push(...rawData.images);
   } else if (rawData.image) {
-    imageList.push(rawData.image);
+    gallery.push(rawData.image);
   }
   
   return {
-    id: `amazon:${asin}`,
-    sourceId: asin,
+    id: `amazon:${sourceId}`,
+    type: 'product',
+    source: 'amazon',
+    sourceId,
     title,
+    titleOriginal: null,
     description,
+    year: null,
     images: {
-      primary: imageList[0] || null,
-      thumbnail: imageList[0] || null,
-      additional: imageList.slice(1)
+      primary: gallery[0] || null,
+      thumbnail: gallery[0] || null,
+      gallery
     },
     urls: {
-      detail: `/api/ecommerce/amazon/product/${asin}?country=${marketplace.code}`,
-      source: rawData.url || `https://${marketplace.domain}/dp/${asin}`
+      source: rawData.url || `https://${marketplace.domain}/dp/${asin}`,
+      detail: `/api/ecommerce/amazon/product/${asin}?country=${marketplace.code}`
     },
     details: {
       asin,
@@ -181,11 +250,15 @@ export async function normalizeProductDetails(rawData, options = {}) {
   };
 }
 
+// ============================================================================
+// PRICE COMPARISON
+// ============================================================================
+
 /**
  * Normalise les résultats de comparaison de prix
  * 
  * @param {object} rawData - Données brutes de comparePrices
- * @returns {object} - Comparaison normalisée
+ * @returns {object|null} - Comparaison normalisée
  */
 export function normalizePriceComparison(rawData) {
   if (!rawData || !rawData.comparison) {

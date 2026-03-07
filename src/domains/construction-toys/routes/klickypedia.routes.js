@@ -143,37 +143,37 @@ router.get('/:id', asyncHandler(async (req, res) => {
   let product = await provider.getById(id, { lang: nativeLang });
 
   // Traduction automatique si activée et langue non supportée nativement
-  if (autoTradEnabled && !validLangs.includes(targetLang) && product) {
+  if (autoTradEnabled && !validLangs.includes(targetLang) && product?.data) {
     // Traduire le nom
-    if (product.name) {
-      const nameResult = await translateText(product.name, targetLang, { 
+    if (product.data.title) {
+      const nameResult = await translateText(product.data.title, targetLang, { 
         enabled: true, 
         sourceLang: nativeLang 
       });
       if (nameResult.translated) {
-        product.nameOriginal = product.name;
-        product.name = nameResult.text;
+        product.data.titleOriginal = product.data.title;
+        product.data.title = nameResult.text;
       }
     }
     
     // Traduire la description
-    if (product.description) {
-      const descResult = await translateText(product.description, targetLang, { 
+    if (product.data.description) {
+      const descResult = await translateText(product.data.description, targetLang, { 
         enabled: true, 
         sourceLang: nativeLang 
       });
       if (descResult.translated) {
-        product.descriptionOriginal = product.description;
-        product.description = descResult.text;
+        product.data.descriptionOriginal = product.data.description;
+        product.data.description = descResult.text;
       }
     }
     
     // Traduire les catégories
-    if (product.categories && product.categories.length > 0) {
-      const translated = await translateToyCategories(product.categories, targetLang);
+    if (product.data.details?.categories && product.data.details.categories.length > 0) {
+      const translated = await translateToyCategories(product.data.details.categories, targetLang);
       if (translated.termsTranslated) {
-        product.categoriesOriginal = translated.termsOriginal;
-        product.categories = translated.terms;
+        product.data.details.categoriesOriginal = translated.termsOriginal;
+        product.data.details.categories = translated.terms;
       }
     }
   }

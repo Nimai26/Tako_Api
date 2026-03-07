@@ -1,13 +1,16 @@
 /**
  * BGG Normalizer
  * 
- * Normalizes BoardGameGeek API responses to a consistent format.
+ * Normalizes BoardGameGeek API responses to canonical Format B.
  * 
  * @module normalizers/bgg
  */
 
+// ============================================================================
+// LANGUAGE PATTERNS
+// ============================================================================
+
 /**
- * Extract localized name from alternate names
  * Patterns de noms français courants dans BGG
  */
 const FRENCH_NAME_PATTERNS = [
@@ -44,6 +47,10 @@ const ITALIAN_NAME_PATTERNS = [
   /^Gli .+/i,
   /: Il Gioco$/i
 ];
+
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 /**
  * Find localized game name in alternate names
@@ -84,72 +91,149 @@ export function findLocalizedName(alternateNames, targetLang = 'fr') {
   return null;
 }
 
+// ============================================================================
+// ITEM NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalize BGG search results
- * @param {object} rawData - Raw BGG search data
- * @returns {object} Normalized search results
+ * Normalize a single BGG search item to canonical Format B
+ * @param {object} game - Raw game item from search results
+ * @returns {object|null} Canonical Format B item
  */
-export function normalizeSearchResult(rawData) {
-  if (!rawData || !rawData.results) {
-    return { results: [], total: 0, query: '' };
-  }
+export function normalizeSearchItem(game) {
+  if (!game) return null;
+  
+  const sourceId = String(game.id || 'unknown');
   
   return {
-    results: rawData.results.map(game => ({
-      id: game.id,
-      type: game.type,
-      name: game.name,
-      year: game.year,
-      url: game.url,
-      source: 'boardgamegeek'
-    })),
-    total: rawData.total || rawData.results.length,
-    query: rawData.query || '',
-    source: 'boardgamegeek'
+    id: `bgg:${sourceId}`,
+    type: game.type || 'boardgame',
+    source: 'bgg',
+    sourceId,
+    title: game.name || '',
+    titleOriginal: null,
+    description: null,
+    year: game.year || null,
+    images: {
+      primary: null,
+      thumbnail: null,
+      gallery: []
+    },
+    urls: {
+      source: game.url || null,
+      detail: `/api/boardgames/bgg/game/${sourceId}`
+    },
+    details: {}
   };
 }
 
+// ============================================================================
+// SEARCH NORMALIZATION — Canonical Search Response
+// ============================================================================
+
 /**
- * Normalize BGG game details
- * @param {object} rawGame - Raw BGG game data
- * @returns {object} Normalized game data
+ * Normalize BGG search results to canonical search wrapper
+ * @param {object} rawData - Raw BGG search data
+ * @returns {object} Canonical search response
  */
-export function normalizeGame(rawGame) {
+export function normalizeSearchResults(rawData) {
+  if (!rawData || !rawData.results) {
+    return {
+      success: true,
+      provider: 'bgg',
+      domain: 'boardgames',
+      query: '',
+      total: 0,
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
+    };
+  }
+  
+  const items = rawData.results.map(normalizeSearchItem).filter(Boolean);
+  
+  return {
+    success: true,
+    provider: 'bgg',
+    domain: 'boardgames',
+    query: rawData.query || '',
+    total: rawData.total || items.length,
+    count: items.length,
+    data: items,
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString() }
+  };
+}
+
+// Backward compatibility alias
+export { normalizeSearchResults as normalizeSearchResult };
+
+// ============================================================================
+// DETAIL NORMALIZATION — Canonical Format B
+// ============================================================================
+
+/**
+ * Normalize BGG game details to canonical Format B
+ * @param {object} rawGame - Raw BGG game data
+ * @returns {object|null} Canonical Format B item
+ */
+export function normalizeDetails(rawGame) {
   if (!rawGame) {
     return null;
   }
   
+  const sourceId = String(rawGame.id || 'unknown');
+  
+  // Build deduplicated gallery
+  const gallery = [...new Set(
+    [rawGame.image, rawGame.thumbnail].filter(Boolean)
+  )];
+  
   return {
-    id: rawGame.id,
-    type: rawGame.type,
-    name: rawGame.name,
-    alternateNames: rawGame.alternateNames || [],
-    description: rawGame.description,
-    year: rawGame.year,
-    players: {
-      min: rawGame.players?.min,
-      max: rawGame.players?.max
+    id: `bgg:${sourceId}`,
+    type: rawGame.type || 'boardgame',
+    source: 'bgg',
+    sourceId,
+    title: rawGame.name || '',
+    titleOriginal: null,
+    description: rawGame.description || null,
+    year: rawGame.year || null,
+    images: {
+      primary: rawGame.image || null,
+      thumbnail: rawGame.thumbnail || null,
+      gallery
     },
-    playTime: {
-      min: rawGame.playTime?.min,
-      max: rawGame.playTime?.max,
-      average: rawGame.playTime?.average
+    urls: {
+      source: rawGame.url || null,
+      detail: `/api/boardgames/bgg/game/${sourceId}`
     },
-    minAge: rawGame.minAge,
-    image: rawGame.image,
-    thumbnail: rawGame.thumbnail,
-    stats: {
-      rating: rawGame.stats?.rating,
-      numRatings: rawGame.stats?.numRatings,
-      rank: rawGame.stats?.rank,
-      complexity: rawGame.stats?.complexity
-    },
-    categories: rawGame.categories || [],
-    mechanics: rawGame.mechanics || [],
-    designers: rawGame.designers || [],
-    artists: rawGame.artists || [],
-    publishers: rawGame.publishers || [],
-    url: rawGame.url,
-    source: 'boardgamegeek'
+    details: {
+      alternateNames: rawGame.alternateNames || [],
+      players: {
+        min: rawGame.players?.min ?? null,
+        max: rawGame.players?.max ?? null
+      },
+      playTime: {
+        min: rawGame.playTime?.min ?? null,
+        max: rawGame.playTime?.max ?? null,
+        average: rawGame.playTime?.average ?? null
+      },
+      minAge: rawGame.minAge ?? null,
+      stats: {
+        rating: rawGame.stats?.rating ?? null,
+        numRatings: rawGame.stats?.numRatings ?? null,
+        rank: rawGame.stats?.rank ?? null,
+        complexity: rawGame.stats?.complexity ?? null
+      },
+      categories: rawGame.categories || [],
+      mechanics: rawGame.mechanics || [],
+      designers: rawGame.designers || [],
+      artists: rawGame.artists || [],
+      publishers: rawGame.publishers || []
+    }
   };
 }
+
+// Backward compatibility alias
+export { normalizeDetails as normalizeGame };

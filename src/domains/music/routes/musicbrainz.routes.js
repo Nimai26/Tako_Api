@@ -83,13 +83,7 @@ router.get('/search', async (req, res) => {
       normalized = musicbrainzNormalizer.normalizeAlbumSearchResponse(data, q);
     }
     
-    res.json({
-      success: true,
-      provider: 'musicbrainz',
-      domain: 'music',
-      ...normalized,
-      source: 'musicbrainz'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Search failed', { error: error.message });
     res.status(500).json({
@@ -120,13 +114,7 @@ router.get('/search/albums', async (req, res) => {
     });
     const normalized = musicbrainzNormalizer.normalizeAlbumSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'musicbrainz',
-      domain: 'music',
-      ...normalized,
-      source: 'musicbrainz'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Album search failed', { error: error.message });
     res.status(500).json({
@@ -154,13 +142,7 @@ router.get('/search/artists', async (req, res) => {
     const data = await musicbrainzProvider.searchArtists(q, { limit: parseInt(limit) });
     const normalized = musicbrainzNormalizer.normalizeArtistSearchResponse(data, q);
     
-    res.json({
-      success: true,
-      provider: 'musicbrainz',
-      domain: 'music',
-      ...normalized,
-      source: 'musicbrainz'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Artist search failed', { error: error.message });
     res.status(500).json({
@@ -185,13 +167,7 @@ router.get('/barcode/:barcode', async (req, res) => {
     const data = await musicbrainzProvider.searchByBarcode(barcode);
     const normalized = musicbrainzNormalizer.normalizeBarcodeSearch(data, barcode);
     
-    res.json({
-      success: true,
-      provider: 'musicbrainz',
-      domain: 'music',
-      ...normalized,
-      source: 'musicbrainz'
-    });
+    res.json(normalized);
   } catch (error) {
     log.error('Barcode search failed', { error: error.message });
     res.status(500).json({
@@ -241,11 +217,11 @@ router.get('/albums/:id', async (req, res) => {
     // Traduire les tags (genres MusicBrainz) si demandé
     const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
     const lang = req.query.lang;
-    if (autoTrad && lang && normalized.tags && normalized.tags.length > 0) {
+    if (autoTrad && lang && normalized.details?.tags && normalized.details.tags.length > 0) {
       const targetLang = extractLangCode(lang);
-      const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.tags, targetLang);
-      normalized.tags = translatedTags;
-      if (termsOriginal) normalized.tagsOriginal = termsOriginal;
+      const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.details.tags, targetLang);
+      normalized.details.tags = translatedTags;
+      if (termsOriginal) normalized.details.tagsOriginal = termsOriginal;
     }
     
     res.json({
@@ -330,11 +306,11 @@ router.get('/artists/:id', async (req, res) => {
     // Traduire les tags (genres MusicBrainz) si demandé
     const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
     const lang = req.query.lang;
-    if (autoTrad && lang && normalized.tags && normalized.tags.length > 0) {
+    if (autoTrad && lang && normalized.details?.tags && normalized.details.tags.length > 0) {
       const targetLang = extractLangCode(lang);
-      const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.tags, targetLang);
-      normalized.tags = translatedTags;
-      if (termsOriginal) normalized.tagsOriginal = termsOriginal;
+      const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.details.tags, targetLang);
+      normalized.details.tags = translatedTags;
+      if (termsOriginal) normalized.details.tagsOriginal = termsOriginal;
     }
     
     res.json({

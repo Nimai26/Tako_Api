@@ -1,7 +1,11 @@
 /**
- * OpenLibrary Normalizer
+ * OpenLibrary Normalizer — Format Canonique Tako
  * 
- * Transforme les données de l'API OpenLibrary au format Tako standardisé.
+ * Transforme les données de l'API OpenLibrary vers le format canonique :
+ * { id, type, source, sourceId, title, titleOriginal, description, year,
+ *   images: { primary, thumbnail, gallery },
+ *   urls: { source, detail },
+ *   details: { ...domain-specific } }
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -16,6 +20,46 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  extractYear(dateStr) {
+    if (!dateStr) return null;
+    const match = String(dateStr).match(/\b(19\d{2}|20\d{2})\b/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  /**
+   * Construit l'objet images canonique à partir des covers OpenLibrary
+   */
+  buildImages(book) {
+    const large = book.images?.[0] || null;
+    const medium = book.images?.[1] || null;
+    const small = book.images?.[2] || null;
+
+    return {
+      primary: large || medium || null,
+      thumbnail: small || medium || null,
+      gallery: [large, medium, small].filter(Boolean)
+    };
+  }
+
+  /**
+   * Construit l'objet covers (large/medium/small) pour le détail
+   */
+  buildCovers(book) {
+    return {
+      large: book.images?.[0] || null,
+      medium: book.images?.[1] || null,
+      small: book.images?.[2] || null
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RECHERCHE
+  // ═══════════════════════════════════════════════════════════════════════════
+
   /**
    * Normaliser une réponse de recherche
    * @param {Array} books - Liste de livres parsés
@@ -23,74 +67,78 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
    */
   normalizeSearchResponse(books, metadata = {}) {
     const { query, searchType, total = 0, pagination = {}, lang = null } = metadata;
-
-    const results = books.map(book => this.normalizeSearchItem(book));
+    const items = books.map((book, index) => this.normalizeSearchItem(book, index + 1));
 
     return {
-      meta: {
-        source: 'openlibrary',
-        query,
-        searchType,
-        total,
-        returned: results.length,
-        pagination,
-        language: lang,
-        timestamp: new Date().toISOString()
+      success: true,
+      provider: 'openlibrary',
+      domain: 'books',
+      query,
+      searchType,
+      total,
+      count: items.length,
+      data: items,
+      pagination: pagination && Object.keys(pagination).length > 0 ? pagination : {
+        page: 1,
+        pageSize: items.length,
+        totalResults: total,
+        hasMore: false
       },
-      data: results
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang: lang || 'en',
+        cached: false,
+        cacheAge: null
+      }
     };
   }
 
   /**
    * Normaliser un item de recherche
    * @param {Object} book - Livre parsé
+   * @param {number} position - Position dans les résultats
    */
-  normalizeSearchItem(book) {
-    // Extraire l'année de publication
-    let year = null;
-    if (book.publishedDate) {
-      const match = String(book.publishedDate).match(/\b(19\d{2}|20\d{2})\b/);
-      if (match) year = parseInt(match[1], 10);
-    }
-
-    // Formater les auteurs (tableau de strings pour cohérence avec GoogleBooks)
-    const authors = book.authors || [];
-
-    // Formater les couvertures
-    const covers = {
-      large: book.images?.[0] || null,
-      medium: book.images?.[1] || null,
-      small: book.images?.[2] || null
-    };
-
-    // Formater les identifiants
-    const identifiers = {
-      openlibrary: book.id,
-      isbn: book.isbn || null
-    };
-
-    // Catégories / Sujets
+  normalizeSearchItem(book, position = null) {
+    const sourceId = String(book.id);
+    const year = this.extractYear(book.publishedDate);
+    const images = this.buildImages(book);
     const categories = (book.subjects || []).slice(0, 10);
 
     return {
-      id: book.id,
+      id: `openlibrary:${sourceId}`,
       type: 'book',
+      source: 'openlibrary',
+      sourceId,
       title: book.title,
-      subtitle: null,
-      authors,
-      publisher: book.publishers?.[0] || null,
-      publishedDate: book.publishedDate,
-      year,
-      categories,
-      language: book.language,
-      identifiers,
-      covers,
+      titleOriginal: null,
       description: book.synopsis || null,
-      pageCount: book.pageCount || null,
-      url: book.url,
-      source: 'openlibrary'
+      year,
+      images,
+      urls: {
+        source: book.url || null,
+        detail: `/api/books/openlibrary/${sourceId}`
+      },
+      details: {
+        subtitle: null,
+        authors: book.authors || [],
+        publisher: book.publishers?.[0] || null,
+        publishedDate: book.publishedDate || null,
+        categories,
+        language: book.language || null,
+        identifiers: {
+          openlibrary: sourceId,
+          isbn: book.isbn || null
+        },
+        covers: this.buildCovers(book),
+        pageCount: book.pageCount || null,
+        position
+      }
     };
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DÉTAILS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Normaliser une réponse de détails
@@ -99,103 +147,80 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
    */
   normalizeDetailResponse(book, options = {}) {
     const { lang = null } = options;
-
-    // Extraire l'année de publication
-    let year = null;
-    if (book.publishedDate) {
-      const match = String(book.publishedDate).match(/\b(19\d{2}|20\d{2})\b/);
-      if (match) year = parseInt(match[1], 10);
-    }
-
-    // Formater les auteurs (tableau de strings pour cohérence avec GoogleBooks)
-    const authors = book.authors || [];
-
-    // Formater les couvertures
-    const covers = {
-      large: book.images?.[0] || null,
-      medium: book.images?.[1] || null,
-      small: book.images?.[2] || null
-    };
-
-    // Formater les identifiants
-    const identifiers = {
-      openlibrary: book.id,
-      isbn: book.isbn || null
-    };
-
-    // Catégories / Sujets
+    const sourceId = String(book.id);
+    const year = this.extractYear(book.publishedDate);
+    const images = this.buildImages(book);
     const categories = (book.subjects || []).slice(0, 15);
+    const covers = this.buildCovers(book);
 
     // Métadonnées additionnelles spécifiques OpenLibrary
-    const additionalMetadata = {};
-
+    const additionalMeta = {};
     if (book.subjectPlaces?.length > 0) {
-      additionalMetadata.places = book.subjectPlaces.slice(0, 10);
+      additionalMeta.places = book.subjectPlaces.slice(0, 10);
     }
     if (book.subjectTimes?.length > 0) {
-      additionalMetadata.times = book.subjectTimes.slice(0, 10);
+      additionalMeta.times = book.subjectTimes.slice(0, 10);
     }
     if (book.subjectPeople?.length > 0) {
-      additionalMetadata.people = book.subjectPeople.slice(0, 10);
+      additionalMeta.people = book.subjectPeople.slice(0, 10);
     }
     if (book.links?.length > 0) {
-      additionalMetadata.externalLinks = book.links.slice(0, 5).map(link => ({
+      additionalMeta.externalLinks = book.links.slice(0, 5).map(link => ({
         title: link.title || 'Link',
         url: link.url
       }));
     }
     if (book.physicalFormat) {
-      additionalMetadata.format = book.physicalFormat;
+      additionalMeta.format = book.physicalFormat;
     }
     if (book.workKey) {
-      additionalMetadata.workId = book.workKey.replace('/works/', '');
+      additionalMeta.workId = book.workKey.replace('/works/', '');
     }
     if (book.allLanguages?.length > 1) {
-      additionalMetadata.availableLanguages = book.allLanguages;
+      additionalMeta.availableLanguages = book.allLanguages;
     }
 
-    // Construire l'objet data
     const data = {
-      id: `${this.source}:${book.id}`,
-      sourceId: book.id,
-      source: this.source,
+      id: `openlibrary:${sourceId}`,
       type: book.type || 'book',
+      source: 'openlibrary',
+      sourceId,
       title: book.title,
-      subtitle: null,
-      authors,
-      publishers: book.publishers || [],
-      publisher: book.publishers?.[0] || null,
-      publishedDate: book.publishedDate,
-      year,
-      categories,
-      language: book.language,
-      identifiers,
-      covers,
+      titleOriginal: null,
       description: book.synopsis || null,
-      pageCount: book.pageCount || null,
+      year,
+      images,
       urls: {
-        source: book.url,
-        detail: `/api/${this.domain}/${this.source}/${book.id}`
+        source: book.url || null,
+        detail: `/api/books/openlibrary/${sourceId}`
       },
-      url: book.url,
-      provider: 'openlibrary'
+      details: {
+        subtitle: null,
+        authors: book.authors || [],
+        publishers: book.publishers || [],
+        publisher: book.publishers?.[0] || null,
+        publishedDate: book.publishedDate || null,
+        categories,
+        language: book.language || null,
+        identifiers: {
+          openlibrary: sourceId,
+          isbn: book.isbn || null
+        },
+        covers,
+        pageCount: book.pageCount || null,
+        ...additionalMeta
+      }
     };
 
-    // Ajouter les métadonnées si présentes
-    if (Object.keys(additionalMetadata).length > 0) {
-      data.metadata = additionalMetadata;
-    }
-
-    // Wrapper standardisé
     return {
       success: true,
-      provider: this.source,
-      domain: this.domain,
+      provider: 'openlibrary',
+      domain: 'books',
       id: data.id,
       data,
       meta: {
         fetchedAt: new Date().toISOString(),
-        lang: lang,
+        lang,
         cached: options.cached || false,
         cacheAge: options.cacheAge || null
       }

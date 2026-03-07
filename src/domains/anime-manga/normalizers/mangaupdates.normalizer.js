@@ -1,7 +1,13 @@
 /**
- * MangaUpdates Normalizer
+ * MangaUpdates Normalizer — Format Canonique Tako
  * 
- * Transforme les données de l'API MangaUpdates vers le format Tako.
+ * Transforme les données de l'API MangaUpdates vers le format canonique :
+ * { id, type, source, sourceId, title, titleOriginal, description, year,
+ *   images: { primary, thumbnail, gallery },
+ *   urls: { source, detail },
+ *   details: { ...domain-specific } }
+ * 
+ * Gère séries, auteurs, éditeurs, releases, recommandations.
  */
 
 import { BaseNormalizer } from '../../../core/normalizers/index.js';
@@ -45,6 +51,33 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     return match ? parseInt(match[0]) : null;
   }
 
+  /**
+   * Construit l'objet images canonique à partir de l'image MangaUpdates
+   */
+  buildImages(series) {
+    const img = series.image;
+    if (!img?.url) {
+      return { primary: null, thumbnail: null, gallery: [] };
+    }
+    return {
+      primary: img.url.original || null,
+      thumbnail: img.url.thumb || null,
+      gallery: [img.url.original, img.url.thumb].filter(Boolean)
+    };
+  }
+
+  /**
+   * Construit l'objet images canonique à partir d'une URL simple
+   */
+  buildSimpleImages(url) {
+    if (!url) return { primary: null, thumbnail: null, gallery: [] };
+    return {
+      primary: url,
+      thumbnail: url,
+      gallery: []
+    };
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // NORMALISATION DE RECHERCHE (SÉRIES)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -56,11 +89,17 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     const { query, page = 1, pageSize = 25 } = metadata;
     const results = data?.results || [];
     const totalHits = data?.total_hits || 0;
+    const items = results.map((item, index) => this.normalizeSeriesItem(item.record, (page - 1) * pageSize + index + 1));
 
     return {
+      success: true,
+      provider: 'mangaupdates',
+      domain: 'anime-manga',
       query,
       searchType: 'series',
       total: totalHits,
+      count: items.length,
+      data: items,
       pagination: {
         page,
         pageSize,
@@ -68,8 +107,9 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
-      data: results.map((item, index) => this.normalizeSeriesItem(item.record, (page - 1) * pageSize + index + 1)),
-      source: 'mangaupdates'
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
 
@@ -81,36 +121,30 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
 
     return {
       id: `mangaupdates:${sourceId}`,
-      sourceId,
-      provider: 'mangaupdates',
       type: 'manga',
-      resourceType: 'series',
-      position,
-
+      source: 'mangaupdates',
+      sourceId,
       title: series.title,
       titleOriginal: this.extractOriginalTitle(series),
-      titleAlternatives: this.extractAlternativeTitles(series),
       description: this.cleanHtml(series.description),
-
-      type: series.type || 'Manga',
       year: this.extractYearFromString(series.year),
-      status: this.extractStatus(series),
-
-      genres: this.extractGenres(series),
-      
-      rating: {
-        score: series.bayesian_rating || null,
-        votes: series.rating_votes || 0
-      },
-
-      image: this.extractImage(series),
-      
+      position,
+      images: this.buildImages(series),
       urls: {
-        source: series.url,
+        source: series.url || null,
         detail: `/api/anime-manga/mangaupdates/series/${sourceId}`
       },
-
-      lastUpdated: series.last_updated?.as_rfc3339 || null
+      details: {
+        format: series.type || 'Manga',
+        status: this.extractStatus(series),
+        titleAlternatives: this.extractAlternativeTitles(series),
+        genres: this.extractGenres(series),
+        rating: {
+          score: series.bayesian_rating || null,
+          votes: series.rating_votes || 0
+        },
+        lastUpdated: series.last_updated?.as_rfc3339 || null
+      }
     };
   }
 
@@ -126,83 +160,72 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
 
     const data = {
       id: `mangaupdates:${sourceId}`,
-      sourceId,
-      source: this.source,
-      provider: 'mangaupdates',
       type: 'manga',
-      resourceType: 'series',
-
-      // Titres
+      source: 'mangaupdates',
+      sourceId,
       title: series.title,
       titleOriginal: this.extractOriginalTitle(series),
-      titleAlternatives: this.extractAlternativeTitles(series),
-      titleFrench: null, // Sera enrichi par le service français
-
-      // Métadonnées
       description: this.cleanHtml(series.description),
-      type: series.type || 'Manga',
       year: this.extractYearFromString(series.year),
-      status: this.extractStatus(series),
-      
-      // Statut détaillé
-      statusDetails: {
-        completed: series.completed ?? null,
-        licensed: series.licensed ?? null,
-        licensedEnglish: series.licensed_in_english ?? null,
-        animeAdaptation: series.anime?.start ? true : false
-      },
-
-      // Classification
-      genres: this.extractGenres(series),
-      categories: this.extractCategories(series),
-
-      // Notation
-      rating: {
-        score: series.bayesian_rating || null,
-        votes: series.rating_votes || 0,
-        distribution: series.rating_distribution || null
-      },
-
-      // Publication
-      publications: this.extractPublications(series),
-      
-      // Auteurs
-      authors: this.extractAuthors(series),
-      
-      // Éditeurs
-      publishers: this.extractPublishers(series),
-      
-      // Séries liées
-      relatedSeries: this.extractRelatedSeries(series),
-      
-      // Recommandations
-      recommendations: this.extractRecommendations(series),
-
-      // Anime
-      anime: series.anime ? {
-        startYear: series.anime.start,
-        endYear: series.anime.end
-      } : null,
-
-      // Images
-      image: this.extractImage(series),
-
-      // URLs
+      images: this.buildImages(series),
       urls: {
-        source: series.url,
+        source: series.url || null,
         detail: `/api/anime-manga/mangaupdates/series/${sourceId}`
       },
+      details: {
+        format: series.type || 'Manga',
+        status: this.extractStatus(series),
+        titleAlternatives: this.extractAlternativeTitles(series),
+        titleFrench: null, // Sera enrichi par le service français
 
-      // Statistiques
-      stats: {
-        rankPosition: series.rank?.position || null,
-        rankOldPosition: series.rank?.old_position || null,
-        forumId: series.forum_id || null
-      },
+        // Statut détaillé
+        statusDetails: {
+          completed: series.completed ?? null,
+          licensed: series.licensed ?? null,
+          licensedEnglish: series.licensed_in_english ?? null,
+          animeAdaptation: series.anime?.start ? true : false
+        },
 
-      lastUpdated: series.last_updated?.as_rfc3339 || null,
-      metadata: {
-        source: 'mangaupdates'
+        // Classification
+        genres: this.extractGenres(series),
+        categories: this.extractCategories(series),
+
+        // Notation
+        rating: {
+          score: series.bayesian_rating || null,
+          votes: series.rating_votes || 0,
+          distribution: series.rating_distribution || null
+        },
+
+        // Publication
+        publications: this.extractPublications(series),
+        
+        // Auteurs
+        authors: this.extractAuthors(series),
+        
+        // Éditeurs
+        publishers: this.extractPublishers(series),
+        
+        // Séries liées
+        relatedSeries: this.extractRelatedSeries(series),
+        
+        // Recommandations
+        recommendations: this.extractRecommendations(series),
+
+        // Anime
+        anime: series.anime ? {
+          startYear: series.anime.start,
+          endYear: series.anime.end
+        } : null,
+
+        // Statistiques
+        stats: {
+          rankPosition: series.rank?.position || null,
+          rankOldPosition: series.rank?.old_position || null,
+          forumId: series.forum_id || null
+        },
+
+        lastUpdated: series.last_updated?.as_rfc3339 || null
       }
     };
 
@@ -312,18 +335,6 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     }));
   }
 
-  extractImage(series) {
-    const img = series.image;
-    if (!img?.url) return null;
-
-    return {
-      original: img.url.original || null,
-      thumbnail: img.url.thumb || null,
-      width: img.width || null,
-      height: img.height || null
-    };
-  }
-
   // ═══════════════════════════════════════════════════════════════════════════
   // NORMALISATION AUTEURS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -335,11 +346,17 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     const { query, page = 1, pageSize = 25 } = metadata;
     const results = data?.results || [];
     const totalHits = data?.total_hits || 0;
+    const items = results.map((item, index) => this.normalizeAuthorItem(item.record, (page - 1) * pageSize + index + 1));
 
     return {
+      success: true,
+      provider: 'mangaupdates',
+      domain: 'anime-manga',
       query,
       searchType: 'author',
       total: totalHits,
+      count: items.length,
+      data: items,
       pagination: {
         page,
         pageSize,
@@ -347,8 +364,9 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
-      data: results.map((item, index) => this.normalizeAuthorItem(item.record, (page - 1) * pageSize + index + 1)),
-      source: 'mangaupdates'
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
 
@@ -361,26 +379,26 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
 
     return {
       id: `mangaupdates:author:${sourceId}`,
-      sourceId,
-      provider: 'mangaupdates',
       type: 'person',
-      resourceType: 'author',
+      source: 'mangaupdates',
+      sourceId,
+      title: author.name,
+      titleOriginal: null,
+      description: null,
+      year: null,
       position,
-
-      name: author.name,
-      nameAlternatives: this.extractAuthorAltNames(author),
-
-      image: author.image?.url?.original || null,
-      
-      genres: author.genres || [],
-      
-      stats: {
-        totalSeries: author.stats?.total_series || 0
-      },
-
+      images: this.buildSimpleImages(author.image?.url?.original || null),
       urls: {
-        source: author.url,
+        source: author.url || null,
         detail: `/api/anime-manga/mangaupdates/author/${sourceId}`
+      },
+      details: {
+        resourceType: 'author',
+        nameAlternatives: this.extractAuthorAltNames(author),
+        genres: author.genres || [],
+        stats: {
+          totalSeries: author.stats?.total_series || 0
+        }
       }
     };
   }
@@ -394,44 +412,45 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
 
     return {
       id: `mangaupdates:author:${sourceId}`,
-      sourceId,
-      provider: 'mangaupdates',
       type: 'person',
-      resourceType: 'author',
-
-      name: author.name,
-      nameAlternatives: this.extractAuthorAltNames(author),
-      actualName: author.actualname || null,
-
-      // Infos personnelles
-      birthday: author.birthday || null,
-      birthplace: author.birthplace || null,
-      bloodtype: author.bloodtype || null,
-      gender: author.gender || null,
-
-      // Réseaux sociaux
-      social: {
-        website: author.social?.officialsite || null,
-        facebook: author.social?.facebook || null,
-        twitter: author.social?.twitter || null
-      },
-
-      // Statistiques
-      stats: {
-        totalSeries: author.stats?.total_series || 0,
-        genres: author.genres || []
-      },
-
-      image: author.image?.url?.original || null,
-
+      source: 'mangaupdates',
+      sourceId,
+      title: author.name,
+      titleOriginal: null,
+      description: null,
+      year: null,
+      images: this.buildSimpleImages(author.image?.url?.original || null),
       urls: {
-        source: author.url,
+        source: author.url || null,
         detail: `/api/anime-manga/mangaupdates/author/${sourceId}`,
         works: `/api/anime-manga/mangaupdates/author/${sourceId}/works`
       },
+      details: {
+        resourceType: 'author',
+        nameAlternatives: this.extractAuthorAltNames(author),
+        actualName: author.actualname || null,
 
-      lastUpdated: author.last_updated?.as_rfc3339 || null,
-      source: 'mangaupdates'
+        // Infos personnelles
+        birthday: author.birthday || null,
+        birthplace: author.birthplace || null,
+        bloodtype: author.bloodtype || null,
+        gender: author.gender || null,
+
+        // Réseaux sociaux
+        social: {
+          website: author.social?.officialsite || null,
+          facebook: author.social?.facebook || null,
+          twitter: author.social?.twitter || null
+        },
+
+        // Statistiques
+        stats: {
+          totalSeries: author.stats?.total_series || 0,
+          genres: author.genres || []
+        },
+
+        lastUpdated: author.last_updated?.as_rfc3339 || null
+      }
     };
   }
 
@@ -443,8 +462,12 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     const list = Array.isArray(series) ? series : [];
 
     return {
+      success: true,
+      provider: 'mangaupdates',
+      domain: 'anime-manga',
       authorId: String(authorId),
       total: list.length,
+      count: list.length,
       data: list.map(s => ({
         id: s.series_id ? String(s.series_id) : null,
         title: s.title || s.series_name,
@@ -452,7 +475,9 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         year: s.year || null,
         url: s.url || null
       })),
-      source: 'mangaupdates'
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
 
@@ -472,11 +497,17 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     const { query, page = 1, pageSize = 25 } = metadata;
     const results = data?.results || [];
     const totalHits = data?.total_hits || 0;
+    const items = results.map((item, index) => this.normalizePublisherItem(item.record, (page - 1) * pageSize + index + 1));
 
     return {
+      success: true,
+      provider: 'mangaupdates',
+      domain: 'anime-manga',
       query,
       searchType: 'publisher',
       total: totalHits,
+      count: items.length,
+      data: items,
       pagination: {
         page,
         pageSize,
@@ -484,8 +515,9 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
-      data: results.map((item, index) => this.normalizePublisherItem(item.record, (page - 1) * pageSize + index + 1)),
-      source: 'mangaupdates'
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
 
@@ -494,19 +526,22 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
 
     return {
       id: `mangaupdates:publisher:${sourceId}`,
-      sourceId,
-      provider: 'mangaupdates',
       type: 'organization',
-      resourceType: 'publisher',
+      source: 'mangaupdates',
+      sourceId,
+      title: publisher.name || publisher.publisher_name,
+      titleOriginal: null,
+      description: publisher.info || null,
+      year: null,
       position,
-
-      name: publisher.name || publisher.publisher_name,
-      type: publisher.type || null,
-      info: publisher.info || null,
-
+      images: { primary: null, thumbnail: null, gallery: [] },
       urls: {
-        source: publisher.url,
+        source: publisher.url || null,
         detail: `/api/anime-manga/mangaupdates/publisher/${sourceId}`
+      },
+      details: {
+        resourceType: 'publisher',
+        publisherType: publisher.type || null
       }
     };
   }
@@ -516,27 +551,27 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
 
     return {
       id: `mangaupdates:publisher:${sourceId}`,
-      sourceId,
-      provider: 'mangaupdates',
       type: 'organization',
-      resourceType: 'publisher',
-
-      name: publisher.name || publisher.publisher_name,
-      type: publisher.type || null,
-      info: publisher.info || null,
-      site: publisher.site || null,
-
-      stats: {
-        totalSeries: publisher.stats?.total_series || 0
-      },
-
+      source: 'mangaupdates',
+      sourceId,
+      title: publisher.name || publisher.publisher_name,
+      titleOriginal: null,
+      description: publisher.info || null,
+      year: null,
+      images: { primary: null, thumbnail: null, gallery: [] },
       urls: {
-        source: publisher.url,
+        source: publisher.url || null,
         detail: `/api/anime-manga/mangaupdates/publisher/${sourceId}`
       },
-
-      lastUpdated: publisher.last_updated?.as_rfc3339 || null,
-      source: 'mangaupdates'
+      details: {
+        resourceType: 'publisher',
+        publisherType: publisher.type || null,
+        site: publisher.site || null,
+        stats: {
+          totalSeries: publisher.stats?.total_series || 0
+        },
+        lastUpdated: publisher.last_updated?.as_rfc3339 || null
+      }
     };
   }
 
@@ -548,11 +583,17 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     const { search, page = 1, pageSize = 25 } = metadata;
     const results = data?.results || [];
     const totalHits = data?.total_hits || 0;
+    const items = results.map((item, index) => this.normalizeReleaseItem(item.record, (page - 1) * pageSize + index + 1));
 
     return {
+      success: true,
+      provider: 'mangaupdates',
+      domain: 'anime-manga',
       search,
       searchType: 'release',
       total: totalHits,
+      count: items.length,
+      data: items,
       pagination: {
         page,
         pageSize,
@@ -560,28 +601,37 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
-      data: results.map((item, index) => this.normalizeReleaseItem(item.record, (page - 1) * pageSize + index + 1)),
-      source: 'mangaupdates'
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
 
   normalizeReleaseItem(release, position = null) {
     return {
       id: release.id ? String(release.id) : null,
-      provider: 'mangaupdates',
-      resourceType: 'release',
-      position,
-
+      type: 'release',
+      source: 'mangaupdates',
+      sourceId: release.id ? String(release.id) : null,
       title: release.title || release.series?.title,
-      seriesId: release.series_id ? String(release.series_id) : null,
-      
-      chapter: release.chapter || null,
-      volume: release.volume || null,
-      
-      groupName: release.group?.name || null,
-      groupId: release.group?.group_id ? String(release.group.group_id) : null,
-
-      releaseDate: release.release_date || null
+      titleOriginal: null,
+      description: null,
+      year: null,
+      position,
+      images: { primary: null, thumbnail: null, gallery: [] },
+      urls: {
+        source: null,
+        detail: null
+      },
+      details: {
+        resourceType: 'release',
+        seriesId: release.series_id ? String(release.series_id) : null,
+        chapter: release.chapter || null,
+        volume: release.volume || null,
+        groupName: release.group?.name || null,
+        groupId: release.group?.group_id ? String(release.group.group_id) : null,
+        releaseDate: release.release_date || null
+      }
     };
   }
 
@@ -594,14 +644,33 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
     const list = Array.isArray(recs) ? recs : [];
 
     return {
+      success: true,
+      provider: 'mangaupdates',
+      domain: 'anime-manga',
       seriesId: String(seriesId),
       total: list.length,
+      count: list.length,
       data: list.map(r => ({
-        id: r.series_id ? String(r.series_id) : null,
+        id: r.series_id ? `mangaupdates:${r.series_id}` : null,
+        type: 'manga',
+        source: 'mangaupdates',
+        sourceId: r.series_id ? String(r.series_id) : null,
         title: r.series_name || r.title,
-        weight: r.weight || 0
+        titleOriginal: null,
+        description: null,
+        year: null,
+        images: { primary: null, thumbnail: null, gallery: [] },
+        urls: {
+          source: null,
+          detail: r.series_id ? `/api/anime-manga/mangaupdates/series/${r.series_id}` : null
+        },
+        details: {
+          weight: r.weight || 0
+        }
       })),
-      source: 'mangaupdates'
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
 }

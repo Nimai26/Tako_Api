@@ -1,37 +1,69 @@
 /**
- * Normalizer RAWG
- * 
- * Transforme les données RAWG en format Tako standardisé
+ * Normalizer RAWG — Format Canonique B
+ *
+ * Transforme les données RAWG en format Tako standardisé.
  * La traduction est gérée au niveau des routes, pas ici.
- * 
+ *
  * @module domains/videogames/normalizers/rawg
  */
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Extrait l'année depuis une date string (YYYY-MM-DD)
+ */
+function yearFromDateStr(dateStr) {
+  if (!dateStr) return null;
+  const y = parseInt(dateStr.split('-')[0], 10);
+  return Number.isNaN(y) ? null : y;
+}
+
+// ============================================================================
+// ITEM NORMALIZERS
+// ============================================================================
 
 /**
  * Normalise un jeu depuis les résultats de recherche RAWG
  */
 export function normalizeSearchResult(game) {
+  const sourceId = String(game.id);
+
   return {
-    id: `rawg-${game.id}`,
-    sourceId: game.id,
+    id: `rawg:${sourceId}`,
+    type: 'videogame',
     source: 'rawg',
+    sourceId,
     title: game.name,
-    slug: game.slug || null,
-    releaseDate: game.released || null,
-    rating: game.rating ? Math.round(game.rating * 20) / 10 : null, // Convertir /5 en /100
-    ratingTop: game.rating_top || 5,
-    ratingsCount: game.ratings_count || 0,
-    metacritic: game.metacritic || null,
-    playtime: game.playtime || null, // heures
-    cover: game.background_image || null,
-    coverThumb: game.background_image || null,
-    platforms: game.platforms?.map(p => p.platform?.name || p.name) || [],
-    genres: game.genres?.map(g => g.name || g) || [],
-    stores: game.stores?.map(s => s.store?.name || s.name) || [],
-    tags: game.tags?.slice(0, 10).map(t => t.name || t) || [], // Limiter à 10 tags
-    esrbRating: game.esrb_rating?.name || null,
-    added: game.added || 0,
-    updated: game.updated || null
+    titleOriginal: null,
+    description: null,
+    year: yearFromDateStr(game.released),
+    images: {
+      primary: game.background_image || null,
+      thumbnail: game.background_image || null,
+      gallery: []
+    },
+    urls: {
+      source: game.slug ? `https://rawg.io/games/${game.slug}` : null,
+      detail: `/api/videogames/rawg/${sourceId}`
+    },
+    details: {
+      slug: game.slug || null,
+      releaseDate: game.released || null,
+      rating: game.rating ? Math.round(game.rating * 20) / 10 : null,
+      ratingTop: game.rating_top || 5,
+      ratingsCount: game.ratings_count || 0,
+      metacritic: game.metacritic || null,
+      playtime: game.playtime || null,
+      platforms: game.platforms?.map(p => p.platform?.name || p.name) || [],
+      genres: game.genres?.map(g => g.name || g) || [],
+      stores: game.stores?.map(s => s.store?.name || s.name) || [],
+      tags: game.tags?.slice(0, 10).map(t => t.name || t) || [],
+      esrbRating: game.esrb_rating?.name || null,
+      added: game.added || 0,
+      updated: game.updated || null
+    }
   };
 }
 
@@ -39,142 +71,159 @@ export function normalizeSearchResult(game) {
  * Normalise un jeu avec tous les détails
  */
 export function normalizeGame(game) {
+  const sourceId = String(game.id);
+
   return {
-    id: `rawg-${game.id}`,
-    sourceId: game.id,
+    id: `rawg:${sourceId}`,
+    type: 'videogame',
     source: 'rawg',
-    
-    // Informations de base
+    sourceId,
     title: game.name,
-    nameOriginal: game.name_original || null,
-    slug: game.slug || null,
+    titleOriginal: game.name_original || null,
     description: game.description_raw || game.description || null,
-    descriptionHtml: game.description || null,
-    
-    // Dates
-    releaseDate: game.released || null,
-    tba: game.tba || false, // To Be Announced
-    updated: game.updated || null,
-    
-    // Notes
-    rating: game.rating ? Math.round(game.rating * 20) / 10 : null,
-    ratingTop: game.rating_top || 5,
-    ratingsCount: game.ratings_count || 0,
-    ratingsBreakdown: game.ratings?.map(r => ({
-      id: r.id,
-      title: r.title,
-      count: r.count,
-      percent: r.percent
-    })) || [],
-    metacritic: game.metacritic || null,
-    metacriticPlatforms: game.metacritic_platforms?.map(mp => ({
-      platform: mp.platform?.name || mp.platform,
-      score: mp.metascore,
-      url: mp.url
-    })) || [],
-    
-    // Statistiques
-    playtime: game.playtime || null,
-    achievementsCount: game.achievements_count || 0,
-    reviewsCount: game.reviews_count || 0,
-    suggestionsCount: game.suggestions_count || 0,
-    added: game.added || 0,
-    addedByStatus: game.added_by_status || {},
-    
-    // Classification
-    esrbRating: game.esrb_rating ? {
-      id: game.esrb_rating.id,
-      name: game.esrb_rating.name,
-      slug: game.esrb_rating.slug
-    } : null,
-    
-    // Médias
-    cover: game.background_image || null,
-    backgroundAdditional: game.background_image_additional || null,
-    website: game.website || null,
-    
-    // Taxonomie
-    genres: game.genres?.map(g => ({
-      id: g.id,
-      name: g.name,
-      slug: g.slug
-    })) || [],
-    tags: game.tags?.map(t => ({
-      id: t.id,
-      name: t.name,
-      slug: t.slug,
-      language: t.language || 'eng',
-      gamesCount: t.games_count || 0
-    })) || [],
-    
-    // Plateformes
-    platforms: game.platforms?.map(p => ({
-      id: p.platform?.id || p.id,
-      name: p.platform?.name || p.name,
-      slug: p.platform?.slug || p.slug,
-      released: p.released_at || null,
-      requirements: p.requirements || null
-    })) || [],
-    parentPlatforms: game.parent_platforms?.map(p => ({
-      id: p.platform?.id || p.id,
-      name: p.platform?.name || p.name,
-      slug: p.platform?.slug || p.slug
-    })) || [],
-    
-    // Entreprises
-    developers: game.developers?.map(d => ({
-      id: d.id,
-      name: d.name,
-      slug: d.slug,
-      gamesCount: d.games_count || 0,
-      image: d.image_background || null
-    })) || [],
-    publishers: game.publishers?.map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      gamesCount: p.games_count || 0,
-      image: p.image_background || null
-    })) || [],
-    
-    // Stores
-    stores: game.stores?.map(s => ({
-      id: s.store?.id || s.id,
-      name: s.store?.name || s.name,
-      slug: s.store?.slug || s.slug,
-      domain: s.store?.domain || s.domain,
-      url: s.url || null
-    })) || [],
-    
-    // Relations
-    clip: game.clip ? {
-      clip: game.clip.clip,
-      preview: game.clip.preview,
-      video: game.clip.video
-    } : null,
-    
-    // Reactions (emoji)
-    reactions: game.reactions || {},
-    
-    // Reddit
-    redditUrl: game.reddit_url || null,
-    redditName: game.reddit_name || null,
-    redditDescription: game.reddit_description || null,
-    redditLogo: game.reddit_logo || null,
-    redditCount: game.reddit_count || 0,
-    
-    // Twitch
-    twitchCount: game.twitch_count || 0,
-    
-    // YouTube
-    youtubeCount: game.youtube_count || 0,
-    
-    // Divers
-    alternativeNames: game.alternative_names || [],
-    saturatedColor: game.saturated_color || null,
-    dominantColor: game.dominant_color || null
+    year: yearFromDateStr(game.released),
+    images: {
+      primary: game.background_image || null,
+      thumbnail: game.background_image || null,
+      gallery: [game.background_image, game.background_image_additional].filter(Boolean)
+    },
+    urls: {
+      source: game.slug ? `https://rawg.io/games/${game.slug}` : null,
+      detail: `/api/videogames/rawg/${sourceId}`
+    },
+    details: {
+      // Basic info
+      slug: game.slug || null,
+      descriptionHtml: game.description || null,
+
+      // Dates
+      releaseDate: game.released || null,
+      tba: game.tba || false,
+      updated: game.updated || null,
+
+      // Ratings
+      rating: game.rating ? Math.round(game.rating * 20) / 10 : null,
+      ratingTop: game.rating_top || 5,
+      ratingsCount: game.ratings_count || 0,
+      ratingsBreakdown: game.ratings?.map(r => ({
+        id: r.id,
+        title: r.title,
+        count: r.count,
+        percent: r.percent
+      })) || [],
+      metacritic: game.metacritic || null,
+      metacriticPlatforms: game.metacritic_platforms?.map(mp => ({
+        platform: mp.platform?.name || mp.platform,
+        score: mp.metascore,
+        url: mp.url
+      })) || [],
+
+      // Statistics
+      playtime: game.playtime || null,
+      achievementsCount: game.achievements_count || 0,
+      reviewsCount: game.reviews_count || 0,
+      suggestionsCount: game.suggestions_count || 0,
+      added: game.added || 0,
+      addedByStatus: game.added_by_status || {},
+
+      // Classification
+      esrbRating: game.esrb_rating ? {
+        id: game.esrb_rating.id,
+        name: game.esrb_rating.name,
+        slug: game.esrb_rating.slug
+      } : null,
+
+      // Media
+      backgroundAdditional: game.background_image_additional || null,
+      website: game.website || null,
+
+      // Taxonomy
+      genres: game.genres?.map(g => ({
+        id: g.id,
+        name: g.name,
+        slug: g.slug
+      })) || [],
+      tags: game.tags?.map(t => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+        language: t.language || 'eng',
+        gamesCount: t.games_count || 0
+      })) || [],
+
+      // Platforms
+      platforms: game.platforms?.map(p => ({
+        id: p.platform?.id || p.id,
+        name: p.platform?.name || p.name,
+        slug: p.platform?.slug || p.slug,
+        released: p.released_at || null,
+        requirements: p.requirements || null
+      })) || [],
+      parentPlatforms: game.parent_platforms?.map(p => ({
+        id: p.platform?.id || p.id,
+        name: p.platform?.name || p.name,
+        slug: p.platform?.slug || p.slug
+      })) || [],
+
+      // Companies
+      developers: game.developers?.map(d => ({
+        id: d.id,
+        name: d.name,
+        slug: d.slug,
+        gamesCount: d.games_count || 0,
+        image: d.image_background || null
+      })) || [],
+      publishers: game.publishers?.map(p => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        gamesCount: p.games_count || 0,
+        image: p.image_background || null
+      })) || [],
+
+      // Stores
+      stores: game.stores?.map(s => ({
+        id: s.store?.id || s.id,
+        name: s.store?.name || s.name,
+        slug: s.store?.slug || s.slug,
+        domain: s.store?.domain || s.domain,
+        url: s.url || null
+      })) || [],
+
+      // Clip
+      clip: game.clip ? {
+        clip: game.clip.clip,
+        preview: game.clip.preview,
+        video: game.clip.video
+      } : null,
+
+      // Reactions
+      reactions: game.reactions || {},
+
+      // Reddit
+      redditUrl: game.reddit_url || null,
+      redditName: game.reddit_name || null,
+      redditDescription: game.reddit_description || null,
+      redditLogo: game.reddit_logo || null,
+      redditCount: game.reddit_count || 0,
+
+      // Twitch
+      twitchCount: game.twitch_count || 0,
+
+      // YouTube
+      youtubeCount: game.youtube_count || 0,
+
+      // Misc
+      alternativeNames: game.alternative_names || [],
+      saturatedColor: game.saturated_color || null,
+      dominantColor: game.dominant_color || null
+    }
   };
 }
+
+// ============================================================================
+// ENTITY NORMALIZERS (genres, platforms, companies, etc.)
+// ============================================================================
 
 /**
  * Normalise un genre RAWG
@@ -322,7 +371,10 @@ export function normalizeMovie(movie) {
   };
 }
 
-// Export par défaut pour compatibilité
+// ============================================================================
+// DEFAULT EXPORT
+// ============================================================================
+
 export default {
   normalizeSearchResult,
   normalizeGame,

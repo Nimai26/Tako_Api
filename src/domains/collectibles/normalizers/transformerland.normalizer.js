@@ -1,10 +1,14 @@
 /**
  * Transformerland Normalizer
  * 
- * Normalizes Transformerland data to Tako_Api standard format
+ * Normalizes Transformerland data to canonical Format B.
  * 
  * @module domains/collectibles/normalizers/transformerland
  */
+
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 /**
  * Extract text from translation object or string
@@ -18,71 +22,139 @@ function extractText(value) {
   return String(value);
 }
 
+// ============================================================================
+// ITEM NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalize search results
+ * Normalize a single Transformerland search item to canonical Format B
+ * @param {object} item - Raw item from search results
+ * @returns {object|null} Canonical Format B item
+ */
+export function normalizeSearchItem(item) {
+  if (!item) return null;
+
+  const sourceId = String(item.id || 'unknown');
+
+  return {
+    id: `transformerland:${sourceId}`,
+    type: 'collectible',
+    source: 'transformerland',
+    sourceId,
+    title: extractText(item.name) || '',
+    titleOriginal: null,
+    description: null,
+    year: item.year || null,
+    images: {
+      primary: item.image || null,
+      thumbnail: item.image || null,
+      gallery: item.image ? [item.image] : []
+    },
+    urls: {
+      source: item.url || null,
+      detail: `/api/collectibles/transformerland/item/${sourceId}`
+    },
+    details: {
+      price: item.price || null,
+      currency: item.currency || null,
+      availability: item.availability || null,
+      series: extractText(item.series) || null,
+      subgroup: extractText(item.subgroup) || null,
+      allegiance: extractText(item.allegiance) || null,
+      condition: item.condition || null
+    }
+  };
+}
+
+// ============================================================================
+// SEARCH NORMALIZATION — Canonical Search Response
+// ============================================================================
+
+/**
+ * Normalize search results to canonical search wrapper
  * @param {object} response - Raw response from provider
- * @returns {object} Normalized response
+ * @returns {object} Canonical search response
  */
 export function normalizeSearchResults(response) {
   if (!response || !response.results) {
     return {
+      success: true,
+      provider: 'transformerland',
+      domain: 'collectibles',
       query: response?.query || '',
+      total: 0,
       count: 0,
-      results: [],
-      source: 'transformerland'
+      data: [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
     };
   }
 
-  const normalizedResults = response.results.map(item => ({
-    id: item.id,
-    name: extractText(item.name),
-    url: item.url,
-    image: item.image,
-    price: item.price,
-    currency: item.currency,
-    availability: item.availability,
-    series: extractText(item.series),
-    subgroup: extractText(item.subgroup),
-    allegiance: extractText(item.allegiance),
-    year: item.year,
-    condition: item.condition
-  }));
+  const items = response.results.map(normalizeSearchItem).filter(Boolean);
 
   return {
-    query: response.query,
-    count: normalizedResults.length,
-    results: normalizedResults,
-    source: 'transformerland'
+    success: true,
+    provider: 'transformerland',
+    domain: 'collectibles',
+    query: response.query || '',
+    total: items.length,
+    count: items.length,
+    data: items,
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 
+// ============================================================================
+// DETAIL NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalize item details
+ * Normalize item details to canonical Format B
  * @param {object} data - Raw item data from provider
- * @returns {object} Normalized item data
+ * @returns {object|null} Canonical Format B item
  */
 export function normalizeDetails(data) {
   if (!data) {
     return null;
   }
 
+  const sourceId = String(data.id || 'unknown');
+
+  // Build gallery from images array or single
+  const rawImages = data.images || [];
+  const imageArray = Array.isArray(rawImages) ? rawImages : [rawImages];
+  const gallery = imageArray.filter(Boolean);
+
   return {
-    id: data.id,
-    url: data.url,
-    name: extractText(data.name),
-    images: data.images || [],
-    description: extractText(data.description),
-    price: data.price,
-    currency: data.currency,
-    availability: data.availability,
-    condition: data.condition,
-    series: extractText(data.series),
-    subgroup: extractText(data.subgroup),
-    faction: extractText(data.faction),
-    size: data.size,
-    year: data.year,
-    manufacturer: data.manufacturer,
-    attributes: data.attributes || {},
-    source: 'transformerland'
+    id: `transformerland:${sourceId}`,
+    type: 'collectible',
+    source: 'transformerland',
+    sourceId,
+    title: extractText(data.name) || '',
+    titleOriginal: null,
+    description: extractText(data.description) || null,
+    year: data.year || null,
+    images: {
+      primary: gallery[0] || null,
+      thumbnail: gallery[0] || null,
+      gallery
+    },
+    urls: {
+      source: data.url || null,
+      detail: `/api/collectibles/transformerland/item/${sourceId}`
+    },
+    details: {
+      price: data.price || null,
+      currency: data.currency || null,
+      availability: data.availability || null,
+      condition: data.condition || null,
+      series: extractText(data.series) || null,
+      subgroup: extractText(data.subgroup) || null,
+      faction: extractText(data.faction) || null,
+      size: data.size || null,
+      manufacturer: data.manufacturer || null,
+      attributes: data.attributes || {}
+    }
   };
 }

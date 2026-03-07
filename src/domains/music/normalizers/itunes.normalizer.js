@@ -1,10 +1,14 @@
 /**
  * Normalizer iTunes
  * 
- * Transforme les réponses iTunes au format Tako standardisé
+ * Transforme les réponses iTunes au format Tako canonique (Format B)
  * 
  * @module domains/music/normalizers/itunes
  */
+
+const SOURCE = 'itunes';
+const DOMAIN = 'music';
+const BASE_DETAIL = '/api/music/itunes';
 
 // ============================================================================
 // HELPERS
@@ -29,6 +33,48 @@ function getLargeImageUrl(url, size = '600x600') {
   return url.replace('100x100bb', `${size}bb`);
 }
 
+/**
+ * Extrait l'année numérique d'une date string
+ */
+function extractYear(dateStr) {
+  if (!dateStr) return null;
+  const y = parseInt(dateStr.substring(0, 4), 10);
+  return isNaN(y) ? null : y;
+}
+
+/**
+ * Construit le bloc meta par défaut
+ */
+function buildMeta() {
+  return {
+    fetchedAt: new Date().toISOString(),
+    lang: null,
+    cached: false,
+    cacheAge: null
+  };
+}
+
+/**
+ * Construit les images iTunes au format canonique
+ */
+function buildArtworkImages(item) {
+  const small = item.artworkUrl60 || null;
+  const medium = item.artworkUrl100 || null;
+  const large = getLargeImageUrl(item.artworkUrl100, '600x600');
+
+  const gallery = [
+    small  ? { size: 'small',  url: small }  : null,
+    medium ? { size: 'medium', url: medium } : null,
+    large  ? { size: 'large',  url: large }  : null
+  ].filter(Boolean);
+
+  return {
+    primary: medium || small || null,
+    thumbnail: small || medium || null,
+    gallery
+  };
+}
+
 // ============================================================================
 // SEARCH NORMALIZERS
 // ============================================================================
@@ -39,56 +85,54 @@ function getLargeImageUrl(url, size = '600x600') {
 export function normalizeAlbumSearchResponse(data, query) {
   const albums = (data.results || []).filter(r => r.wrapperType === 'collection');
   const results = albums.map((item, index) => normalizeAlbumSearchItem(item, index + 1));
-  
+
   return {
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
     query,
-    searchType: 'album',
     total: data.resultCount || results.length,
+    count: results.length,
+    data: results,
     pagination: {
       page: 1,
       pageSize: results.length,
       totalResults: data.resultCount || results.length,
       hasMore: false
     },
-    data: results
+    meta: buildMeta()
   };
 }
 
 /**
- * Normalise un album de recherche
+ * Normalise un album de recherche → format canonique
  */
 export function normalizeAlbumSearchItem(item, position = null) {
   return {
-    id: `itunes:album:${item.collectionId}`,
+    id: `${SOURCE}:${item.collectionId}`,
+    type: 'music_album',
+    source: SOURCE,
     sourceId: String(item.collectionId),
-    provider: 'itunes',
-    type: 'album',
-    position,
-    
     title: item.collectionName,
-    artist: item.artistName || null,
-    artistId: item.artistId ? `itunes:artist:${item.artistId}` : null,
-    
-    releaseDate: item.releaseDate || null,
-    year: item.releaseDate?.substring(0, 4) || null,
-    
-    trackCount: item.trackCount || null,
-    genre: item.primaryGenreName || null,
-    
-    explicit: item.collectionExplicitness === 'explicit',
-    
-    price: item.collectionPrice || null,
-    currency: item.currency || null,
-    
-    poster: item.artworkUrl100,
-    posterLarge: getLargeImageUrl(item.artworkUrl100, '600x600'),
-    images: [
-      { type: 'small', url: item.artworkUrl60 },
-      { type: 'medium', url: item.artworkUrl100 },
-      { type: 'large', url: getLargeImageUrl(item.artworkUrl100, '600x600') }
-    ].filter(img => img.url),
-    
-    url: item.collectionViewUrl
+    titleOriginal: null,
+    description: null,
+    year: extractYear(item.releaseDate),
+    images: buildArtworkImages(item),
+    urls: {
+      source: item.collectionViewUrl || null,
+      detail: `${BASE_DETAIL}/albums/${item.collectionId}`
+    },
+    details: {
+      artist: item.artistName || null,
+      artistId: item.artistId ? `${SOURCE}:${item.artistId}` : null,
+      releaseDate: item.releaseDate || null,
+      trackCount: item.trackCount || null,
+      genre: item.primaryGenreName || null,
+      explicit: item.collectionExplicitness === 'explicit',
+      price: item.collectionPrice || null,
+      currency: item.currency || null,
+      position
+    }
   };
 }
 
@@ -98,36 +142,51 @@ export function normalizeAlbumSearchItem(item, position = null) {
 export function normalizeArtistSearchResponse(data, query) {
   const artists = (data.results || []).filter(r => r.wrapperType === 'artist');
   const results = artists.map((item, index) => normalizeArtistSearchItem(item, index + 1));
-  
+
   return {
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
     query,
-    searchType: 'artist',
     total: data.resultCount || results.length,
+    count: results.length,
+    data: results,
     pagination: {
       page: 1,
       pageSize: results.length,
       totalResults: data.resultCount || results.length,
       hasMore: false
     },
-    data: results
+    meta: buildMeta()
   };
 }
 
 /**
- * Normalise un artiste de recherche
+ * Normalise un artiste de recherche → format canonique
  */
 export function normalizeArtistSearchItem(item, position = null) {
   return {
-    id: `itunes:artist:${item.artistId}`,
+    id: `${SOURCE}:${item.artistId}`,
+    type: 'music_artist',
+    source: SOURCE,
     sourceId: String(item.artistId),
-    provider: 'itunes',
-    type: 'artist',
-    position,
-    
-    name: item.artistName,
-    genre: item.primaryGenreName || null,
-    
-    url: item.artistLinkUrl
+    title: item.artistName,
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: {
+      primary: null,
+      thumbnail: null,
+      gallery: []
+    },
+    urls: {
+      source: item.artistLinkUrl || null,
+      detail: `${BASE_DETAIL}/artists/${item.artistId}`
+    },
+    details: {
+      genre: item.primaryGenreName || null,
+      position
+    }
   };
 }
 
@@ -137,58 +196,60 @@ export function normalizeArtistSearchItem(item, position = null) {
 export function normalizeTrackSearchResponse(data, query) {
   const tracks = (data.results || []).filter(r => r.wrapperType === 'track');
   const results = tracks.map((item, index) => normalizeTrackSearchItem(item, index + 1));
-  
+
   return {
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
     query,
-    searchType: 'track',
     total: data.resultCount || results.length,
+    count: results.length,
+    data: results,
     pagination: {
       page: 1,
       pageSize: results.length,
       totalResults: data.resultCount || results.length,
       hasMore: false
     },
-    data: results
+    meta: buildMeta()
   };
 }
 
 /**
- * Normalise un track de recherche
+ * Normalise un track de recherche → format canonique
  */
 export function normalizeTrackSearchItem(item, position = null) {
   return {
-    id: `itunes:track:${item.trackId}`,
+    id: `${SOURCE}:${item.trackId}`,
+    type: 'music_track',
+    source: SOURCE,
     sourceId: String(item.trackId),
-    provider: 'itunes',
-    type: 'track',
-    position,
-    
     title: item.trackName,
-    artist: item.artistName || null,
-    artistId: item.artistId ? `itunes:artist:${item.artistId}` : null,
-    album: item.collectionName || null,
-    albumId: item.collectionId ? `itunes:album:${item.collectionId}` : null,
-    
-    duration: item.trackTimeMillis ? Math.round(item.trackTimeMillis / 1000) : null,
-    durationFormatted: item.trackTimeMillis ? formatDuration(item.trackTimeMillis) : null,
-    
-    trackNumber: item.trackNumber || null,
-    discNumber: item.discNumber || 1,
-    
-    genre: item.primaryGenreName || null,
-    releaseDate: item.releaseDate || null,
-    
-    explicit: item.trackExplicitness === 'explicit',
-    
-    price: item.trackPrice || null,
-    currency: item.currency || null,
-    
-    preview: item.previewUrl || null,
-    
-    poster: item.artworkUrl100,
-    posterLarge: getLargeImageUrl(item.artworkUrl100, '600x600'),
-    
-    url: item.trackViewUrl
+    titleOriginal: null,
+    description: null,
+    year: extractYear(item.releaseDate),
+    images: buildArtworkImages(item),
+    urls: {
+      source: item.trackViewUrl || null,
+      detail: `${BASE_DETAIL}/tracks/${item.trackId}`
+    },
+    details: {
+      artist: item.artistName || null,
+      artistId: item.artistId ? `${SOURCE}:${item.artistId}` : null,
+      album: item.collectionName || null,
+      albumId: item.collectionId ? `${SOURCE}:${item.collectionId}` : null,
+      duration: item.trackTimeMillis ? Math.round(item.trackTimeMillis / 1000) : null,
+      durationFormatted: item.trackTimeMillis ? formatDuration(item.trackTimeMillis) : null,
+      trackNumber: item.trackNumber || null,
+      discNumber: item.discNumber || 1,
+      genre: item.primaryGenreName || null,
+      releaseDate: item.releaseDate || null,
+      explicit: item.trackExplicitness === 'explicit',
+      price: item.trackPrice || null,
+      currency: item.currency || null,
+      preview: item.previewUrl || null,
+      position
+    }
   };
 }
 
@@ -197,22 +258,22 @@ export function normalizeTrackSearchItem(item, position = null) {
 // ============================================================================
 
 /**
- * Normalise les détails d'un album (avec tracks)
+ * Normalise les détails d'un album (avec tracks) → format canonique
  */
 export function normalizeAlbumDetail(data) {
   const results = data.results || [];
-  
+
   // Premier élément = album, reste = tracks
   const albumInfo = results.find(r => r.wrapperType === 'collection');
   const trackItems = results.filter(r => r.wrapperType === 'track');
-  
+
   if (!albumInfo) {
     throw new Error('Album non trouvé dans les résultats');
   }
-  
+
   const tracks = trackItems.map((t, idx) => ({
     position: t.trackNumber || idx + 1,
-    id: `itunes:track:${t.trackId}`,
+    id: `${SOURCE}:${t.trackId}`,
     sourceId: String(t.trackId),
     title: t.trackName,
     duration: t.trackTimeMillis ? Math.round(t.trackTimeMillis / 1000) : null,
@@ -222,73 +283,74 @@ export function normalizeAlbumDetail(data) {
     explicit: t.trackExplicitness === 'explicit',
     price: t.trackPrice || null
   }));
-  
+
   // Calculer la durée totale
   const totalDuration = tracks.reduce((sum, t) => sum + (t.duration || 0), 0);
-  
+
   return {
-    id: `itunes:album:${albumInfo.collectionId}`,
+    id: `${SOURCE}:${albumInfo.collectionId}`,
+    type: 'music_album',
+    source: SOURCE,
     sourceId: String(albumInfo.collectionId),
-    provider: 'itunes',
-    type: 'album',
-    
     title: albumInfo.collectionName,
-    artist: albumInfo.artistName || null,
-    artistId: albumInfo.artistId ? `itunes:artist:${albumInfo.artistId}` : null,
-    
-    releaseDate: albumInfo.releaseDate || null,
-    year: albumInfo.releaseDate?.substring(0, 4) || null,
-    
-    genre: albumInfo.primaryGenreName || null,
-    
-    tracks,
-    trackCount: albumInfo.trackCount || tracks.length,
-    discCount: albumInfo.discCount || 1,
-    
-    duration: totalDuration || null,
-    durationFormatted: totalDuration ? formatDuration(totalDuration * 1000) : null,
-    
-    explicit: albumInfo.collectionExplicitness === 'explicit',
-    
-    price: albumInfo.collectionPrice || null,
-    currency: albumInfo.currency || null,
-    
-    copyright: albumInfo.copyright || null,
-    
-    poster: albumInfo.artworkUrl100,
-    posterLarge: getLargeImageUrl(albumInfo.artworkUrl100, '600x600'),
-    images: [
-      { type: 'small', url: albumInfo.artworkUrl60 },
-      { type: 'medium', url: albumInfo.artworkUrl100 },
-      { type: 'large', url: getLargeImageUrl(albumInfo.artworkUrl100, '600x600') }
-    ].filter(img => img.url),
-    
-    url: albumInfo.collectionViewUrl
+    titleOriginal: null,
+    description: albumInfo.copyright || null,
+    year: extractYear(albumInfo.releaseDate),
+    images: buildArtworkImages(albumInfo),
+    urls: {
+      source: albumInfo.collectionViewUrl || null,
+      detail: `${BASE_DETAIL}/albums/${albumInfo.collectionId}`
+    },
+    details: {
+      artist: albumInfo.artistName || null,
+      artistId: albumInfo.artistId ? `${SOURCE}:${albumInfo.artistId}` : null,
+      releaseDate: albumInfo.releaseDate || null,
+      genre: albumInfo.primaryGenreName || null,
+      tracks,
+      trackCount: albumInfo.trackCount || tracks.length,
+      discCount: albumInfo.discCount || 1,
+      duration: totalDuration || null,
+      durationFormatted: totalDuration ? formatDuration(totalDuration * 1000) : null,
+      explicit: albumInfo.collectionExplicitness === 'explicit',
+      price: albumInfo.collectionPrice || null,
+      currency: albumInfo.currency || null,
+      copyright: albumInfo.copyright || null
+    }
   };
 }
 
 /**
- * Normalise les détails d'un artiste
+ * Normalise les détails d'un artiste → format canonique
  */
 export function normalizeArtistDetail(data) {
   const results = data.results || [];
-  
   const artistInfo = results.find(r => r.wrapperType === 'artist');
-  
+
   if (!artistInfo) {
     throw new Error('Artiste non trouvé dans les résultats');
   }
-  
+
   return {
-    id: `itunes:artist:${artistInfo.artistId}`,
+    id: `${SOURCE}:${artistInfo.artistId}`,
+    type: 'music_artist',
+    source: SOURCE,
     sourceId: String(artistInfo.artistId),
-    provider: 'itunes',
-    type: 'artist',
-    
-    name: artistInfo.artistName,
-    genre: artistInfo.primaryGenreName || null,
-    
-    url: artistInfo.artistLinkUrl
+    title: artistInfo.artistName,
+    titleOriginal: null,
+    description: null,
+    year: null,
+    images: {
+      primary: null,
+      thumbnail: null,
+      gallery: []
+    },
+    urls: {
+      source: artistInfo.artistLinkUrl || null,
+      detail: `${BASE_DETAIL}/artists/${artistInfo.artistId}`
+    },
+    details: {
+      genre: artistInfo.primaryGenreName || null
+    }
   };
 }
 
@@ -297,21 +359,26 @@ export function normalizeArtistDetail(data) {
  */
 export function normalizeArtistAlbums(data, artistId) {
   const results = data.results || [];
-  
+
   // Premier = artiste, reste = albums
   const albums = results
     .filter(r => r.wrapperType === 'collection')
     .map((item, idx) => normalizeAlbumSearchItem(item, idx + 1));
-  
+
   return {
-    artistId,
+    success: true,
+    provider: SOURCE,
+    domain: DOMAIN,
+    query: artistId,
     total: albums.length,
+    count: albums.length,
+    data: albums,
     pagination: {
       page: 1,
       pageSize: albums.length,
       hasMore: false
     },
-    data: albums
+    meta: buildMeta()
   };
 }
 

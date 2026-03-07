@@ -1,11 +1,15 @@
 /**
- * Paninimania Normalizer
+ * Paninimania Normalizer — Canonical Format B
  * 
- * Normalizes Paninimania data to Tako_Api standard format
+ * Normalizes Paninimania data to canonical Format B.
  * Preserves ALL complex data: specialStickers, additionalImages, articles, checklist
  * 
  * @module domains/sticker-albums/normalizers/paninimania
  */
+
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 /**
  * Extract text from translation object or string
@@ -19,52 +23,105 @@ function extractText(value) {
   return String(value);
 }
 
+// ============================================================================
+// ITEM NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalize search results
+ * Normalize a single Paninimania search item to canonical Format B
+ * @param {object} item - Raw item from search results
+ * @returns {object|null} Canonical Format B item
+ */
+export function normalizeSearchItem(item) {
+  if (!item) return null;
+
+  const sourceId = String(item.id || 'unknown');
+
+  return {
+    id: `paninimania:${sourceId}`,
+    type: 'sticker_album',
+    source: 'paninimania',
+    sourceId,
+    title: extractText(item.title) || '',
+    titleOriginal: null,
+    description: null,
+    year: item.year || null,
+    images: {
+      primary: item.image || null,
+      thumbnail: item.thumbnail || item.image || null,
+      gallery: [item.image, item.thumbnail].filter(Boolean)
+    },
+    urls: {
+      source: item.url || null,
+      detail: `/api/sticker-albums/paninimania/album/${sourceId}`
+    },
+    details: {}
+  };
+}
+
+// ============================================================================
+// SEARCH NORMALIZATION — Canonical Search Response
+// ============================================================================
+
+/**
+ * Normalize search results to canonical search wrapper
  * @param {object} response - Raw response from provider
- * @returns {object} Normalized response
+ * @returns {object} Canonical search response
  */
 export function normalizeSearchResults(response) {
   if (!response || !response.results) {
     return {
+      success: true,
+      provider: 'paninimania',
+      domain: 'sticker-albums',
       query: response?.query || '',
-      formattedQuery: response?.formattedQuery || '',
       total: 0,
-      results: [],
-      source: 'paninimania'
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        formattedQuery: response?.formattedQuery || ''
+      }
     };
   }
 
-  const normalizedResults = response.results.map(item => ({
-    id: item.id,
-    title: extractText(item.title),
-    url: item.url,
-    image: item.image,
-    thumbnail: item.thumbnail,
-    year: item.year
-  }));
+  const items = response.results.map(normalizeSearchItem).filter(Boolean);
 
   return {
-    query: response.query,
-    formattedQuery: response.formattedQuery,
-    total: normalizedResults.length,
-    results: normalizedResults,
-    source: 'paninimania'
+    success: true,
+    provider: 'paninimania',
+    domain: 'sticker-albums',
+    query: response.query || '',
+    total: items.length,
+    count: items.length,
+    data: items,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString(),
+      formattedQuery: response.formattedQuery || ''
+    }
   };
 }
 
+// ============================================================================
+// DETAIL NORMALIZATION — Canonical Format B
+// ============================================================================
+
 /**
- * Normalize album details
+ * Normalize album details to canonical Format B
  * CRITICAL: Preserves ALL data including specialStickers, additionalImages, articles
  * @param {object} data - Raw album data from provider
- * @returns {object} Normalized album data
+ * @returns {object|null} Canonical Format B item
  */
 export function normalizeDetails(data) {
   if (!data) {
     return null;
   }
 
-  // Normalize checklist - preserve structure
+  const sourceId = String(data.id || 'unknown');
+
+  // Normalize checklist — preserve full structure
   let normalizedChecklist = null;
   if (data.checklist) {
     normalizedChecklist = {
@@ -75,7 +132,7 @@ export function normalizeDetails(data) {
     };
   }
 
-  // Normalize special stickers - CRITICAL: preserve ALL types
+  // Normalize special stickers — CRITICAL: preserve ALL types
   let normalizedSpecialStickers = null;
   if (data.specialStickers && Array.isArray(data.specialStickers)) {
     normalizedSpecialStickers = data.specialStickers.map(special => ({
@@ -86,7 +143,7 @@ export function normalizeDetails(data) {
     }));
   }
 
-  // Normalize additional images - preserve captions
+  // Normalize additional images — preserve captions
   let normalizedAdditionalImages = null;
   if (data.additionalImages && Array.isArray(data.additionalImages)) {
     normalizedAdditionalImages = data.additionalImages.map(img => ({
@@ -107,21 +164,43 @@ export function normalizeDetails(data) {
     normalizedArticles = data.articles.map(art => extractText(art));
   }
 
+  // Build images gallery from mainImage + additionalImages URLs
+  const gallery = [];
+  if (data.mainImage) gallery.push(data.mainImage);
+  if (normalizedAdditionalImages) {
+    for (const img of normalizedAdditionalImages) {
+      if (img.url) gallery.push(img.url);
+    }
+  }
+
   return {
-    id: data.id,
-    title: extractText(data.title),
-    url: data.url,
-    description: extractText(data.description),
-    mainImage: data.mainImage,
-    barcode: data.barcode,
-    copyright: data.copyright,
-    releaseDate: data.releaseDate,
-    editor: data.editor,
-    checklist: normalizedChecklist,
-    categories: normalizedCategories,
-    additionalImages: normalizedAdditionalImages,
-    articles: normalizedArticles,
-    specialStickers: normalizedSpecialStickers,
-    source: 'paninimania'
+    id: `paninimania:${sourceId}`,
+    type: 'sticker_album',
+    source: 'paninimania',
+    sourceId,
+    title: extractText(data.title) || '',
+    titleOriginal: null,
+    description: extractText(data.description) || null,
+    year: null,
+    images: {
+      primary: data.mainImage || null,
+      thumbnail: data.mainImage || null,
+      gallery
+    },
+    urls: {
+      source: data.url || null,
+      detail: `/api/sticker-albums/paninimania/album/${sourceId}`
+    },
+    details: {
+      barcode: data.barcode || null,
+      copyright: data.copyright || null,
+      releaseDate: data.releaseDate || null,
+      editor: data.editor || null,
+      categories: normalizedCategories,
+      checklist: normalizedChecklist,
+      specialStickers: normalizedSpecialStickers,
+      additionalImages: normalizedAdditionalImages,
+      articles: normalizedArticles
+    }
   };
 }
