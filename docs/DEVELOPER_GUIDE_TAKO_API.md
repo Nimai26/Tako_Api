@@ -2,7 +2,7 @@
 
 > **Version** : 2.6.1  
 > **Base URL Production** : `https://tako.snowmanprod.fr`  
-> **Dernière mise à jour** : 6 mars 2026
+> **Dernière mise à jour** : 7 mars 2026
 
 ---
 
@@ -1130,6 +1130,44 @@ Le provider Amazon utilise un mécanisme multi-couches pour contourner les prote
 
 > **Note** : Temps de réponse : ~8s (1ère requête avec warm-up WAF), ~3s ensuite (session réutilisée). Limiter à 1 requête / 3 secondes.
 
+#### Routes alias Amazon par domaine
+
+Amazon est également exposé comme **provider natif** dans 9 domaines via des routes alias. Chaque alias redirige vers le provider Amazon avec une **catégorie pré-configurée** :
+
+| Route alias | Catégorie Amazon | Label |
+|-------------|-----------------|-------|
+| `/api/videogames/amazon/` | `videogames` | Jeux vidéo |
+| `/api/collectibles/amazon/` | `toys` | Jouets |
+| `/api/boardgames/amazon/` | `toys` | Jouets |
+| `/api/construction-toys/amazon/` | `toys` | Jouets |
+| `/api/books/amazon/` | `books` | Livres |
+| `/api/anime-manga/amazon/` | `books` | Livres |
+| `/api/comics/amazon/` | `books` | Livres |
+| `/api/music/amazon/` | `music` | Musique |
+| `/api/media/amazon/` | `movies` | Films & Séries |
+
+Chaque alias expose **4 endpoints** :
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/{domain}/amazon/search?q=` | Recherche Amazon (catégorie pré-filtrée, `country=fr` par défaut) |
+| `GET /api/{domain}/amazon/product/:asin` | Détails produit par ASIN |
+| `GET /api/{domain}/amazon/health` | Statut du provider Amazon |
+| `GET /api/{domain}/amazon/` | Informations de la route alias |
+
+```bash
+# Recherche de jeux vidéo sur Amazon (catégorie videogames auto)
+GET /api/videogames/amazon/search?q=zelda
+
+# Détail d'un Blu-ray via l'alias media
+GET /api/media/amazon/product/B07HHQK71Z
+
+# Recherche de livres manga sur Amazon
+GET /api/anime-manga/amazon/search?q=one+piece
+```
+
+> **Note** : Les alias utilisent le même provider Amazon que `/api/ecommerce/amazon/` — même mécanisme FlareSolverr + VPN, mêmes temps de réponse.
+
 ---
 
 ### 10.12 Sticker-Albums
@@ -1149,21 +1187,12 @@ Le provider Amazon utilise un mécanisme multi-couches pour contourner les prote
 ---
 
 ## 11. Endpoints Discovery (Trending/Popular/Charts)
-op/tv` | Jikan | Top séries animées |
-| `GET /api/anime-manga/jikan/top/movie` | Jikan | Top films animés |
-| `GET /api/anime-manga/jikan/trending` | Jikan | Anime de la saison |
-| `GET /api/anime-manga/jikan/trending/tv` | Jikan | Trending séries animées |
-| `GET /api/anime-manga/jikan/trending/movie` | Jikan | Trending films animés |
-| `GET /api/anime-manga/jikan/upcoming` | Jikan | Anime à venir |
-| `GET /api/anime-manga/jikan/upcoming/tv` | Jikan | À venir séries animées |
-| `GET /api/anime-manga/jikan/upcoming/movie` | Jikan | À venir films animésr automatiquement. Réponse ultra-rapide (~11ms).
+
+Ces endpoints retournent des données **pré-cachées** dans PostgreSQL, rafraîchies automatiquement. Réponse ultra-rapide (~11ms).
 
 | Endpoint | Provider | Description |
 |----------|----------|-------------|
-| `GET /api/media/tmdb/trending` | Deezer | Charts globaux |
-| `GET /api/music/deezer/chart/albums` | Deezer | Charts albums |
-| `GET /api/music/deezer/chart/tracks` | Deezer | Charts tracks |
-| `GET /api/music/deezer/chart/artists` | Deezer | Charts artistems trending |
+| `GET /api/media/tmdb/trending?category=movie&period=day` | TMDB | Films trending |
 | `GET /api/media/tmdb/trending?category=tv&period=day` | TMDB | Séries trending |
 | `GET /api/media/tmdb/popular?category=movie` | TMDB | Films populaires |
 | `GET /api/media/tmdb/popular?category=tv` | TMDB | Séries populaires |
@@ -1174,12 +1203,27 @@ op/tv` | Jikan | Top séries animées |
 | `GET /api/media/tmdb/airing-today` | TMDB | Séries du jour |
 | `GET /api/anime-manga/jikan/top?type=anime` | Jikan | Top anime |
 | `GET /api/anime-manga/jikan/top?type=manga` | Jikan | Top manga |
+| `GET /api/anime-manga/jikan/top/tv` | Jikan | Top séries animées |
+| `GET /api/anime-manga/jikan/top/movie` | Jikan | Top films animés |
 | `GET /api/anime-manga/jikan/trending` | Jikan | Anime de la saison |
+| `GET /api/anime-manga/jikan/trending/tv` | Jikan | Trending séries animées |
+| `GET /api/anime-manga/jikan/trending/movie` | Jikan | Trending films animés |
 | `GET /api/anime-manga/jikan/upcoming` | Jikan | Anime à venir |
+| `GET /api/anime-manga/jikan/upcoming/tv` | Jikan | À venir séries animées |
+| `GET /api/anime-manga/jikan/upcoming/movie` | Jikan | À venir films animés |
+| `GET /api/videogames/igdb/popular` | IGDB | Jeux populaires |
+| `GET /api/videogames/igdb/top-rated` | IGDB | Jeux mieux notés |
+| `GET /api/videogames/igdb/recent` | IGDB | Sorties récentes |
+| `GET /api/videogames/igdb/upcoming` | IGDB | Jeux à venir |
 | `GET /api/videogames/rawg/popular` | RAWG | Jeux populaires |
 | `GET /api/videogames/rawg/trending` | RAWG | Jeux trending |
-| `GET /api/videogames/igdb/popular` | IGDB | Jeux populaires |
-| `GET /api/music/deezer/charts?category=albums` | Deezer | Charts albums |
+| `GET /api/videogames/rawg/top-rated` | RAWG | Jeux mieux notés |
+| `GET /api/videogames/rawg/recent` | RAWG | Sorties récentes |
+| `GET /api/videogames/rawg/upcoming` | RAWG | Jeux à venir |
+| `GET /api/music/deezer/charts` | Deezer | Charts globaux |
+| `GET /api/music/deezer/chart/albums` | Deezer | Charts albums |
+| `GET /api/music/deezer/chart/tracks` | Deezer | Charts tracks |
+| `GET /api/music/deezer/chart/artists` | Deezer | Charts artistes |
 | `GET /api/music/itunes/charts?category=album&country=fr` | iTunes | Top albums FR |
 
 ---
@@ -1376,14 +1420,14 @@ Les providers TCG incluent les prix dans les détails :
 - **Pokémon TCG** : TCGPlayer (USD) + Cardmarket (EUR)
 - **MTG** : Scryfall (USD, EUR, MTGO Tix)
 - **Yu-Gi-Oh!** : Cardmarket, TCGPlayer, eBay, Amazon, CoolStuffInc
-7 providers, 12
+
 ### Puis-je utiliser l'API en production ?
 Oui. L'API est accessible en production sur `https://tako.snowmanprod.fr` avec un certificat TLS Let's Encrypt valide.
 
 ---
 
 ## Endpoints de contrôle
-7 providers, 12
+
 | Endpoint | Description |
 |----------|-------------|
 | `GET /health` | Statut de l'API, version, uptime |
@@ -1392,5 +1436,5 @@ Oui. L'API est accessible en production sur `https://tako.snowmanprod.fr` avec u
 
 ---
 
-> **Tako API v2.6.0** — 37 providers, 12 domaines, 130 102 cartes archivées  
+> **Tako API v2.6.1** — 37 providers, 12 domaines, 130 102 cartes archivées  
 > Pour toute question, consultez le repo [Nimai26/Tako_Api](https://github.com/Nimai26/Tako_Api)
