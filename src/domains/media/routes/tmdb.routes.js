@@ -28,6 +28,7 @@ import { ValidationError } from '../../../shared/errors/index.js';
 import {
   translateSearchResults,
   translateText,
+  translateGenre,
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
@@ -58,13 +59,10 @@ async function translateDetailResult(result, targetLang, autoTradEnabled) {
     }
   }
 
-  // Traduire genres si présents (tableau de strings)
+  // Traduire genres si présents (utilise translateGenre avec dictionnaire + fallback API)
   if (result.genres && Array.isArray(result.genres) && result.genres.length > 0) {
     const genreTranslations = await Promise.all(
-      result.genres.map(async (genre) => {
-        const { text, translated: wasTranslated } = await translateText(genre, targetLang, { enabled: true });
-        return wasTranslated ? text : genre;
-      })
+      result.genres.map(genre => translateGenre(genre, targetLang))
     );
     
     // Vérifier si au moins un genre a été traduit

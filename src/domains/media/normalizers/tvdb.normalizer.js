@@ -35,9 +35,13 @@ export class TvdbNormalizer extends BaseNormalizer {
     const { query, searchType, total, pagination } = metadata;
 
     return {
+      success: true,
+      provider: 'tvdb',
+      domain: 'media',
       query,
       searchType,
       total,
+      count: results.length,
       pagination: pagination || {
         page: 1,
         pageSize: results.length,
@@ -45,21 +49,30 @@ export class TvdbNormalizer extends BaseNormalizer {
         hasMore: false
       },
       data: results.map((item, index) => this.normalizeSearchItem(item, index + 1)),
-      source: 'tvdb'
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        source: 'tvdb'
+      }
     };
   }
 
   normalizeSearchItem(item, position) {
     const type = item.type || 'series';
+    const sourceId = String(item.tvdb_id || item.id);
+    const sourceUrl = type === 'movie'
+      ? `https://thetvdb.com/movies/${item.slug || sourceId}`
+      : `https://thetvdb.com/series/${item.slug || sourceId}`;
     
     return {
-      sourceId: String(item.tvdb_id || item.id),
+      id: `tvdb:${sourceId}`,
+      sourceId,
+      source: 'tvdb',
       provider: 'tvdb',
       type: type,
       mediaType: type,
 
       title: item.name || item.title,
-      originalTitle: item.name,
+      titleOriginal: item.name,
       slug: item.slug,
       
       description: item.overview || null,
@@ -70,13 +83,17 @@ export class TvdbNormalizer extends BaseNormalizer {
       country: item.country || null,
       primaryLanguage: item.primary_language || null,
 
-      poster: item.image || item.thumbnail || item.image_url || null,
+      images: {
+        primary: item.image || item.thumbnail || item.image_url || null,
+        thumbnail: item.thumbnail || item.image || null
+      },
       
       aliases: item.aliases || [],
 
-      src_url: type === 'movie'
-        ? `https://thetvdb.com/movies/${item.slug || item.tvdb_id || item.id}`
-        : `https://thetvdb.com/series/${item.slug || item.tvdb_id || item.id}`,
+      urls: {
+        source: sourceUrl,
+        detail: `/api/media/tvdb/${type === 'movie' ? 'movies' : 'series'}/${sourceId}`
+      },
 
       metadata: {
         position,
@@ -238,20 +255,7 @@ export class TvdbNormalizer extends BaseNormalizer {
       }
     };
 
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: options.lang || 'en',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
+    return data;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -408,20 +412,7 @@ export class TvdbNormalizer extends BaseNormalizer {
       }
     };
 
-    // Wrapper standardisé
-    return {
-      success: true,
-      provider: this.source,
-      domain: this.domain,
-      id: data.id,
-      data,
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang: options.lang || 'en',
-        cached: options.cached || false,
-        cacheAge: options.cacheAge || null
-      }
-    };
+    return data;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
