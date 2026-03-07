@@ -1,9 +1,29 @@
 # Format de Réponse Normalisé Tako API
 
+> **Ce document est la spécification NORMATIVE (non négociable).**  
+> Tout normalizer DOIT produire EXACTEMENT cette structure.  
+> Voir [ADR 2025-06 : Choix du Format B](#adr-2025-06--choix-du-format-b) pour le contexte.
+
 ## Principe Fondamental
 
 **Toutes les réponses suivent le MÊME schéma de base**, quel que soit le provider ou le domaine.  
 Les données spécifiques sont encapsulées dans un objet `details` qui varie selon le type de contenu.
+
+### État de Migration (juin 2025)
+
+| Domaine | Providers | Format B conforme ? | Notes |
+|---------|-----------|---------------------|-------|
+| media | TMDB, TVDB | ✅ Oui | Refonte canonique v2.6.1 |
+| construction-toys | Brickset, Rebrickable, BrickEconomy, LEGO, Amazon, Mega Construx (archive) | ⚠️ Partiel | Uses BaseNormalizer mais `details` aplati au root |
+| books | OpenLibrary, Google Books, Amazon | ⚠️ Partiel | Uses BaseNormalizer, structure à vérifier |
+| comics | ComicVine, Amazon | ⚠️ Partiel | Uses BaseNormalizer, structure à vérifier |
+| anime-manga | Jikan, AniList | ❌ Non | Wrapper construit dans les routes, format libre |
+| videogames | RAWG | ❌ Non | Wrapper dans routes, vocabulaire différent (`source` au lieu de `provider`) |
+| music | Deezer | ❌ Non | Wrapper dans routes, champs `source` + `provider` redondants |
+| boardgames | BGG | ❌ Non | Aucun wrapper — objet brut envoyé directement |
+| collectibles | ConsoleVariations, Amazon | ❌ Non | Wrapper minimal `{success, data}` |
+| tcg | DBS Card Game, Carddass (archives) | ❌ Non | Pas de normalizer canonique |
+| ecommerce | Amazon | ❌ Non | Pas de normalizer canonique |
 
 ---
 
@@ -255,10 +275,46 @@ Les données spécifiques sont encapsulées dans un objet `details` qui varie se
 
 ---
 
-## Avantages de cette Architecture
+## ADR 2025-06 : Choix du Format B
 
-1. **Prédictibilité** : Le client sait toujours où trouver `id`, `title`, `images`, etc.
-2. **Compatibilité** : Facile de comparer des items de différents providers
-3. **Extensibilité** : Ajouter des champs dans `details` ne casse pas le schéma
-4. **Validation** : Zod valide automatiquement la structure
-5. **Documentation** : Un seul format à documenter et maintenir
+### Contexte
+
+Le projet Tako API a été lancé avec l'intention d'avoir un format de réponse unique et normé.
+En réalité, la migration v2.0.0 a produit un format plat (`...base, ...details`) contraire à la spec.
+La migration v2.0.1 a affirmé "100% conforme" alors que seul le wrapper externe avait été ajouté.
+Résultat en v2.6.0 : **6 formats distincts coexistaient**, chaque domaine ayant son propre vocabulaire.
+
+### Trois causes racines identifiées
+
+1. **v2.0.0** a choisi le format plat (opposé de la spec) → `...base, ...details` au lieu de `{ ...base, details: {...} }`
+2. **v2.0.1** a déclaré victoire prématurément — wrapper externe OK mais contenu interne jamais validé
+3. **Aucune validation Zod active** — `data: z.any()` dans response.js ⇒ aucun garde-fou
+
+### Décision
+
+**Format B (noyau commun + objet `details`)** est le format DÉFINITIF et NON NÉGOCIABLE pour tous les domaines.
+
+- Le noyau commun (id, type, source, sourceId, title, titleOriginal, description, year, images, urls) est IDENTIQUE partout
+- Les données spécifiques au domaine sont dans `details: { ... }` — JAMAIS aplaties au root
+- Le schéma Zod dans `content-types.js` est la source de vérité (`coreItemSchema` + `createItemSchema`)
+
+### Conséquences
+
+- Tous les domaines doivent être migrés vers Format B (voir tableau d'état ci-dessus)
+- La validation Zod doit être activée dans BaseNormalizer pour rejeter les formats non conformes
+- Le `baseItemSchema` legacy (ancien format plat) a été supprimé du code
+
+---
+
+## Validation Zod
+
+Les schémas sont définis dans `src/core/schemas/content-types.js` :
+
+| Schéma | Usage |
+|--------|-------|
+| `coreItemSchema` | Noyau commun obligatoire |
+| `createItemSchema(detailsSchema)` | Fabrique un schéma complet core + details |
+| `detailSchemasByType` | Map type → schéma de détails |
+| `itemSchemasByType` | Map type → schéma complet |
+
+> **TODO** : Activer la validation Zod `.parse()` dans BaseNormalizer pour garantir la conformité à la compilation.

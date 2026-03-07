@@ -110,39 +110,7 @@ export function createItemSchema(detailsSchema) {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCHÉMA LEGACY (rétrocompatibilité) - À SUPPRIMER APRÈS MIGRATION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/** @deprecated Utiliser coreItemSchema + createItemSchema */
-export const baseItemSchema = z.object({
-  // Identification
-  type: z.string(),
-  source: z.string(),
-  sourceId: z.string(),
-  
-  // Noms
-  name: z.string(),
-  name_original: z.string().nullable(),
-  
-  // Description
-  description: z.string().nullable(),
-  
-  // Année
-  year: z.number().nullable(),
-  
-  // Images
-  image: z.string().url().nullable(),
-  images: z.object({
-    thumbnail: z.string().url().nullable(),
-    cover: z.string().url().nullable(),
-    gallery: z.array(z.string().url()).optional()
-  }).optional(),
-  
-  // URLs
-  src_url: z.string().url().nullable(),
-  detailUrl: z.string()
-});
+// LEGACY baseItemSchema supprimé — seul coreItemSchema + createItemSchema subsistent
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DÉTAILS PAR DOMAINE - Schémas spécifiques pour la propriété "details"
