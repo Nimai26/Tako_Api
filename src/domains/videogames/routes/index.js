@@ -11,6 +11,7 @@ import igdbRoutes from './igdb.routes.js';
 import rawgRoutes from './rawg.routes.js';
 import jvcRoutes from './jvc.routes.js';
 import consolevariationsRoutes from './consolevariations.routes.js';
+import { createAmazonAliasRouter } from '../../ecommerce/routes/amazon-alias.factory.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 const log = logger.create('VideogamesRoutes');
@@ -198,5 +199,8 @@ router.get('/health', async (req, res) => {
     summary: `${healthyCount}/${totalCount} providers healthy`
   });
 });
+
+// Amazon alias (catégorie Jeux vidéo)
+router.use('/amazon', createAmazonAliasRouter({ domain: 'videogames', category: 'videogames', categoryLabel: 'Jeux vidéo' }));
 
 export default router;

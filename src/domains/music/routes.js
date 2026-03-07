@@ -12,6 +12,7 @@ import discogsRoutes from './routes/discogs.routes.js';
 import deezerRoutes from './routes/deezer.routes.js';
 import musicbrainzRoutes from './routes/musicbrainz.routes.js';
 import itunesRoutes from './routes/itunes.routes.js';
+import { createAmazonAliasRouter } from '../ecommerce/routes/amazon-alias.factory.js';
 import { logger } from '../../shared/utils/logger.js';
 
 const router = Router();
@@ -192,6 +193,7 @@ router.use('/discogs', discogsRoutes);
 router.use('/deezer', deezerRoutes);
 router.use('/musicbrainz', musicbrainzRoutes);
 router.use('/itunes', itunesRoutes);
+router.use('/amazon', createAmazonAliasRouter({ domain: 'music', category: 'music', categoryLabel: 'Musique' }));
 
 log.info('Music domain routes initialized', {
   providers: ['discogs', 'deezer', 'musicbrainz', 'itunes']

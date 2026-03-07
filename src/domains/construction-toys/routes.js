@@ -17,6 +17,7 @@
 
 import { Router } from 'express';
 import { asyncHandler } from '../../shared/utils/async-handler.js';
+import { createAmazonAliasRouter } from '../ecommerce/routes/amazon-alias.factory.js';
 
 // Import des routers par provider
 import legoRouter from './routes/lego.routes.js';
@@ -182,3 +183,4 @@ router.use('/kreo', kreoRouter);
 router.use('/klickypedia', klickypediaRouter);
 router.use('/playmobil', playmobilRouter);
 // router.use('/playmobil', playmobilRouter);
+router.use('/amazon', createAmazonAliasRouter({ domain: 'construction-toys', category: 'toys', categoryLabel: 'Jouets' }));

@@ -3090,6 +3090,58 @@ curl "http://localhost:3000/api/ecommerce/amazon/health"
 
 ---
 
+### Amazon — Routes alias par domaine
+
+> Amazon est aussi accessible comme **provider natif** dans chaque domaine via des routes alias.
+> La catégorie Amazon est pré-configurée — pas besoin de la spécifier.
+
+#### Routes disponibles
+
+| Route alias | Catégorie Amazon | Label |
+|-------------|-----------------|-------|
+| `/api/videogames/amazon` | `videogames` | Jeux vidéo |
+| `/api/collectibles/amazon` | `toys` | Jouets |
+| `/api/boardgames/amazon` | `toys` | Jouets |
+| `/api/construction-toys/amazon` | `toys` | Jouets |
+| `/api/books/amazon` | `books` | Livres |
+| `/api/anime-manga/amazon` | `books` | Livres |
+| `/api/comics/amazon` | `books` | Livres |
+| `/api/music/amazon` | `music` | Musique |
+| `/api/media/amazon` | `movies` | Films & Séries |
+
+#### Endpoints par alias
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | Info sur l'alias (domaine, catégorie, endpoints disponibles) |
+| `GET /search?q=&country=&page=&limit=` | Recherche avec catégorie forcée |
+| `GET /product/:asin?country=` | Détails d'un produit par ASIN |
+| `GET /health` | Health check FlareSolverr + info alias |
+
+#### Exemples
+
+```bash
+# Rechercher des jeux vidéo sur Amazon
+curl "http://localhost:3000/api/videogames/amazon/search?q=zelda&country=fr"
+
+# Rechercher des livres manga
+curl "http://localhost:3000/api/anime-manga/amazon/search?q=one+piece&country=fr"
+
+# Rechercher des jouets de construction
+curl "http://localhost:3000/api/construction-toys/amazon/search?q=lego+star+wars"
+
+# Détails d'un produit musique
+curl "http://localhost:3000/api/music/amazon/product/B09ZGJKQ3K?country=fr"
+
+# Rechercher des films/séries
+curl "http://localhost:3000/api/media/amazon/search?q=lord+of+the+rings"
+```
+
+> **Note** : Ces alias utilisent le même provider Amazon (FlareSolverr + VPN) que `/api/ecommerce/amazon`.
+> Les réponses sont identiques mais le champ `domain` reflète le domaine de l'alias.
+
+---
+
 ## �️ Cache & Administration
 
 ### Cache Admin

@@ -11,6 +11,7 @@ import colekaRoutes from './coleka.routes.js';
 import luluberluRoutes from './luluberlu.routes.js';
 import transformerlandRoutes from './transformerland.routes.js';
 import carddassRoutes from './carddass.routes.js';
+import { createAmazonAliasRouter } from '../../ecommerce/routes/amazon-alias.factory.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.use('/coleka', colekaRoutes);
 router.use('/luluberlu', luluberluRoutes);
 router.use('/transformerland', transformerlandRoutes);
 router.use('/carddass', carddassRoutes);
+router.use('/amazon', createAmazonAliasRouter({ domain: 'collectibles', category: 'toys', categoryLabel: 'Jouets' }));
 
 // Route d'information sur le domaine
 router.get('/', (req, res) => {

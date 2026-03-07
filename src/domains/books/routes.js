@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import googleBooksRoutes from './routes/googlebooks.routes.js';
 import openLibraryRoutes from './routes/openlibrary.routes.js';
+import { createAmazonAliasRouter } from '../ecommerce/routes/amazon-alias.factory.js';
 
 const router = Router();
 
@@ -90,5 +91,6 @@ router.get('/health', async (req, res) => {
 // Monter les sous-routes
 router.use('/googlebooks', googleBooksRoutes);
 router.use('/openlibrary', openLibraryRoutes);
+router.use('/amazon', createAmazonAliasRouter({ domain: 'books', category: 'books', categoryLabel: 'Livres' }));
 
 export default router;

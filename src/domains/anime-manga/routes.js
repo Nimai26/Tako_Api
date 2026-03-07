@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import mangaUpdatesRoutes from './routes/mangaupdates.routes.js';
 import jikanRoutes from './routes/jikan.routes.js';
+import { createAmazonAliasRouter } from '../ecommerce/routes/amazon-alias.factory.js';
 
 const router = Router();
 
@@ -139,5 +140,6 @@ router.get('/', (req, res) => {
 // Montage des routes par provider
 router.use('/mangaupdates', mangaUpdatesRoutes);
 router.use('/jikan', jikanRoutes);
+router.use('/amazon', createAmazonAliasRouter({ domain: 'anime-manga', category: 'books', categoryLabel: 'Livres' }));
 
 export default router;

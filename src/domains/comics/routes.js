@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import comicVineRoutes from './routes/comicvine.routes.js';
 import bedethequeRoutes from './routes/bedetheque.routes.js';
+import { createAmazonAliasRouter } from '../ecommerce/routes/amazon-alias.factory.js';
 
 const router = Router();
 
@@ -74,5 +75,6 @@ router.get('/', (req, res) => {
 // Montage des routes par provider
 router.use('/comicvine', comicVineRoutes);
 router.use('/bedetheque', bedethequeRoutes);
+router.use('/amazon', createAmazonAliasRouter({ domain: 'comics', category: 'books', categoryLabel: 'Livres' }));
 
 export default router;

@@ -7,7 +7,27 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
-### 🔧 Amazon — VPN Gluetun + détection AWS WAF + format Tako standard
+### � Amazon — Routes alias par domaine
+
+#### Added
+- **`amazon-alias.factory.js`** — Factory générant des routers Express alias Amazon avec catégorie pré-configurée
+- **9 routes alias Amazon** exposant Amazon comme provider natif dans chaque domaine :
+  | Route | Catégorie Amazon | Label |
+  |-------|-----------------|-------|
+  | `/api/videogames/amazon` | `videogames` | Jeux vidéo |
+  | `/api/collectibles/amazon` | `toys` | Jouets |
+  | `/api/boardgames/amazon` | `toys` | Jouets |
+  | `/api/construction-toys/amazon` | `toys` | Jouets |
+  | `/api/books/amazon` | `books` | Livres |
+  | `/api/anime-manga/amazon` | `books` | Livres |
+  | `/api/comics/amazon` | `books` | Livres |
+  | `/api/music/amazon` | `music` | Musique |
+  | `/api/media/amazon` | `movies` | Films & Séries |
+- Chaque alias expose : `GET /search`, `GET /product/:asin`, `GET /health`, `GET /`
+
+---
+
+### �🔧 Amazon — VPN Gluetun + détection AWS WAF + format Tako standard
 
 #### Added
 - **Gluetun VPN** intégré au stack Docker de production (PIA OpenVPN, proxy HTTP 8888)
