@@ -63,6 +63,9 @@ export class TvdbNormalizer extends BaseNormalizer {
       ? `https://thetvdb.com/movies/${item.slug || sourceId}`
       : `https://thetvdb.com/series/${item.slug || sourceId}`;
     
+    const primaryImage = item.image || item.thumbnail || item.image_url || null;
+    const thumbnailImage = item.thumbnail || item.image || null;
+
     return {
       id: `tvdb:${sourceId}`,
       sourceId,
@@ -72,7 +75,8 @@ export class TvdbNormalizer extends BaseNormalizer {
       mediaType: type,
 
       title: item.name || item.title,
-      titleOriginal: item.name,
+      originalTitle: item.name,
+      titleOriginal: item.name, // rétrocompat
       slug: item.slug,
       
       description: item.overview || null,
@@ -83,9 +87,14 @@ export class TvdbNormalizer extends BaseNormalizer {
       country: item.country || null,
       primaryLanguage: item.primary_language || null,
 
+      // Images (flat, aligné TMDB)
+      poster: primaryImage,
+      posterSmall: thumbnailImage,
+
+      // Images (nested, rétrocompat)
       images: {
-        primary: item.image || item.thumbnail || item.image_url || null,
-        thumbnail: item.thumbnail || item.image || null
+        primary: primaryImage,
+        thumbnail: thumbnailImage
       },
       
       aliases: item.aliases || [],
@@ -94,6 +103,7 @@ export class TvdbNormalizer extends BaseNormalizer {
         source: sourceUrl,
         detail: `/api/media/tvdb/${type === 'movie' ? 'movies' : 'series'}/${sourceId}`
       },
+      src_url: sourceUrl,
 
       metadata: {
         position,
@@ -114,6 +124,12 @@ export class TvdbNormalizer extends BaseNormalizer {
     // Détermine l'overview à utiliser
     const overview = translations?.overview || baseOverview || null;
 
+    // Extraire backdrop et posterOriginal depuis artworks (alignement TMDB)
+    const { backdrop, backdropOriginal, posterOriginal } = this.extractKeyArtworks(movie.artworks);
+
+    // Extraire la date de sortie depuis releases[]
+    const releaseDate = this.extractReleaseDate(movie.releases);
+
     const data = {
       id: `${this.source}:${movie.id}`,
       sourceId: String(movie.id),
@@ -128,12 +144,18 @@ export class TvdbNormalizer extends BaseNormalizer {
       slug: movie.slug,
       description: overview,
       
-      year: movie.year,
+      releaseDate,
+      year: movie.year || (releaseDate ? this.extractYear(releaseDate) : null),
       runtime: movie.runtime,
       status: movie.status?.name || null,
 
-      // Images
+      // Images (flat, aligné TMDB)
       poster: movie.image,
+      posterOriginal: posterOriginal || movie.image,
+      backdrop,
+      backdropOriginal,
+
+      // Artworks complets
       artworks: movie.artworks?.slice(0, 20).map(a => ({
         id: a.id,
         type: a.type,
@@ -266,6 +288,9 @@ export class TvdbNormalizer extends BaseNormalizer {
     const { translations } = options;
     const genres = Array.isArray(series.genres) ? series.genres.map(g => g.name) : [];
 
+    // Extraire backdrop et posterOriginal depuis artworks (alignement TMDB)
+    const { backdrop, backdropOriginal, posterOriginal } = this.extractKeyArtworks(series.artworks);
+
     const data = {
       id: `${this.source}:${series.id}`,
       sourceId: String(series.id),
@@ -280,7 +305,8 @@ export class TvdbNormalizer extends BaseNormalizer {
       slug: series.slug,
       description: translations?.overview || series.overview || null,
       
-      year: series.year,
+      firstAirDate: series.firstAired,
+      year: series.year || (series.firstAired ? this.extractYear(series.firstAired) : null),
       endYear: series.lastAired ? this.extractYear(series.lastAired) : null,
       status: series.status?.name || null,
       averageRuntime: series.averageRuntime,
@@ -290,8 +316,13 @@ export class TvdbNormalizer extends BaseNormalizer {
       lastAired: series.lastAired,
       nextAired: series.nextAired,
 
-      // Images
+      // Images (flat, aligné TMDB)
       poster: series.image,
+      posterOriginal: posterOriginal || series.image,
+      backdrop,
+      backdropOriginal,
+
+      // Artworks complets
       artworks: series.artworks?.slice(0, 20).map(a => ({
         id: a.id,
         type: a.type,
@@ -605,6 +636,48 @@ export class TvdbNormalizer extends BaseNormalizer {
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPERS PRIVÉS
   // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Extrait backdrop et posterOriginal depuis les artworks TVDB
+   * 
+   * Types TVDB (films) : 14 = poster, 15 = background/backdrop, 24 = clearart, 25 = clearlogo
+   * Types TVDB (séries) : 1 = banner, 2 = poster, 3 = fanart/backdrop, 6 = icon, 7 = clearart, etc.
+   */
+  extractKeyArtworks(artworks) {
+    if (!Array.isArray(artworks) || artworks.length === 0) {
+      return { backdrop: null, backdropOriginal: null, posterOriginal: null };
+    }
+
+    // Background/Backdrop : type 15 (films) ou type 3 (séries = fanart)
+    const backgrounds = artworks
+      .filter(a => a.type === 15 || a.type === 3)
+      .sort((a, b) => (b.score || 0) - (a.score || 0));
+    const bestBg = backgrounds[0];
+
+    // Poster haute résolution : type 14 (films) ou type 2 (séries)
+    const posters = artworks
+      .filter(a => a.type === 14 || a.type === 2)
+      .sort((a, b) => (b.score || 0) - (a.score || 0));
+    const bestPoster = posters[0];
+
+    return {
+      backdrop: bestBg?.thumbnail || bestBg?.image || null,
+      backdropOriginal: bestBg?.image || null,
+      posterOriginal: bestPoster?.image || null
+    };
+  }
+
+  /**
+   * Extrait la date de sortie la plus pertinente depuis releases[]
+   */
+  extractReleaseDate(releases) {
+    if (!Array.isArray(releases) || releases.length === 0) return null;
+    // Préférer la release "global" ou la première date disponible
+    const sorted = [...releases]
+      .filter(r => r.date)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    return sorted[0]?.date || null;
+  }
 
   /**
    * Extrait les personnes par type (Director, Writer, etc.)
