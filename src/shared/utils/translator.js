@@ -537,29 +537,67 @@ export async function translateSearchDescriptions(items, autoTrad, lang) {
 
 /**
  * Traduit les noms ET descriptions des résultats de recherche (pour providers US/internationaux)
- * @param {Array} items - Les items à traduire
- * @param {boolean|string|number} autoTrad - Si la traduction est activée
- * @param {string} lang - La langue cible (fr, es, de, etc.)
- * @returns {Promise<Array>} - Les items avec noms et descriptions traduits
+ * 
+ * Supporte deux conventions d'appel :
+ *   Convention A : translateSearchResults(items[], autoTrad, lang)
+ *     → Utilisée par klickypedia, googlebooks, brickset, rebrickable, openlibrary, igdb
+ *   Convention B : translateSearchResults(responseObj, targetLang, { fields })
+ *     → Utilisée par tmdb, tvdb, mangaupdates, jikan, bedetheque, comicvine
+ * 
+ * @param {Array|Object} input - Tableau d'items OU objet réponse avec .data[]
+ * @param {boolean|string} secondArg - autoTrad (Convention A) ou targetLang (Convention B)
+ * @param {string|Object} thirdArg - lang (Convention A) ou { fields: string[] } (Convention B)
+ * @returns {Promise<Array|Object>} - Les items traduits, dans le même format que l'input
  */
-export async function translateSearchResults(items, autoTrad, lang) {
-  // Ne pas traduire si autoTrad désactivé ou langue anglaise demandée
-  const destLang = extractLangCode(lang);
-  if (!autoTrad || !destLang || destLang === 'en') {
-    return items;
+export async function translateSearchResults(input, secondArg, thirdArg) {
+  // ── Normalisation des arguments (2 conventions supportées) ──────────────
+  let items, destLang, fieldsToTranslate, isResponseObject;
+
+  if (Array.isArray(input)) {
+    // Convention A : translateSearchResults(items[], autoTrad, lang)
+    if (!secondArg) return input;
+    destLang = extractLangCode(thirdArg);
+    if (!destLang || destLang === 'en') return input;
+    items = input;
+    fieldsToTranslate = null; // tous les champs par défaut
+    isResponseObject = false;
+  } else if (input && Array.isArray(input.data)) {
+    // Convention B : translateSearchResults(responseObj, targetLang, { fields })
+    destLang = typeof secondArg === 'string' ? secondArg : null;
+    if (!destLang || destLang === 'en') return input;
+    items = input.data;
+    const options = (typeof thirdArg === 'object' && thirdArg !== null) ? thirdArg : {};
+    fieldsToTranslate = options.fields || options.fieldsToTranslate || null;
+    isResponseObject = true;
+  } else {
+    return input;
   }
-  
-  // Limiter la traduction aux 25 premiers résultats (limite API standard)
+
+  if (!items.length) return input;
+
+  // ── Traduction ──────────────────────────────────────────────────────────
   const MAX_TRANSLATIONS = 25;
   const toTranslate = items.slice(0, MAX_TRANSLATIONS);
   const remaining = items.slice(MAX_TRANSLATIONS);
-  
-  // Traduire noms et descriptions en parallèle
+
   const translatedBatch = await Promise.all(
     toTranslate.map(async (item) => {
       const result = { ...item };
-      
-      // Traduire le nom si présent
+
+      // Si des champs spécifiques sont demandés (Convention B)
+      if (fieldsToTranslate) {
+        for (const field of fieldsToTranslate) {
+          if (!item[field]) continue;
+          const tr = await translateText(item[field], destLang, { enabled: true, sourceLang: 'en' });
+          if (tr.translated) {
+            result[`${field}Original`] = item[field];
+            result[field] = tr.text;
+          }
+        }
+        return result;
+      }
+
+      // Sinon, traduire tous les champs par défaut (Convention A)
       if (item.name) {
         const nameResult = await translateText(item.name, destLang, { enabled: true, sourceLang: 'en' });
         if (nameResult.translated) {
@@ -567,8 +605,7 @@ export async function translateSearchResults(items, autoTrad, lang) {
           result.name_translated = nameResult.text;
         }
       }
-      
-      // Traduire le titre si présent (livres, albums, etc.)
+
       if (item.title) {
         const titleResult = await translateText(item.title, destLang, { enabled: true, sourceLang: 'en' });
         if (titleResult.translated) {
@@ -577,8 +614,7 @@ export async function translateSearchResults(items, autoTrad, lang) {
           result.title_translated = titleResult.text;
         }
       }
-      
-      // Traduire la description si présente
+
       if (item.description) {
         const descResult = await translateText(item.description, destLang, { enabled: true, sourceLang: 'en' });
         if (descResult.translated) {
@@ -586,8 +622,7 @@ export async function translateSearchResults(items, autoTrad, lang) {
           result.description_translated = descResult.text;
         }
       }
-      
-      // Traduire le synopsis si présent (anime/manga)
+
       if (item.synopsis) {
         const synopsisResult = await translateText(item.synopsis, destLang, { enabled: true, sourceLang: 'en' });
         if (synopsisResult.translated) {
@@ -595,8 +630,7 @@ export async function translateSearchResults(items, autoTrad, lang) {
           result.synopsis_translated = synopsisResult.text;
         }
       }
-      
-      // Traduire le champ about si présent (personnages)
+
       if (item.about) {
         log.debug(`[Translator] Tentative traduction about (length: ${item.about.length}): "${item.about.substring(0, 50)}..."`);
         const aboutResult = await translateText(item.about, destLang, { enabled: true, sourceLang: 'en' });
@@ -606,11 +640,16 @@ export async function translateSearchResults(items, autoTrad, lang) {
           result.about_translated = aboutResult.text;
         }
       }
-      
+
       return result;
     })
   );
-  
-  // Retourner les traduits + les non-traduits
-  return [...translatedBatch, ...remaining];
+
+  const translatedItems = [...translatedBatch, ...remaining];
+
+  // Retourner dans le même format que l'input
+  if (isResponseObject) {
+    return { ...input, data: translatedItems };
+  }
+  return translatedItems;
 }
