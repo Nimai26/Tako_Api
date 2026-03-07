@@ -16,7 +16,7 @@ import { asyncHandler } from '../../../shared/utils/async-handler.js';
 import { logger } from '../../../shared/utils/logger.js';
 import {
   translateSearchResults,
-  translateGenres,
+  translateVideoGameGenres,
   translateText,
   isAutoTradEnabled,
   extractLangCode
@@ -41,7 +41,7 @@ async function translateGameGenres(games, autoTrad, lang) {
     
     // Traduire les genres
     if (game.genres && game.genres.length > 0) {
-      const { genres: translatedGenres } = await translateGenres(game.genres, targetLang);
+      const { terms: translatedGenres } = await translateVideoGameGenres(game.genres, targetLang);
       result.genres = translatedGenres;
     }
     

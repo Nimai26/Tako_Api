@@ -63,6 +63,7 @@ import { ValidationError } from '../../../shared/errors/index.js';
 import {
   translateSearchResults,
   translateText,
+  translateGenre,
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
@@ -123,6 +124,41 @@ async function translateDetailResult(result, targetLang, autoTradEnabled) {
       translated.aboutOriginal = result.about;
       translated.about = text;
       translated.aboutTranslated = true;
+    }
+  }
+
+  // Traduire les genres (utilise MEDIA_GENRES + fallback API)
+  // Les genres Jikan sont des objets {id, name, url} — on traduit le name
+  if (result.genres && Array.isArray(result.genres) && result.genres.length > 0) {
+    const isObjectGenres = typeof result.genres[0] === 'object' && result.genres[0].name;
+    
+    if (isObjectGenres) {
+      // Traduire les noms dans les objets genre
+      const translatedGenres = await Promise.all(
+        result.genres.map(async (genre) => {
+          const translatedName = await translateGenre(genre.name, targetLang);
+          if (translatedName !== genre.name) {
+            return { ...genre, nameOriginal: genre.name, name: translatedName };
+          }
+          return genre;
+        })
+      );
+      const wasTranslatedGenres = translatedGenres.some((g, i) => g.nameOriginal);
+      if (wasTranslatedGenres) {
+        translated.genres = translatedGenres;
+        translated.genresTranslated = true;
+      }
+    } else {
+      // Genres simples (strings)
+      const genreTranslations = await Promise.all(
+        result.genres.map(genre => translateGenre(genre, targetLang))
+      );
+      const wasTranslatedGenres = genreTranslations.some((g, i) => g !== result.genres[i]);
+      if (wasTranslatedGenres) {
+        translated.genresOriginal = result.genres;
+        translated.genres = genreTranslations;
+        translated.genresTranslated = true;
+      }
     }
   }
 

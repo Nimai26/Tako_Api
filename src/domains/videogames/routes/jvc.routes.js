@@ -10,7 +10,7 @@
 import express from 'express';
 import * as jvcProvider from '../providers/jvc.provider.js';
 import * as jvcNormalizer from '../normalizers/jvc.normalizer.js';
-import { translateGenres, translateText, isAutoTradEnabled, extractLangCode } from '../../../shared/utils/translator.js';
+import { translateVideoGameGenres, translateText, isAutoTradEnabled, extractLangCode } from '../../../shared/utils/translator.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 const log = logger.create('JvcRoutes');
@@ -39,7 +39,7 @@ async function translateGameContent(games, autoTrad, targetLang) {
     // Translate genres
     if (game.genres && game.genres.length > 0) {
       try {
-        const { genres: translatedGenres } = await translateGenres(
+        const { terms: translatedGenres } = await translateVideoGameGenres(
           game.genres,
           targetLang
         );

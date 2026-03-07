@@ -10,6 +10,7 @@ import { Router } from 'express';
 import * as musicbrainzProvider from '../providers/musicbrainz.provider.js';
 import * as musicbrainzNormalizer from '../normalizers/musicbrainz.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { translateMusicGenres, extractLangCode } from '../../../shared/utils/translator.js';
 
 const router = Router();
 const log = logger.create('MusicBrainzRoutes');
@@ -237,6 +238,16 @@ router.get('/albums/:id', async (req, res) => {
     
     const normalized = musicbrainzNormalizer.normalizeAlbumDetail(album, tracks);
     
+    // Traduire les tags (genres MusicBrainz) si demandé
+    const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
+    const lang = req.query.lang;
+    if (autoTrad && lang && normalized.tags && normalized.tags.length > 0) {
+      const targetLang = extractLangCode(lang);
+      const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.tags, targetLang);
+      normalized.tags = translatedTags;
+      if (termsOriginal) normalized.tagsOriginal = termsOriginal;
+    }
+    
     res.json({
       success: true,
       provider: 'musicbrainz',
@@ -315,6 +326,16 @@ router.get('/artists/:id', async (req, res) => {
     
     const data = await musicbrainzProvider.getArtist(id);
     const normalized = musicbrainzNormalizer.normalizeArtistDetail(data);
+    
+    // Traduire les tags (genres MusicBrainz) si demandé
+    const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
+    const lang = req.query.lang;
+    if (autoTrad && lang && normalized.tags && normalized.tags.length > 0) {
+      const targetLang = extractLangCode(lang);
+      const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.tags, targetLang);
+      normalized.tags = translatedTags;
+      if (termsOriginal) normalized.tagsOriginal = termsOriginal;
+    }
     
     res.json({
       success: true,

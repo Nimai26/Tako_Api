@@ -9,8 +9,7 @@
 import express from 'express';
 import * as bggProvider from '../providers/bgg.provider.js';
 import * as bggNormalizer from '../normalizers/bgg.normalizer.js';
-import { translateGenres, translateText, isAutoTradEnabled } from '../../../shared/utils/translator.js';
-import { BOARDGAME_GENRES } from '../../../shared/utils/genre-dictionaries.js';
+import { translateBoardGameCategories, translateText, isAutoTradEnabled } from '../../../shared/utils/translator.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 const router = express.Router();
@@ -43,14 +42,13 @@ async function translateGameContent(games, autoTrad, targetLang) {
     
     // Translate categories (BGG uses English)
     if (game.categories && game.categories.length > 0) {
-      const translated = await translateGenres(
+      const translated = await translateBoardGameCategories(
         game.categories,
-        targetLang,
-        { sourceLang: 'en' }
+        targetLang
       );
-      translatedGame.categories = translated.genres;
-      if (translated.genresOriginal) {
-        translatedGame.categoriesOriginal = translated.genresOriginal;
+      translatedGame.categories = translated.terms;
+      if (translated.termsOriginal) {
+        translatedGame.categoriesOriginal = translated.termsOriginal;
       }
     }
     

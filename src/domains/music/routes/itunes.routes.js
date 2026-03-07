@@ -10,6 +10,7 @@ import { Router } from 'express';
 import * as itunesProvider from '../providers/itunes.provider.js';
 import * as itunesNormalizer from '../normalizers/itunes.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { translateGenre, extractLangCode } from '../../../shared/utils/translator.js';
 import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const router = Router();
@@ -267,6 +268,18 @@ router.get('/albums/:id', async (req, res) => {
     const data = await itunesProvider.getAlbum(id, { country });
     const normalized = itunesNormalizer.normalizeAlbumDetail(data);
     
+    // Traduire le genre si demandé
+    const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
+    const lang = req.query.lang;
+    if (autoTrad && lang && normalized.genre) {
+      const targetLang = extractLangCode(lang);
+      const translatedGenre = await translateGenre(normalized.genre, targetLang);
+      if (translatedGenre !== normalized.genre) {
+        normalized.genreOriginal = normalized.genre;
+        normalized.genre = translatedGenre;
+      }
+    }
+    
     res.json({
       success: true,
       provider: 'itunes',
@@ -300,6 +313,18 @@ router.get('/artists/:id', async (req, res) => {
     
     const data = await itunesProvider.getArtist(id, { country });
     const normalized = itunesNormalizer.normalizeArtistDetail(data);
+    
+    // Traduire le genre si demandé
+    const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
+    const lang = req.query.lang;
+    if (autoTrad && lang && normalized.genre) {
+      const targetLang = extractLangCode(lang);
+      const translatedGenre = await translateGenre(normalized.genre, targetLang);
+      if (translatedGenre !== normalized.genre) {
+        normalized.genreOriginal = normalized.genre;
+        normalized.genre = translatedGenre;
+      }
+    }
     
     res.json({
       success: true,

@@ -10,7 +10,7 @@ import { Router } from 'express';
 import * as discogsProvider from '../providers/discogs.provider.js';
 import * as discogsNormalizer from '../normalizers/discogs.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
-import { translateFields } from '../../../shared/utils/translator.js';
+import { translateFields, translateMusicGenres, extractLangCode } from '../../../shared/utils/translator.js';
 
 const router = Router();
 const log = logger.create('DiscogsRoutes');
@@ -28,10 +28,30 @@ async function applyTranslation(data, req) {
   
   if (!autoTrad) return data;
   
+  const targetLang = extractLangCode(lang);
+  const result = { ...data };
+  
   try {
-    // Champs à traduire pour les albums/releases
+    // Champs texte à traduire pour les albums/releases
     const fieldsToTranslate = ['notes', 'profile'];
-    return await translateFields(data, fieldsToTranslate, lang);
+    const translated = await translateFields(result, fieldsToTranslate, lang);
+    Object.assign(result, translated);
+    
+    // Traduire les genres musicaux
+    if (result.genres && result.genres.length > 0) {
+      const { terms: translatedGenres, termsOriginal } = await translateMusicGenres(result.genres, targetLang);
+      result.genres = translatedGenres;
+      if (termsOriginal) result.genresOriginal = termsOriginal;
+    }
+    
+    // Traduire les styles musicaux (mêmes dictionnaires)
+    if (result.styles && result.styles.length > 0) {
+      const { terms: translatedStyles, termsOriginal } = await translateMusicGenres(result.styles, targetLang);
+      result.styles = translatedStyles;
+      if (termsOriginal) result.stylesOriginal = termsOriginal;
+    }
+    
+    return result;
   } catch (error) {
     log.warn('Translation failed', { error: error.message });
     return data;

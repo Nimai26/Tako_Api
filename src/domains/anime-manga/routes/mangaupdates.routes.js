@@ -29,6 +29,7 @@ import { ValidationError } from '../../../shared/errors/index.js';
 import {
   translateSearchResults,
   translateText,
+  translateGenre,
   isAutoTradEnabled,
   extractLangCode
 } from '../../../shared/utils/translator.js';
@@ -266,6 +267,19 @@ router.get('/series/:id', asyncHandler(async (req, res) => {
         text: result.description,
         translated: false
       };
+    }
+  }
+
+  // Traduction des genres
+  if (autoTradEnabled && targetLang && result?.genres && Array.isArray(result.genres) && result.genres.length > 0) {
+    const genreTranslations = await Promise.all(
+      result.genres.map(genre => translateGenre(genre, targetLang))
+    );
+    const wasTranslated = genreTranslations.some((g, i) => g !== result.genres[i]);
+    if (wasTranslated) {
+      result.genresOriginal = result.genres;
+      result.genres = genreTranslations;
+      result.genresTranslated = true;
     }
   }
 

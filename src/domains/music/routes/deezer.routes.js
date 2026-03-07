@@ -10,6 +10,7 @@ import { Router } from 'express';
 import * as deezerProvider from '../providers/deezer.provider.js';
 import * as deezerNormalizer from '../normalizers/deezer.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { translateMusicGenres, extractLangCode } from '../../../shared/utils/translator.js';
 import { withDiscoveryCache, getTTL } from '../../../shared/utils/cache-wrapper.js';
 
 const router = Router();
@@ -212,6 +213,16 @@ router.get('/albums/:id', async (req, res) => {
     
     const data = await deezerProvider.getAlbum(id);
     const normalized = deezerNormalizer.normalizeAlbumDetail(data);
+    
+    // Traduire les genres si demandé
+    const autoTrad = req.query.autoTrad === '1' || req.query.autoTrad === 'true';
+    const lang = req.query.lang;
+    if (autoTrad && lang && normalized.genres && normalized.genres.length > 0) {
+      const targetLang = extractLangCode(lang);
+      const { terms: translatedGenres, termsOriginal } = await translateMusicGenres(normalized.genres, targetLang);
+      normalized.genres = translatedGenres;
+      if (termsOriginal) normalized.genresOriginal = termsOriginal;
+    }
     
     res.json({
       success: true,

@@ -110,20 +110,20 @@ function extractGenreName(genre) {
 }
 
 /**
- * Traduit un genre en utilisant le dictionnaire local
+ * Traduit un genre en utilisant les dictionnaires locaux (tous les domaines)
+ * Cherche d'abord dans MEDIA_GENRES, puis dans tous les autres dictionnaires
  * @param {string|object} genre - Genre en anglais (string ou objet avec name)
  * @param {string} lang - Code langue cible (fr, de, es, it, pt)
- * @returns {string|null} - Genre traduit ou null si non trouvé dans le dictionnaire
+ * @returns {string|null} - Genre traduit ou null si non trouvé dans les dictionnaires
  */
 function translateGenreFromDict(genre, lang) {
   const genreName = extractGenreName(genre);
   if (!genreName || !lang || lang === 'en') return genreName || genre;
   
-  const key = genreName.toLowerCase().trim();
-  const translations = GENRE_TRANSLATIONS[key];
-  
-  if (translations && translations[lang]) {
-    return translations[lang];
+  // Chercher dans tous les dictionnaires (media d'abord, puis videogame, music, book, boardgame, toy)
+  const translated = lookupInAllDictionaries(genreName, lang);
+  if (translated !== null) {
+    return translated;
   }
   
   return null;
