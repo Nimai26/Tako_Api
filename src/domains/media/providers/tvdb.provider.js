@@ -326,16 +326,14 @@ export class TvdbProvider extends BaseProvider {
   async getSeriesSeasons(seriesId, options = {}) {
     const series = await this.getSeries(seriesId, options);
     
-    // Filtrer les saisons "Aired Order" (type 1)
-    const airedSeasons = (series.seasons || [])
-      .filter(s => s.type === 'Aired Order' || s.type?.id === 1 || s.type?.name === 'Aired Order')
-      .sort((a, b) => a.number - b.number);
+    // Format canonique : seasons dans details.seasons, titre au top-level
+    const seasons = series.details?.seasons || [];
 
     return {
       seriesId,
       seriesName: series.title,
-      seasons: airedSeasons,
-      total: airedSeasons.length
+      seasons,
+      total: seasons.length
     };
   }
 

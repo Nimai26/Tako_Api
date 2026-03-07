@@ -42,35 +42,37 @@ const provider = new TmdbProvider();
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Traduit les champs description et genres d'un résultat détaillé
+ * Traduit les champs description et genres d'un résultat détaillé (format canonique)
+ * - description est au top-level
+ * - genres est dans details.genres
  */
 async function translateDetailResult(result, targetLang, autoTradEnabled) {
   if (!autoTradEnabled || !targetLang || !result) return result;
 
   const translated = { ...result };
+  if (result.details) {
+    translated.details = { ...result.details };
+  }
 
-  // Traduire description si présente
+  // Traduire description (top-level)
   if (result.description) {
     const { text, translated: wasTranslated } = await translateText(result.description, targetLang, { enabled: true });
     if (wasTranslated) {
       translated.descriptionOriginal = result.description;
       translated.description = text;
-      translated.descriptionTranslated = true;
     }
   }
 
-  // Traduire genres si présents (utilise translateGenre avec dictionnaire + fallback API)
-  if (result.genres && Array.isArray(result.genres) && result.genres.length > 0) {
+  // Traduire genres (dans details)
+  const genres = result.details?.genres;
+  if (Array.isArray(genres) && genres.length > 0) {
     const genreTranslations = await Promise.all(
-      result.genres.map(genre => translateGenre(genre, targetLang))
+      genres.map(genre => translateGenre(genre, targetLang))
     );
-    
-    // Vérifier si au moins un genre a été traduit
-    const wasTranslated = genreTranslations.some((g, i) => g !== result.genres[i]);
+    const wasTranslated = genreTranslations.some((g, i) => g !== genres[i]);
     if (wasTranslated) {
-      translated.genresOriginal = result.genres;
-      translated.genres = genreTranslations;
-      translated.genresTranslated = true;
+      translated.details.genresOriginal = genres;
+      translated.details.genres = genreTranslations;
     }
   }
 
@@ -332,19 +334,25 @@ router.get('/series/:id/season/:season', asyncHandler(async (req, res) => {
   // Traduire overview de la saison
   result = await translateDetailResult(result, targetLang, autoTradEnabled);
 
-  // Traduire les overviews des épisodes si autoTrad activé
-  if (autoTradEnabled && targetLang && result.episodes?.length > 0) {
-    result.episodes = await Promise.all(
-      result.episodes.map(async (ep) => {
-        if (ep.overview) {
-          const { text, translated } = await translateText(ep.overview, targetLang, { enabled: true });
-          if (translated) {
-            return { ...ep, overviewOriginal: ep.overview, overview: text };
-          }
-        }
-        return ep;
-      })
-    );
+  // Traduire les descriptions des épisodes si autoTrad activé (format canonique)
+  if (autoTradEnabled && targetLang && result.details?.episodes?.length > 0) {
+    result = {
+      ...result,
+      details: {
+        ...result.details,
+        episodes: await Promise.all(
+          result.details.episodes.map(async (ep) => {
+            if (ep.description) {
+              const { text, translated } = await translateText(ep.description, targetLang, { enabled: true });
+              if (translated) {
+                return { ...ep, descriptionOriginal: ep.description, description: text };
+              }
+            }
+            return ep;
+          })
+        )
+      }
+    };
   }
 
   res.json({
@@ -390,14 +398,8 @@ router.get('/series/:id/season/:season/episode/:episode', asyncHandler(async (re
 
   let result = await provider.getEpisode(id, seasonNumber, episodeNumber, { lang });
 
-  // Traduire overview
-  if (autoTradEnabled && targetLang && result.overview) {
-    const { text, translated } = await translateText(result.overview, targetLang, { enabled: true });
-    if (translated) {
-      result.overviewOriginal = result.overview;
-      result.overview = text;
-    }
-  }
+  // Traduire description (format canonique)
+  result = await translateDetailResult(result, targetLang, autoTradEnabled);
 
   res.json({
     success: true,
@@ -436,28 +438,28 @@ router.get('/collections/:id', asyncHandler(async (req, res) => {
 
   let result = await provider.getCollection(id, { lang });
 
-  // Traduire l'overview de la collection
-  if (autoTradEnabled && targetLang && result.overview) {
-    const { text, translated } = await translateText(result.overview, targetLang, { enabled: true });
-    if (translated) {
-      result.overviewOriginal = result.overview;
-      result.overview = text;
-    }
-  }
+  // Traduire la description de la collection (format canonique)
+  result = await translateDetailResult(result, targetLang, autoTradEnabled);
 
-  // Traduire les overviews des films de la collection
-  if (autoTradEnabled && targetLang && result.parts?.length > 0) {
-    result.parts = await Promise.all(
-      result.parts.map(async (movie) => {
-        if (movie.overview) {
-          const { text, translated } = await translateText(movie.overview, targetLang, { enabled: true });
-          if (translated) {
-            return { ...movie, overviewOriginal: movie.overview, overview: text };
-          }
-        }
-        return movie;
-      })
-    );
+  // Traduire les descriptions des films de la collection
+  if (autoTradEnabled && targetLang && result.details?.parts?.length > 0) {
+    result = {
+      ...result,
+      details: {
+        ...result.details,
+        parts: await Promise.all(
+          result.details.parts.map(async (movie) => {
+            if (movie.description) {
+              const { text, translated } = await translateText(movie.description, targetLang, { enabled: true });
+              if (translated) {
+                return { ...movie, descriptionOriginal: movie.description, description: text };
+              }
+            }
+            return movie;
+          })
+        )
+      }
+    };
   }
 
   res.json({
@@ -495,14 +497,8 @@ router.get('/persons/:id', asyncHandler(async (req, res) => {
 
   let result = await provider.getPerson(id, { lang });
 
-  // Traduire la biographie si autoTrad activé
-  if (autoTradEnabled && targetLang && result.biography) {
-    const { text, translated } = await translateText(result.biography, targetLang, { enabled: true });
-    if (translated) {
-      result.biographyOriginal = result.biography;
-      result.biography = text;
-    }
-  }
+  // Traduire la biographie (= description en format canonique)
+  result = await translateDetailResult(result, targetLang, autoTradEnabled);
 
   res.json({
     success: true,
