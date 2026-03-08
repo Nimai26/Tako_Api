@@ -171,12 +171,15 @@ export class KreoProvider extends BaseProvider {
       success: true,
       provider: 'kreo',
       domain: 'construction-toys',
+      query: null,
       data: rows.map(r => ({
         name: r.franchise,
         count: parseInt(r.count),
         slug: r.franchise
       })),
-      total: rows.reduce((sum, r) => sum + parseInt(r.count), 0),
+      total: rows.length,
+      count: rows.length,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         source: 'database'
@@ -241,11 +244,15 @@ export class KreoProvider extends BaseProvider {
       success: true,
       provider: 'kreo',
       domain: 'construction-toys',
+      query: franchise || null,
       data: rows.map(r => ({
         franchise: r.franchise,
         subLine: r.sub_line,
         count: parseInt(r.count)
       })),
+      total: rows.length,
+      count: rows.length,
+      pagination: null,
       meta: { fetchedAt: new Date().toISOString(), source: 'database' }
     };
   }

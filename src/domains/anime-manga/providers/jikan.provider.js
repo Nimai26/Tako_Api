@@ -521,58 +521,8 @@ export class JikanProvider extends BaseProvider {
   // SAISONS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Récupère les anime d'une saison
-   * @param {number} year - Année
-   * @param {string} season - Saison (winter, spring, summer, fall)
-   * @param {Object} options - Options
-   */
-  async getSeason(year, season, options = {}) {
-    const { page = 1, filter = null } = options;
-
-    this.log.debug(`Récupération saison: ${season} ${year} (page ${page})`);
-
-    const params = new URLSearchParams({
-      page: String(page),
-      sfw: 'false'  // Inclure tout le contenu
-    });
-
-    if (filter) params.append('filter', filter); // tv, movie, ova, special, ona, music
-
-    const url = `${JIKAN_BASE_URL}/seasons/${year}/${season}?${params.toString()}`;
-    const data = await this.fetchWithRetry(url);
-
-    if (!data) {
-      throw new NotFoundError(`Saison ${season} ${year} non trouvée`);
-    }
-
-    return this.normalizer.normalizeSeasonResponse(data, { year, season, page });
-  }
-
-  /**
-   * Récupère la saison actuelle
-   */
-  async getCurrentSeason(options = {}) {
-    const { page = 1, filter = null } = options;
-
-    this.log.debug(`Récupération saison actuelle (page ${page})`);
-
-    const params = new URLSearchParams({
-      page: String(page),
-      sfw: 'false'
-    });
-
-    if (filter) params.append('filter', filter);
-
-    const url = `${JIKAN_BASE_URL}/seasons/now?${params.toString()}`;
-    const data = await this.fetchWithRetry(url);
-
-    if (!data) {
-      throw new BadGatewayError('Erreur lors de la récupération de la saison actuelle');
-    }
-
-    return this.normalizer.normalizeSeasonResponse(data, { current: true, page });
-  }
+  // NOTE: getSeason() et getCurrentSeason() sont définis plus bas dans la section DISCOVERY
+  // Ils retournent: { data, total, count, pagination: {page, limit, hasMore} }
 
   /**
    * Récupère la liste des saisons disponibles
@@ -1012,19 +962,22 @@ export class JikanProvider extends BaseProvider {
       this.normalizer.normalizeAnimeItem(item)
     );
 
+    const pag = data.pagination || {};
+
     return {
+      total: pag.items?.total || normalizedData.length,
+      count: normalizedData.length,
       data: normalizedData,
-      pagination: data.pagination || {
-        current_page: page,
-        has_next_page: data.pagination?.has_next_page || false,
-        items: {
-          count: normalizedData.length,
-          total: data.pagination?.items?.total || normalizedData.length,
-          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
-        }
+      pagination: {
+        page,
+        limit: pag.items?.per_page || Math.min(limit, MAX_RESULTS_LIMIT),
+        hasMore: pag.has_next_page || false
       },
-      season: data.season || 'current',
-      year: data.year || new Date().getFullYear()
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        season: data.season || 'current',
+        year: data.year || new Date().getFullYear()
+      }
     };
   }
 
@@ -1070,19 +1023,22 @@ export class JikanProvider extends BaseProvider {
       this.normalizer.normalizeAnimeItem(item)
     );
 
+    const pag = data.pagination || {};
+
     return {
+      total: pag.items?.total || normalizedData.length,
+      count: normalizedData.length,
       data: normalizedData,
-      pagination: data.pagination || {
-        current_page: page,
-        has_next_page: data.pagination?.has_next_page || false,
-        items: {
-          count: normalizedData.length,
-          total: data.pagination?.items?.total || normalizedData.length,
-          per_page: Math.min(limit, MAX_RESULTS_LIMIT)
-        }
+      pagination: {
+        page,
+        limit: pag.items?.per_page || Math.min(limit, MAX_RESULTS_LIMIT),
+        hasMore: pag.has_next_page || false
       },
-      season,
-      year
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        season,
+        year
+      }
     };
   }
 

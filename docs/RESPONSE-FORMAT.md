@@ -9,21 +9,22 @@
 **Toutes les réponses suivent le MÊME schéma de base**, quel que soit le provider ou le domaine.  
 Les données spécifiques sont encapsulées dans un objet `details` qui varie selon le type de contenu.
 
-### État de Migration (juin 2025)
+### État de Migration (mars 2026)
 
 | Domaine | Providers | Format B conforme ? | Notes |
 |---------|-----------|---------------------|-------|
-| media | TMDB, TVDB | ✅ Oui | Refonte canonique v2.6.1 |
-| construction-toys | Brickset, Rebrickable, BrickEconomy, LEGO, Amazon, Mega Construx (archive) | ⚠️ Partiel | Uses BaseNormalizer mais `details` aplati au root |
-| books | OpenLibrary, Google Books, Amazon | ⚠️ Partiel | Uses BaseNormalizer, structure à vérifier |
-| comics | ComicVine, Amazon | ⚠️ Partiel | Uses BaseNormalizer, structure à vérifier |
-| anime-manga | Jikan, AniList | ❌ Non | Wrapper construit dans les routes, format libre |
-| videogames | RAWG | ❌ Non | Wrapper dans routes, vocabulaire différent (`source` au lieu de `provider`) |
-| music | Deezer | ❌ Non | Wrapper dans routes, champs `source` + `provider` redondants |
-| boardgames | BGG | ❌ Non | Aucun wrapper — objet brut envoyé directement |
-| collectibles | ConsoleVariations, Amazon | ❌ Non | Wrapper minimal `{success, data}` |
-| tcg | DBS Card Game, Carddass (archives) | ❌ Non | Pas de normalizer canonique |
-| ecommerce | Amazon | ❌ Non | Pas de normalizer canonique |
+| media | TMDB, TVDB | ✅ Oui | Audit v10-v12 |
+| videogames | IGDB, RAWG, JVC, ConsoleVariations | ✅ Oui | Audit v11-v12 |
+| anime-manga | Jikan, MangaUpdates | ✅ Oui | Audit v12 |
+| music | Deezer, Discogs, iTunes, MusicBrainz | ✅ Oui | Audit v11-v12 |
+| books | Google Books, OpenLibrary | ✅ Oui | BaseNormalizer |
+| comics | ComicVine, Bedetheque | ✅ Oui | Audit v12 |
+| construction-toys | Brickset, Rebrickable, LEGO, Playmobil, Klickypedia, KRE-O, Mega | ✅ Oui | Audit v11-v12 |
+| tcg | Pokemon, MTG, Yu-Gi-Oh, DBS, Digimon, Lorcana, One Piece | ✅ Oui | Audit v12 |
+| collectibles | Carddass, Coleka, Luluberlu, Transformerland | ✅ Oui | Audit v12 |
+| boardgames | BGG | ✅ Oui | Audit v12 |
+| ecommerce | Amazon | ✅ Oui | Audit v11-v12 |
+| sticker-albums | Paninimania | ✅ Oui | Audit v12 |
 
 ---
 
@@ -109,9 +110,7 @@ Les données spécifiques sont encapsulées dans un objet `details` qui varie se
   
   "pagination": {
     "page": 1,
-    "pageSize": 20,
-    "totalResults": 42,
-    "totalPages": 3,
+    "limit": 20,
     "hasMore": true
   },
   

@@ -200,12 +200,15 @@ export class MegaProvider extends BaseProvider {
       success: true,
       provider: 'mega',
       domain: 'construction-toys',
+      query: null,
       data: rows.map(r => ({
         name: r.category,
         count: parseInt(r.count),
         slug: r.category
       })),
-      total: rows.reduce((sum, r) => sum + parseInt(r.count), 0),
+      total: rows.length,
+      count: rows.length,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         source: 'database'

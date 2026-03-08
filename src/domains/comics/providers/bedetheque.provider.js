@@ -569,9 +569,19 @@ export class BedethequeProvider extends BaseProvider {
       const albums = this.parseSerieAlbums(html, maxResults);
 
       return {
-        serie,
-        albums,
-        total: albums.length
+        success: true,
+        provider: 'bedetheque',
+        domain: 'comics',
+        query: null,
+        total: albums.length,
+        count: albums.length,
+        data: albums,
+        pagination: null,
+        meta: {
+          fetchedAt: new Date().toISOString(),
+          serieId,
+          serieTitle: serie.title
+        }
       };
     } catch (error) {
       this.log.error(`Erreur albums série: ${error.message}`);
@@ -691,9 +701,19 @@ export class BedethequeProvider extends BaseProvider {
       const series = this.parseAuthorSeries(html, maxResults);
 
       return {
-        author,
-        series,
-        total: series.length
+        success: true,
+        provider: 'bedetheque',
+        domain: 'comics',
+        query: null,
+        total: series.length,
+        count: series.length,
+        data: series,
+        pagination: null,
+        meta: {
+          fetchedAt: new Date().toISOString(),
+          authorId,
+          authorName: author.name
+        }
       };
     } catch (error) {
       this.log.error(`Erreur œuvres auteur: ${error.message}`);

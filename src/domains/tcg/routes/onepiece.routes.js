@@ -56,7 +56,7 @@ router.get('/search', async (req, res) => {
       success: true,
       provider: 'onepiece',
       domain: 'tcg',
-      query: q || 'all',
+      query: q || null,
       total: rawCards.length,
       count: normalizedData.length,
       data: normalizedData,

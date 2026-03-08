@@ -136,6 +136,7 @@ router.get('/themes', asyncHandler(async (req, res) => {
     success: true,
     provider: 'brickset',
     domain: 'construction-toys',
+    query: null,
     total: themes.length,
     count: themes.length,
     data: themes,
