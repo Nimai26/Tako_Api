@@ -112,6 +112,7 @@ router.get('/search', async (req, res) => {
   } catch (error) {
     log.error(`[BGG] Search error: ${error.message}`);
     res.status(500).json({
+      success: false,
       error: error.message,
       provider: 'bgg'
     });
@@ -155,6 +156,7 @@ router.get('/search/category', async (req, res) => {
   } catch (error) {
     log.error(`[BGG] Category search error: ${error.message}`);
     res.status(500).json({
+      success: false,
       error: error.message,
       provider: 'bgg'
     });
@@ -192,11 +194,13 @@ router.get('/game/:id', async (req, res) => {
     
     if (error.message.includes('not found')) {
       res.status(404).json({
+        success: false,
         error: error.message,
         provider: 'bgg'
       });
     } else {
       res.status(500).json({
+        success: false,
         error: error.message,
         provider: 'bgg'
       });

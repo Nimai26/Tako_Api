@@ -557,6 +557,7 @@ router.get('/directors/:id/movies', asyncHandler(async (req, res) => {
     total: result.total,
     data: result.movies,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -695,7 +696,8 @@ router.get('/trending', asyncHandler(async (req, res) => {
     domain: 'media',
     endpoint: 'trending',
     ...translatedResults,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category,
       period,
       limit: limitNum,
@@ -779,7 +781,8 @@ router.get('/popular', asyncHandler(async (req, res) => {
     domain: 'media',
     endpoint: 'popular',
     ...translatedResults,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category,
       limit: limitNum,
       page: pageNum,
@@ -862,7 +865,8 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
     domain: 'media',
     endpoint: 'top-rated',
     ...translatedResults,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category,
       limit: limitNum,
       page: pageNum,
@@ -947,7 +951,8 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     domain: 'media',
     endpoint: 'upcoming',
     ...translatedResults,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category,
       limit: limitNum,
       page: pageNum,
@@ -1016,7 +1021,8 @@ router.get('/on-the-air', asyncHandler(async (req, res) => {
     domain: 'media',
     endpoint: 'on-the-air',
     ...translatedResults,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       limit: limitNum,
       page: pageNum,
       lang,
@@ -1084,7 +1090,8 @@ router.get('/airing-today', asyncHandler(async (req, res) => {
     domain: 'media',
     endpoint: 'airing-today',
     ...translatedResults,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       limit: limitNum,
       page: pageNum,
       lang,

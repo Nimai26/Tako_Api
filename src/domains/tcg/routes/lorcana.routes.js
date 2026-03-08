@@ -197,9 +197,11 @@ router.get('/sets', async (req, res) => {
       success: true,
       provider: 'lorcana',
       domain: 'tcg',
+      query: null,
       total: normalizedSets.length,
       count: normalizedSets.length,
       data: normalizedSets,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang

@@ -103,7 +103,12 @@ router.get('/instructions/:id', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'lego',
-    ...instructions
+    domain: 'construction-toys',
+    id: `lego:${id}`,
+    data: instructions,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 

@@ -124,8 +124,18 @@ router.get('/instructions/:sku', asyncHandler(async (req, res) => {
     throw new ValidationError('SKU manquant');
   }
 
-  const result = await megaProvider.getInstructions(sku);
-  res.json(result);
+  const instructions = await megaProvider.getInstructions(sku);
+  const { success: _, provider: __, ...instructionData } = instructions;
+  res.json({
+    success: true,
+    provider: 'mega',
+    domain: 'construction-toys',
+    id: `mega:${sku.toUpperCase()}`,
+    data: instructionData,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
+  });
 }));
 
 // ===========================================

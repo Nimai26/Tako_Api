@@ -715,6 +715,7 @@ router.get('/seasons/now', asyncHandler(async (req, res) => {
     type: 'season',
     ...result,
     meta: {
+      ...result.meta,
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré'
@@ -761,6 +762,7 @@ router.get('/seasons/:year/:season', asyncHandler(async (req, res) => {
     type: 'season',
     ...result,
     meta: {
+      ...result.meta,
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré'
@@ -813,6 +815,7 @@ router.get('/top/anime', asyncHandler(async (req, res) => {
     type: 'top-anime',
     ...result,
     meta: {
+      ...result.meta,
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré',
@@ -863,6 +866,7 @@ router.get('/top/manga', asyncHandler(async (req, res) => {
     type: 'top-manga',
     ...result,
     meta: {
+      ...result.meta,
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré',
@@ -903,6 +907,7 @@ router.get('/schedules', asyncHandler(async (req, res) => {
     type: 'schedule',
     ...result,
     meta: {
+      ...result.meta,
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré'
@@ -942,6 +947,7 @@ router.get('/schedules/:day', asyncHandler(async (req, res) => {
     type: 'schedule',
     ...result,
     meta: {
+      ...result.meta,
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré'
@@ -961,12 +967,12 @@ router.get('/genres/anime', asyncHandler(async (req, res) => {
   const result = await provider.getAnimeGenres();
 
   res.json({
+    ...result,
     success: true,
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'genres',
-    contentType: 'anime',
-    ...result
+    contentType: 'anime'
   });
 }));
 
@@ -978,12 +984,12 @@ router.get('/genres/manga', asyncHandler(async (req, res) => {
   const result = await provider.getMangaGenres();
 
   res.json({
+    ...result,
     success: true,
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'genres',
-    contentType: 'manga',
-    ...result
+    contentType: 'manga'
   });
 }));
 
@@ -1186,7 +1192,8 @@ router.get('/top', asyncHandler(async (req, res) => {
     endpoint: 'top',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       type,
       filter,
       subtype,
@@ -1259,7 +1266,8 @@ router.get('/trending', asyncHandler(async (req, res) => {
     endpoint: 'trending',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       season: results.season,
       year: results.year,
       filter,
@@ -1349,7 +1357,8 @@ router.get('/seasons/:year/:season', asyncHandler(async (req, res) => {
     endpoint: 'season',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       season: results.season,
       year: results.year,
       filter,
@@ -1422,7 +1431,8 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     endpoint: 'upcoming',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       filter,
       limit: limitNum,
       page: pageNum,
@@ -1498,7 +1508,8 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
     endpoint: 'trending',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       season: results.season,
       year: results.year,
       category: 'tv',
@@ -1577,7 +1588,8 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
     endpoint: 'trending',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       season: results.season,
       year: results.year,
       category: 'movie',
@@ -1691,7 +1703,8 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
     endpoint: 'top',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category: 'tv',
       filter,
       limit: limitNum,
@@ -1804,7 +1817,8 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
     endpoint: 'top',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category: 'movie',
       filter,
       limit: limitNum,
@@ -1881,7 +1895,8 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
     endpoint: 'upcoming',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category: 'tv',
       limit: limitNum,
       page: pageNum,
@@ -1957,7 +1972,8 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
     endpoint: 'upcoming',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       category: 'movie',
       limit: limitNum,
       page: pageNum,
@@ -2037,7 +2053,8 @@ router.get('/schedule', asyncHandler(async (req, res) => {
     endpoint: 'schedule',
     data: results.data,
     pagination: results.pagination,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       day: results.day,
       limit: limitNum,
       page: pageNum,

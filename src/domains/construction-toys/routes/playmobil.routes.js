@@ -93,7 +93,16 @@ router.get('/instructions/:productId', asyncHandler(async (req, res) => {
 
   const instructions = await provider.getPlaymobilInstructions(productId);
 
-  res.json(instructions);
+  res.json({
+    success: true,
+    provider: 'playmobil',
+    domain: 'construction-toys',
+    id: `playmobil:${productId}`,
+    data: instructions,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
+  });
 }));
 
 // ═══════════════════════════════════════════════════════════════════════════

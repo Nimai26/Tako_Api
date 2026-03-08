@@ -74,7 +74,6 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
       provider: 'openlibrary',
       domain: 'books',
       query,
-      searchType,
       total,
       count: items.length,
       data: items,

@@ -307,6 +307,7 @@ router.get('/series/:id/seasons', asyncHandler(async (req, res) => {
     total: result.total,
     data: result.seasons,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang
     }
   });
@@ -418,6 +419,7 @@ router.get('/series/:id/episodes', asyncHandler(async (req, res) => {
     total: result.total,
     data: result.episodes,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled,
       links: result.links
@@ -576,6 +578,7 @@ router.get('/directors/:id/works', asyncHandler(async (req, res) => {
     totalMovies: result.totalMovies,
     totalSeries: result.totalSeries,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang
     }
   });

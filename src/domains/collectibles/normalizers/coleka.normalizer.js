@@ -198,24 +198,35 @@ export function normalizeDetails(rawData) {
 export function normalizeCategories(rawData) {
   if (!rawData || !rawData.categories) {
     return {
+      success: true,
       provider: 'coleka',
-      totalCategories: 0,
-      categories: []
+      domain: 'collectibles',
+      total: 0,
+      count: 0,
+      data: [],
+      pagination: null,
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     };
   }
   
   return {
+    success: true,
     provider: 'coleka',
-    totalCategories: rawData.categories.length,
-    categories: rawData.categories.map(cat => ({
+    domain: 'collectibles',
+    total: rawData.categories.length,
+    count: rawData.categories.length,
+    data: rawData.categories.map(cat => ({
       id: cat.id,
       name: cat.name,
       slug: cat.slug,
       description: cat.description || null
     })),
-    metadata: {
-      lang: rawData.lang || 'fr',
-      source: 'coleka'
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString(),
+      lang: rawData.lang || 'fr'
     }
   };
 }

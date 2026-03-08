@@ -165,9 +165,11 @@ router.get('/sets', async (req, res) => {
       success: true,
       provider: 'mtg',
       domain: 'tcg',
+      query: null,
       total: rawData.total || 0,
       count: normalized.length,
       data: normalized,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang

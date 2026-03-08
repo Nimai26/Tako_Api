@@ -339,12 +339,11 @@ export class MegaNormalizer extends BaseNormalizer {
       total: context.total || results.length,
       count: results.length,
       data: results.map(item => this.normalize(item)),
-      pagination: context.pagination || {
-        page: 1,
-        pageSize: results.length,
-        totalResults: context.total || results.length,
-        hasMore: false
-      },
+      pagination: context.pagination ? {
+        page: context.pagination.page,
+        limit: context.pagination.limit || context.pagination.pageSize,
+        hasMore: context.pagination.hasMore ?? false
+      } : null,
       meta: {
         fetchedAt: new Date().toISOString(),
         source: 'database'

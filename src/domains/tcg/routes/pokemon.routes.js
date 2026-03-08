@@ -186,9 +186,11 @@ router.get('/sets', async (req, res) => {
       success: true,
       provider: 'pokemon',
       domain: 'tcg',
+      query: series || year || null,
       total: rawData.total || 0,
       count: normalized.length,
       data: normalized,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang

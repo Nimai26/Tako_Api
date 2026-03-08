@@ -407,7 +407,11 @@ export class BaseNormalizer {
       total: meta.total ?? items.length,
       count: items.length,
       data: items,
-      pagination: meta.pagination || null,
+      pagination: meta.pagination ? {
+        page: meta.pagination.page,
+        limit: meta.pagination.limit || meta.pagination.pageSize,
+        hasMore: meta.pagination.hasMore ?? false
+      } : null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang: meta.lang || 'en',

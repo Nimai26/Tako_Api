@@ -63,7 +63,6 @@ export class GoogleBooksNormalizer extends BaseNormalizer {
       provider: 'googlebooks',
       domain: 'books',
       query,
-      searchType,
       total,
       count: items.length,
       data: items,

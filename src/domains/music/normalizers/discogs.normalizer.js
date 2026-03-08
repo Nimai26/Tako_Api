@@ -96,7 +96,7 @@ export function normalizeSearchResponse(data, query, searchType = 'release') {
     data: results,
     pagination: {
       page: data.pagination?.page || 1,
-      pageSize: data.pagination?.per_page || 25,
+      limit: data.pagination?.per_page || 25,
       totalResults: data.pagination?.items || results.length,
       totalPages: data.pagination?.pages || 1,
       hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
@@ -439,7 +439,7 @@ export function normalizeArtistReleases(data, artistId) {
     data: releases,
     pagination: {
       page: data.pagination?.page || 1,
-      pageSize: data.pagination?.per_page || 50,
+      limit: data.pagination?.per_page || 50,
       totalPages: data.pagination?.pages || 1,
       hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
     },

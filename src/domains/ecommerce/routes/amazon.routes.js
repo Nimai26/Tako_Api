@@ -268,7 +268,10 @@ router.get('/marketplaces', async (req, res) => {
       domain: 'ecommerce',
       provider: 'amazon',
       total: marketplaces.length,
-      count: marketplaces.length
+      count: marketplaces.length,
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     });
   } catch (err) {
     logger.error('[Amazon] Erreur marketplaces:', err);
@@ -297,7 +300,10 @@ router.get('/categories', async (req, res) => {
       domain: 'ecommerce',
       provider: 'amazon',
       total: categories.length,
-      count: categories.length
+      count: categories.length,
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     });
   } catch (err) {
     logger.error('[Amazon] Erreur catégories:', err);
@@ -323,9 +329,13 @@ router.get('/health', async (req, res) => {
     const statusCode = health.healthy ? 200 : 503;
     
     res.status(statusCode).json({
+      success: health.healthy,
       data: health,
       domain: 'ecommerce',
-      provider: 'amazon'
+      provider: 'amazon',
+      meta: {
+        fetchedAt: new Date().toISOString()
+      }
     });
   } catch (err) {
     logger.error('[Amazon] Erreur health check:', err);

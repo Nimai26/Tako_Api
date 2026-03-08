@@ -135,8 +135,14 @@ router.get('/themes', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'brickset',
+    domain: 'construction-toys',
+    total: themes.length,
     count: themes.length,
-    themes
+    data: themes,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -160,9 +166,15 @@ router.get('/themes/:theme/subthemes', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'brickset',
-    theme,
+    domain: 'construction-toys',
+    query: theme,
+    total: subthemes.length,
     count: subthemes.length,
-    subthemes
+    data: subthemes,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -194,9 +206,15 @@ router.get('/years', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'brickset',
-    theme: theme || null,
+    domain: 'construction-toys',
+    query: theme || null,
+    total: years.length,
     count: years.length,
-    years
+    data: years,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 

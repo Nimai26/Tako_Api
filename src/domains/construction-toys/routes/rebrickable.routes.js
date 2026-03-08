@@ -154,12 +154,17 @@ router.get('/themes', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'rebrickable',
-    ...result
+    domain: 'construction-toys',
+    total: result.count,
+    count: result.themes.length,
+    data: result.themes,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
-// ===========================================
-// Couleurs
 // ===========================================
 
 /**
@@ -182,12 +187,17 @@ router.get('/colors', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'rebrickable',
-    ...result
+    domain: 'construction-toys',
+    total: result.count,
+    count: result.colors.length,
+    data: result.colors,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
-// ===========================================
-// Recherche de pièces
 // ===========================================
 
 /**
@@ -216,8 +226,19 @@ router.get('/parts', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'rebrickable',
+    domain: 'construction-toys',
     query: searchQuery,
-    ...result
+    total: result.count,
+    count: result.parts.length,
+    data: result.parts,
+    pagination: result.pagination ? {
+      page: result.pagination.page,
+      limit: result.pagination.pageSize,
+      hasMore: result.pagination.hasMore
+    } : null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -251,8 +272,19 @@ router.get('/minifigs', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'rebrickable',
+    domain: 'construction-toys',
     query: searchQuery,
-    ...result
+    total: result.count,
+    count: result.minifigs.length,
+    data: result.minifigs,
+    pagination: result.pagination ? {
+      page: result.pagination.page,
+      limit: result.pagination.pageSize,
+      hasMore: result.pagination.hasMore
+    } : null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -365,7 +397,18 @@ router.get('/sets/:id/parts', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'rebrickable',
-    ...result
+    domain: 'construction-toys',
+    total: result.count,
+    count: result.parts.length,
+    data: result.parts,
+    pagination: result.pagination ? {
+      page: result.pagination.page,
+      limit: result.pagination.pageSize,
+      hasMore: result.pagination.hasMore
+    } : null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -393,7 +436,14 @@ router.get('/sets/:id/minifigs', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     provider: 'rebrickable',
-    ...result
+    domain: 'construction-toys',
+    total: result.count,
+    count: result.minifigs.length,
+    data: result.minifigs,
+    pagination: null,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 

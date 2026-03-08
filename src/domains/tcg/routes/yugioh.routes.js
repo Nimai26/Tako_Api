@@ -168,9 +168,11 @@ router.get('/sets', async (req, res) => {
       success: true,
       provider: 'yugioh',
       domain: 'tcg',
+      query: null,
       total: normalizedSets.length,
       count: normalizedSets.length,
       data: normalizedSets,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang
@@ -217,10 +219,11 @@ router.get('/archetype', async (req, res) => {
       success: true,
       provider: 'yugioh',
       domain: 'tcg',
-      archetype: name,
+      query: name,
       total: rawData.total_cards || 0,
       count: normalizedData.length,
       data: normalizedData,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,

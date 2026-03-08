@@ -108,7 +108,16 @@ router.get('/instructions/:productId', asyncHandler(async (req, res) => {
 
   const instructions = await provider.getKlickypediaInstructions(productId);
 
-  res.json(instructions);
+  res.json({
+    success: true,
+    provider: 'klickypedia',
+    domain: 'construction-toys',
+    id: `klickypedia:${productId}`,
+    data: instructions,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
+  });
 }));
 
 // ═══════════════════════════════════════════════════════════════════════════

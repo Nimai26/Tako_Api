@@ -455,7 +455,7 @@ export class TvdbProvider extends BaseProvider {
     const person = await this.getPerson(id, options);
     
     // Filtrer les crédits où la personne est Director
-    const directedMovies = (person.characters || [])
+    const directedMovies = (person.details?.characters || [])
       .filter(c => c.peopleType === 'Director' && c.type === 'movie')
       .map(c => ({
         id: c.movieId,
@@ -463,7 +463,7 @@ export class TvdbProvider extends BaseProvider {
         type: 'movie'
       }));
 
-    const directedSeries = (person.characters || [])
+    const directedSeries = (person.details?.characters || [])
       .filter(c => c.peopleType === 'Director' && c.type === 'series')
       .map(c => ({
         id: c.seriesId,

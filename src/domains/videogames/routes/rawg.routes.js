@@ -939,7 +939,8 @@ router.get('/popular', asyncHandler(async (req, res) => {
     domain: 'videogames',
     endpoint: 'popular',
     data: normalized,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       page: parseInt(page),
       totalResults: normalized.length,
       platforms: platforms || 'all',
@@ -1002,7 +1003,8 @@ router.get('/trending', asyncHandler(async (req, res) => {
     domain: 'videogames',
     endpoint: 'trending',
     data: normalized,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       page: parseInt(page),
       totalResults: normalized.length,
       platforms: platforms || 'all',

@@ -196,7 +196,13 @@ router.get('/licenses/:id', asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    data
+    provider: 'carddass',
+    domain: 'collectibles',
+    id: `carddass:${id}`,
+    data,
+    meta: {
+      fetchedAt: new Date().toISOString()
+    }
   });
 }));
 
@@ -390,9 +396,12 @@ router.get('/cards/:id/images', asyncHandler(async (req, res) => {
 
     res.json({
       success: true,
-      data: {
-        provider: 'carddass',
-        ...data
+      provider: 'carddass',
+      domain: 'collectibles',
+      id: `carddass:${id}`,
+      data,
+      meta: {
+        fetchedAt: new Date().toISOString()
       }
     });
   } catch (error) {

@@ -309,8 +309,7 @@ router.get('/releases/:id', async (req, res) => {
       type: 'release',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get release failed', { error: error.message });
@@ -350,8 +349,7 @@ router.get('/masters/:id', async (req, res) => {
       type: 'master',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get master failed', { error: error.message });
@@ -404,7 +402,7 @@ router.get('/masters/:id/versions', async (req, res) => {
         totalPages: data.pagination?.pages || 1
       },
       data: versions,
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get master versions failed', { error: error.message });
@@ -438,8 +436,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist failed', { error: error.message });
@@ -474,7 +471,7 @@ router.get('/artists/:id/releases', async (req, res) => {
       domain: 'music',
       type: 'artist-releases',
       ...normalized,
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist releases failed', { error: error.message });
@@ -508,8 +505,7 @@ router.get('/labels/:id', async (req, res) => {
       type: 'label',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get label failed', { error: error.message });
@@ -563,7 +559,7 @@ router.get('/labels/:id/releases', async (req, res) => {
         totalPages: data.pagination?.pages || 1
       },
       data: releases,
-      source: 'discogs'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get label releases failed', { error: error.message });

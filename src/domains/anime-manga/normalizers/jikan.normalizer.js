@@ -530,7 +530,6 @@ export class JikanNormalizer extends BaseNormalizer {
       titleOriginal: item.name_kanji || null,
       description: item.about || null,
       year: null,
-      position: (page - 1) * pageSize + index + 1,
       images: {
         primary: this.extractImage(item.images),
         thumbnail: this.extractThumbnail(item.images),
@@ -543,7 +542,8 @@ export class JikanNormalizer extends BaseNormalizer {
       details: {
         malId: item.mal_id,
         nicknames: item.nicknames || [],
-        favorites: item.favorites
+        favorites: item.favorites,
+        position: (page - 1) * pageSize + index + 1
       }
     }));
 
@@ -786,7 +786,6 @@ export class JikanNormalizer extends BaseNormalizer {
       titleOriginal: null,
       description: item.about || null,
       year: null,
-      position: (page - 1) * pageSize + index + 1,
       images: {
         primary: this.extractImage(item.images),
         thumbnail: this.extractThumbnail(item.images),
@@ -802,7 +801,8 @@ export class JikanNormalizer extends BaseNormalizer {
         familyName: item.family_name,
         alternateNames: item.alternate_names || [],
         birthday: item.birthday,
-        favorites: item.favorites
+        favorites: item.favorites,
+        position: (page - 1) * pageSize + index + 1
       }
     }));
 
@@ -905,7 +905,6 @@ export class JikanNormalizer extends BaseNormalizer {
       titleOriginal: item.titles?.find(t => t.type === 'Japanese')?.title || null,
       description: item.about || null,
       year: null,
-      position: (page - 1) * pageSize + index + 1,
       images: {
         primary: this.extractImage(item.images),
         thumbnail: this.extractThumbnail(item.images),
@@ -920,7 +919,8 @@ export class JikanNormalizer extends BaseNormalizer {
         titles: item.titles || [],
         established: item.established,
         favorites: item.favorites,
-        count: item.count
+        count: item.count,
+        position: (page - 1) * pageSize + index + 1
       }
     }));
 

@@ -207,8 +207,7 @@ router.get('/albums/:id', async (req, res) => {
       type: 'album',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get album failed', { error: error.message });
@@ -249,7 +248,7 @@ router.get('/albums/:id/tracks', async (req, res) => {
       albumId: id,
       total: data.total || tracks.length,
       data: tracks,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get album tracks failed', { error: error.message });
@@ -288,8 +287,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist failed', { error: error.message });
@@ -323,7 +321,7 @@ router.get('/artists/:id/albums', async (req, res) => {
       artistId: id,
       total: data.total || albums.length,
       data: albums,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist albums failed', { error: error.message });
@@ -357,7 +355,7 @@ router.get('/artists/:id/top', async (req, res) => {
       artistId: id,
       total: tracks.length,
       data: tracks,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist top tracks failed', { error: error.message });
@@ -391,7 +389,7 @@ router.get('/artists/:id/related', async (req, res) => {
       artistId: id,
       total: artists.length,
       data: artists,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get related artists failed', { error: error.message });
@@ -424,8 +422,7 @@ router.get('/tracks/:id', async (req, res) => {
       type: 'track',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get track failed', { error: error.message });
@@ -455,7 +452,7 @@ router.get('/genres', async (req, res) => {
       domain: 'music',
       type: 'genres',
       ...normalized,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get genres failed', { error: error.message });
@@ -482,7 +479,7 @@ router.get('/chart/albums', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       ...normalized,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get chart albums failed', { error: error.message });
@@ -529,7 +526,8 @@ router.get('/charts', async (req, res) => {
       domain: 'music',
       endpoint: 'charts',
       data: normalized.data || [],
-      metadata: {
+      meta: {
+        fetchedAt: new Date().toISOString(),
         category,
         limit: parseInt(limit),
         count: (normalized.data || []).length,
@@ -563,7 +561,7 @@ router.get('/chart/tracks', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       ...normalized,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get chart tracks failed', { error: error.message });
@@ -590,7 +588,7 @@ router.get('/chart/artists', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       ...normalized,
-      source: 'deezer'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get chart artists failed', { error: error.message });

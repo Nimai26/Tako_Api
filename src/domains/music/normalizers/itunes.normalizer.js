@@ -96,7 +96,7 @@ export function normalizeAlbumSearchResponse(data, query) {
     data: results,
     pagination: {
       page: 1,
-      pageSize: results.length,
+      limit: results.length,
       totalResults: data.resultCount || results.length,
       hasMore: false
     },
@@ -153,7 +153,7 @@ export function normalizeArtistSearchResponse(data, query) {
     data: results,
     pagination: {
       page: 1,
-      pageSize: results.length,
+      limit: results.length,
       totalResults: data.resultCount || results.length,
       hasMore: false
     },
@@ -207,7 +207,7 @@ export function normalizeTrackSearchResponse(data, query) {
     data: results,
     pagination: {
       page: 1,
-      pageSize: results.length,
+      limit: results.length,
       totalResults: data.resultCount || results.length,
       hasMore: false
     },
@@ -375,7 +375,7 @@ export function normalizeArtistAlbums(data, artistId) {
     data: albums,
     pagination: {
       page: 1,
-      pageSize: albums.length,
+      limit: albums.length,
       hasMore: false
     },
     meta: buildMeta()

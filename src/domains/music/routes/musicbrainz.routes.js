@@ -231,8 +231,7 @@ router.get('/albums/:id', async (req, res) => {
       type: 'album',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'musicbrainz'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get album failed', { error: error.message });
@@ -278,7 +277,7 @@ router.get('/albums/:id/cover', async (req, res) => {
         medium: musicbrainzProvider.getCoverUrl(id, '500'),
         large: musicbrainzProvider.getCoverUrl(id, '1200')
       },
-      source: 'coverartarchive'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get cover art failed', { error: error.message });
@@ -321,8 +320,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'musicbrainz'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist failed', { error: error.message });
@@ -356,7 +354,7 @@ router.get('/artists/:id/albums', async (req, res) => {
       domain: 'music',
       type: 'artist-albums',
       ...normalized,
-      source: 'musicbrainz'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist albums failed', { error: error.message });

@@ -98,8 +98,8 @@ router.get('/search', async (req, res) => {
       total: artists.length + albums.length + tracks.length,
       count: artists.length + albums.length + tracks.length,
       data: [...artists, ...albums, ...tracks],
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'itunes'
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Search failed', { error: error.message });
@@ -238,8 +238,7 @@ router.get('/albums/:id', async (req, res) => {
       type: 'album',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'itunes'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get album failed', { error: error.message });
@@ -285,8 +284,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id: normalized.id,
       data: normalized,
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'itunes'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist failed', { error: error.message });
@@ -318,7 +316,7 @@ router.get('/artists/:id/albums', async (req, res) => {
       domain: 'music',
       type: 'artist-albums',
       ...normalized,
-      source: 'itunes'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get artist albums failed', { error: error.message });
@@ -397,8 +395,7 @@ router.get('/tracks/:id', async (req, res) => {
           isStreamable: track.isStreamable || false
         }
       },
-      meta: { fetchedAt: new Date().toISOString() },
-      source: 'itunes'
+      meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {
     log.error('Get track failed', { error: error.message });
@@ -459,7 +456,8 @@ router.get('/charts', async (req, res) => {
         domain: 'music',
         endpoint: 'charts',
         data: [],
-        metadata: {
+        meta: {
+          fetchedAt: new Date().toISOString(),
           country: country.toUpperCase(),
           category,
           limit: parseInt(limit),
@@ -489,7 +487,8 @@ router.get('/charts', async (req, res) => {
       domain: 'music',
       endpoint: 'charts',
       data: results,
-      metadata: {
+      meta: {
+        fetchedAt: new Date().toISOString(),
         country: country.toUpperCase(),
         category,
         limit: parseInt(limit),

@@ -603,7 +603,8 @@ router.get('/popular', asyncHandler(async (req, res) => {
     domain: 'videogames',
     endpoint: 'popular',
     data: normalized,
-    metadata: {
+    meta: {
+      fetchedAt: new Date().toISOString(),
       limit: parseInt(limit),
       offset: parseInt(offset),
       platforms: platforms || 'all',
