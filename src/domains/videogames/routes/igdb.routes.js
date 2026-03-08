@@ -146,9 +146,12 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
-    filters: { query, platforms, genres, themes, gameModes, minRating, releaseYear },
+    query: query || null,
+    filters: { platforms, genres, themes, gameModes, minRating, releaseYear },
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));

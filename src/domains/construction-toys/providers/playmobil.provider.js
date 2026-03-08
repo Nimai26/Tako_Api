@@ -90,7 +90,7 @@ export class PlaymobilProvider extends BaseProvider {
       total: products.length,
       pagination: {
         page: 1,
-        pageSize: max,
+        limit: max,
         totalResults: products.length,
         hasMore: false
       },

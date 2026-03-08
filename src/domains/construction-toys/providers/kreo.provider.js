@@ -109,7 +109,7 @@ export class KreoProvider extends BaseProvider {
       total,
       pagination: {
         page,
-        pageSize: limit,
+        limit,
         totalResults: total,
         totalPages: Math.ceil(total / limit),
         hasMore: offset + results.length < total
@@ -216,7 +216,7 @@ export class KreoProvider extends BaseProvider {
       total,
       pagination: {
         page,
-        pageSize: limit,
+        limit,
         totalResults: total,
         totalPages: Math.ceil(total / limit),
         hasMore: offset + results.length < total

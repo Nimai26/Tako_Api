@@ -398,7 +398,7 @@ router.get('/masters/:id/versions', async (req, res) => {
       total: data.pagination?.items || versions.length,
       pagination: {
         page: data.pagination?.page || 1,
-        pageSize: data.pagination?.per_page || 50,
+        limit: data.pagination?.per_page || 50,
         totalPages: data.pagination?.pages || 1
       },
       data: versions,
@@ -555,7 +555,7 @@ router.get('/labels/:id/releases', async (req, res) => {
       total: data.pagination?.items || releases.length,
       pagination: {
         page: data.pagination?.page || 1,
-        pageSize: data.pagination?.per_page || 50,
+        limit: data.pagination?.per_page || 50,
         totalPages: data.pagination?.pages || 1
       },
       data: releases,

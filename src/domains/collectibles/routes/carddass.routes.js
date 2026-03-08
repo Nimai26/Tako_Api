@@ -198,7 +198,7 @@ router.get('/licenses/:id', asyncHandler(async (req, res) => {
     success: true,
     provider: 'carddass',
     domain: 'collectibles',
-    id: `carddass:${id}`,
+    id: `carddass:${data.id}`,
     data,
     meta: {
       fetchedAt: new Date().toISOString()
@@ -398,7 +398,7 @@ router.get('/cards/:id/images', asyncHandler(async (req, res) => {
       success: true,
       provider: 'carddass',
       domain: 'collectibles',
-      id: `carddass:${id}`,
+      id: `carddass:${data.cardId || id}`,
       data,
       meta: {
         fetchedAt: new Date().toISOString()

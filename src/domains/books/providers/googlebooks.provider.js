@@ -176,7 +176,7 @@ export class GoogleBooksProvider extends BaseProvider {
       total: totalItems,
       pagination: {
         page: 1,
-        pageSize: limit,
+        limit,
         totalResults: totalItems,
         hasMore: totalItems > limit
       },

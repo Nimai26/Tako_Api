@@ -98,7 +98,7 @@ router.get('/search', asyncHandler(async (req, res) => {
   
   const results = await rawgProvider.search(searchQuery, {
     page: parseInt(page),
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     platforms,
     genres,
     tags,
@@ -129,10 +129,9 @@ router.get('/search', asyncHandler(async (req, res) => {
     total: results.count || 0,
     pagination: {
       page: parseInt(page),
-      pageSize: parseInt(pageSize),
+      limit: parseInt(pageSize),
       total: results.count || 0,
-      next: results.next || null,
-      previous: results.previous || null
+      hasMore: !!results.next
     },
     count: normalized.length,
     data: normalized,
@@ -213,10 +212,9 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
     filters: { query, platforms, genres, tags, developers, publishers, metacritic, ordering },
     pagination: {
       page: parseInt(page),
-      pageSize: parseInt(pageSize),
+      limit: parseInt(pageSize),
       total: results.count || 0,
-      next: results.next || null,
-      previous: results.previous || null
+      hasMore: !!results.next
     },
     count: normalized.length,
     data: normalized,
@@ -285,7 +283,9 @@ router.get('/game/:idOrSlug/screenshots', asyncHandler(async (req, res) => {
     gameId: idOrSlug,
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -341,7 +341,9 @@ router.get('/game/:idOrSlug/series', asyncHandler(async (req, res) => {
     gameId: idOrSlug,
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -377,7 +379,9 @@ router.get('/game/:idOrSlug/additions', asyncHandler(async (req, res) => {
     gameId: idOrSlug,
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -407,7 +411,9 @@ router.get('/game/:idOrSlug/achievements', asyncHandler(async (req, res) => {
     gameId: idOrSlug,
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -449,7 +455,7 @@ router.get('/genres', asyncHandler(async (req, res) => {
   
   const data = await rawgProvider.getGenres({ 
     page: parseInt(page), 
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     ordering 
   });
   
@@ -461,7 +467,9 @@ router.get('/genres', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -497,7 +505,7 @@ router.get('/platforms', asyncHandler(async (req, res) => {
   
   const data = await rawgProvider.getPlatforms({ 
     page: parseInt(page), 
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     ordering 
   });
   
@@ -509,7 +517,9 @@ router.get('/platforms', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -543,7 +553,7 @@ router.get('/tags', asyncHandler(async (req, res) => {
   
   const data = await rawgProvider.getTags({ 
     page: parseInt(page), 
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     ordering 
   });
   
@@ -555,7 +565,9 @@ router.get('/tags', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -572,7 +584,7 @@ router.get('/stores', asyncHandler(async (req, res) => {
   
   const data = await rawgProvider.getStores({ 
     page: parseInt(page), 
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     ordering 
   });
   
@@ -584,7 +596,9 @@ router.get('/stores', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -616,7 +630,9 @@ router.get('/developers', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -653,7 +669,7 @@ router.get('/developer/:idOrSlug/games', asyncHandler(async (req, res) => {
   
   const data = await rawgProvider.getGamesByDeveloper(idOrSlug, { 
     page: parseInt(page), 
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     ordering 
   });
   
@@ -672,7 +688,9 @@ router.get('/developer/:idOrSlug/games', asyncHandler(async (req, res) => {
     developer: idOrSlug,
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -700,7 +718,9 @@ router.get('/publishers', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -737,7 +757,7 @@ router.get('/publisher/:idOrSlug/games', asyncHandler(async (req, res) => {
   
   const data = await rawgProvider.getGamesByPublisher(idOrSlug, { 
     page: parseInt(page), 
-    pageSize: parseInt(pageSize),
+    limit: parseInt(pageSize),
     ordering 
   });
   
@@ -756,7 +776,9 @@ router.get('/publisher/:idOrSlug/games', asyncHandler(async (req, res) => {
     publisher: idOrSlug,
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -788,7 +810,9 @@ router.get('/creators', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -845,7 +869,9 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -879,7 +905,9 @@ router.get('/recent', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
@@ -1042,7 +1070,9 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     domain: 'videogames',
     pagination: {
       page: parseInt(page),
-      total: data.count || 0
+      limit: parseInt(pageSize),
+      total: data.count || 0,
+      hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,

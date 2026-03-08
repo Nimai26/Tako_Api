@@ -212,7 +212,14 @@ router.get('/author/:id', asyncHandler(async (req, res) => {
     }
   }
 
-  res.json(result);
+  res.json({
+    success: true,
+    provider: 'openlibrary',
+    domain: 'books',
+    id: `openlibrary:${result.sourceId || id.trim()}`,
+    data: result,
+    meta: { fetchedAt: new Date().toISOString() }
+  });
 }));
 
 /**

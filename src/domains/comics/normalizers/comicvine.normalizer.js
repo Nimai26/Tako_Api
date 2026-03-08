@@ -119,7 +119,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       data: items,
       pagination: pagination || {
         page: 1,
-        pageSize: items.length,
+        limit: items.length,
         totalResults: total,
         hasMore: false
       },
@@ -325,7 +325,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       data: items,
       pagination: pagination || {
         page: 1,
-        pageSize: items.length,
+        limit: items.length,
         totalResults: total,
         hasMore: false
       },
@@ -569,7 +569,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       data: items,
       pagination: pagination || {
         page: 1,
-        pageSize: items.length,
+        limit: items.length,
         totalResults: total,
         hasMore: false
       },

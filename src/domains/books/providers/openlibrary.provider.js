@@ -163,7 +163,7 @@ export class OpenLibraryProvider extends BaseProvider {
       total: numFound,
       pagination: {
         page: 1,
-        pageSize: limit,
+        limit,
         totalResults: numFound,
         hasMore: numFound > limit
       },
@@ -242,7 +242,7 @@ export class OpenLibraryProvider extends BaseProvider {
         query: isbn,
         searchType: 'isbn',
         total: 0,
-        pagination: { page: 1, pageSize: 0, totalResults: 0, hasMore: false }
+        pagination: { page: 1, limit: 0, totalResults: 0, hasMore: false }
       });
     }
 
@@ -252,7 +252,7 @@ export class OpenLibraryProvider extends BaseProvider {
       query: isbn,
       searchType: 'isbn',
       total: 1,
-      pagination: { page: 1, pageSize: 1, totalResults: 1, hasMore: false }
+      pagination: { page: 1, limit: 1, totalResults: 1, hasMore: false }
     });
   }
 
@@ -286,7 +286,7 @@ export class OpenLibraryProvider extends BaseProvider {
       total: numFound,
       pagination: {
         page: 1,
-        pageSize: limit,
+        limit,
         totalResults: numFound,
         hasMore: numFound > limit
       },
@@ -603,17 +603,21 @@ export class OpenLibraryProvider extends BaseProvider {
     this.log.info(`✅ ${numFound} auteurs trouvés, ${authors.length} retournés pour "${query}"`);
 
     return {
+      success: true,
+      provider: 'openlibrary',
+      domain: 'books',
       query,
       searchType: 'authors',
       total: numFound,
+      count: authors.length,
       pagination: {
         page: 1,
-        pageSize: limit,
+        limit,
         totalResults: numFound,
         hasMore: numFound > limit
       },
       data: authors,
-      source: 'openlibrary'
+      meta: { fetchedAt: new Date().toISOString() }
     };
   }
 
@@ -681,17 +685,21 @@ export class OpenLibraryProvider extends BaseProvider {
     this.log.info(`✅ ${totalWorks} œuvres au total, ${works.length} retournées pour ${cleanId}`);
 
     return {
+      success: true,
+      provider: 'openlibrary',
+      domain: 'books',
       authorId: cleanId,
       total: totalWorks,
+      count: works.length,
       pagination: {
         page: currentPage,
-        pageSize: limit,
+        limit,
         offset,
         totalResults: totalWorks,
         hasMore: offset + works.length < totalWorks
       },
       data: works,
-      source: 'openlibrary'
+      meta: { fetchedAt: new Date().toISOString() }
     };
   }
 

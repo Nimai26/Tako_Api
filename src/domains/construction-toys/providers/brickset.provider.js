@@ -146,7 +146,7 @@ export class BricksetProvider extends BaseProvider {
       total,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: total,
         totalPages: Math.ceil(total / pageSize),
         hasMore: page * pageSize < total

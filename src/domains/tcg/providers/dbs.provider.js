@@ -133,7 +133,7 @@ export async function searchDBSCards(searchQuery, options = {}) {
       results: dataRes.rows,
       total,
       page,
-      pageSize: max,
+      limit: max,
       count: dataRes.rows.length,
     };
   } catch (error) {

@@ -146,7 +146,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -427,7 +427,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: data.results?.length || 0,
+        limit: data.results?.length || 0,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -474,7 +474,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: data.results?.length || 0,
+        limit: data.results?.length || 0,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -536,7 +536,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -589,7 +589,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -642,7 +642,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -717,7 +717,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -765,7 +765,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages
@@ -813,7 +813,7 @@ export class TmdbProvider extends BaseProvider {
       total: data.total_results,
       pagination: {
         page: data.page,
-        pageSize: results.length,
+        limit: results.length,
         totalPages: data.total_pages,
         totalResults: data.total_results,
         hasMore: data.page < data.total_pages

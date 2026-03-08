@@ -142,7 +142,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: pagination.items?.total || results.length,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
@@ -165,13 +165,13 @@ export class JikanNormalizer extends BaseNormalizer {
       titleOriginal: anime.title_japanese || null,
       description: anime.synopsis || null,
       year: anime.year || (anime.aired?.from ? new Date(anime.aired.from).getFullYear() : null),
-      position,
       images: this.buildImages(anime.images),
       urls: {
         source: anime.url || null,
         detail: `/api/anime-manga/jikan/anime/${sourceId}`
       },
       details: {
+        position,
         malId: anime.mal_id,
         resourceType: anime.type?.toLowerCase() || 'anime',
         titleEnglish: anime.title_english,
@@ -228,7 +228,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: pagination.items?.total || results.length,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
@@ -251,13 +251,13 @@ export class JikanNormalizer extends BaseNormalizer {
       titleOriginal: manga.title_japanese || null,
       description: manga.synopsis || null,
       year: manga.published?.from ? new Date(manga.published.from).getFullYear() : null,
-      position,
       images: this.buildImages(manga.images),
       urls: {
         source: manga.url || null,
         detail: `/api/anime-manga/jikan/manga/${sourceId}`
       },
       details: {
+        position,
         malId: manga.mal_id,
         resourceType: manga.type?.toLowerCase() || 'manga',
         titleEnglish: manga.title_english,
@@ -338,7 +338,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: sliced,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: totalAnime + totalManga,
         hasMore: (animeResults?.pagination?.hasMore || false) || (mangaResults?.pagination?.hasMore || false)
       },
@@ -461,6 +461,7 @@ export class JikanNormalizer extends BaseNormalizer {
       })),
       pagination: {
         page,
+        limit: pagination.items?.per_page || 100,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
@@ -558,7 +559,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: pagination.items?.total || results.length,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
@@ -726,6 +727,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
+        limit: pagination.items?.per_page || 25,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
@@ -760,6 +762,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
+        limit: pagination.items?.per_page || 25,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
@@ -817,7 +820,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: pagination.items?.total || results.length,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
@@ -935,7 +938,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: pagination.items?.total || results.length,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
@@ -1026,6 +1029,7 @@ export class JikanNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
+        limit: pagination.items?.per_page || 25,
         totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },

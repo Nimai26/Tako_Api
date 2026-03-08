@@ -102,7 +102,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: totalHits,
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
@@ -128,13 +128,13 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       titleOriginal: this.extractOriginalTitle(series),
       description: this.cleanHtml(series.description),
       year: this.extractYearFromString(series.year),
-      position,
       images: this.buildImages(series),
       urls: {
         source: series.url || null,
         detail: `/api/anime-manga/mangaupdates/series/${sourceId}`
       },
       details: {
+        position,
         format: series.type || 'Manga',
         status: this.extractStatus(series),
         titleAlternatives: this.extractAlternativeTitles(series),
@@ -359,7 +359,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: totalHits,
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
@@ -386,13 +386,13 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       titleOriginal: null,
       description: null,
       year: null,
-      position,
       images: this.buildSimpleImages(author.image?.url?.original || null),
       urls: {
         source: author.url || null,
         detail: `/api/anime-manga/mangaupdates/author/${sourceId}`
       },
       details: {
+        position,
         resourceType: 'author',
         nameAlternatives: this.extractAuthorAltNames(author),
         genres: author.genres || [],
@@ -510,7 +510,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: totalHits,
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
@@ -533,13 +533,13 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       titleOriginal: null,
       description: publisher.info || null,
       year: null,
-      position,
       images: { primary: null, thumbnail: null, gallery: [] },
       urls: {
         source: publisher.url || null,
         detail: `/api/anime-manga/mangaupdates/publisher/${sourceId}`
       },
       details: {
+        position,
         resourceType: 'publisher',
         publisherType: publisher.type || null
       }
@@ -596,7 +596,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       data: items,
       pagination: {
         page,
-        pageSize,
+        limit: pageSize,
         totalResults: totalHits,
         totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
@@ -608,22 +608,23 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
   }
 
   normalizeReleaseItem(release, position = null) {
+    const sourceId = release.id ? String(release.id) : null;
     return {
-      id: release.id ? String(release.id) : null,
+      id: sourceId ? `mangaupdates:${sourceId}` : null,
       type: 'release',
       source: 'mangaupdates',
-      sourceId: release.id ? String(release.id) : null,
+      sourceId,
       title: release.title || release.series?.title,
       titleOriginal: null,
       description: null,
       year: null,
-      position,
       images: { primary: null, thumbnail: null, gallery: [] },
       urls: {
         source: null,
         detail: null
       },
       details: {
+        position,
         resourceType: 'release',
         seriesId: release.series_id ? String(release.series_id) : null,
         chapter: release.chapter || null,
