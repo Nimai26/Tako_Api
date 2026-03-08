@@ -55,6 +55,7 @@ router.get('/search', async (req, res) => {
     res.json({
       success: true,
       provider: 'onepiece',
+      domain: 'tcg',
       query: q || 'all',
       total: rawCards.length,
       count: normalizedData.length,
@@ -102,6 +103,8 @@ router.get('/card/:id', async (req, res) => {
     res.json({
       success: true,
       provider: 'onepiece',
+      domain: 'tcg',
+      id: normalizedCard.id,
       data: normalizedCard,
       meta: {
         fetchedAt: new Date().toISOString(),

@@ -69,31 +69,7 @@ export function createAmazonAliasRouter({ domain, category, categoryLabel }) {
         autoTrad: autotrad === 'true'
       });
 
-      const total = rawResults.total || normalized.length;
-
-      res.json({
-        data: normalized,
-        domain,
-        provider: 'amazon',
-        query: q,
-        total,
-        count: normalized.length,
-        pagination: {
-          page: pageNum,
-          pageSize: limitNum,
-          totalResults: total,
-          totalPages: Math.ceil(total / limitNum),
-          hasMore: pageNum * limitNum < total
-        },
-        meta: {
-          fetchedAt: new Date().toISOString(),
-          lang,
-          country: rawResults.country,
-          category: rawResults.category,
-          amazonCategory: category,
-          autoTrad: autotrad === 'true'
-        }
-      });
+      res.json(normalized);
     } catch (err) {
       logger.error(`[Amazon/${domain}] Erreur recherche:`, err);
       res.status(500).json({
@@ -138,9 +114,11 @@ export function createAmazonAliasRouter({ domain, category, categoryLabel }) {
       });
 
       res.json({
-        data: normalized,
-        domain,
+        success: true,
         provider: 'amazon',
+        domain,
+        id: normalized.id,
+        data: normalized,
         meta: {
           fetchedAt: new Date().toISOString(),
           lang,

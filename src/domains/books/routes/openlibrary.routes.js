@@ -73,11 +73,11 @@ router.get('/search', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
     
     for (const book of result.data) {
-      if (book.subjects && book.subjects.length > 0) {
-        const translated = await translateBookGenres(book.subjects, targetLang);
+      if (book.details?.categories && book.details.categories.length > 0) {
+        const translated = await translateBookGenres(book.details.categories, targetLang);
         if (translated.termsTranslated) {
-          book.subjectsOriginal = translated.termsOriginal;
-          book.subjects = translated.terms;
+          book.details.categoriesOriginal = translated.termsOriginal;
+          book.details.categories = translated.terms;
         }
       }
     }
@@ -117,11 +117,11 @@ router.get('/search/author', asyncHandler(async (req, res) => {
     result.data = await translateSearchResults(result.data, true, targetLang);
     
     for (const book of result.data) {
-      if (book.subjects && book.subjects.length > 0) {
-        const translated = await translateBookGenres(book.subjects, targetLang);
+      if (book.details?.categories && book.details.categories.length > 0) {
+        const translated = await translateBookGenres(book.details.categories, targetLang);
         if (translated.termsTranslated) {
-          book.subjectsOriginal = translated.termsOriginal;
-          book.subjects = translated.terms;
+          book.details.categoriesOriginal = translated.termsOriginal;
+          book.details.categories = translated.terms;
         }
       }
     }
@@ -259,11 +259,11 @@ router.get('/author/:id/works', asyncHandler(async (req, res) => {
           work.description = descResult.text;
         }
       }
-      if (work.subjects && work.subjects.length > 0) {
-        const translated = await translateBookGenres(work.subjects, targetLang);
+      if (work.details?.categories && work.details.categories.length > 0) {
+        const translated = await translateBookGenres(work.details.categories, targetLang);
         if (translated.termsTranslated) {
-          work.subjectsOriginal = translated.termsOriginal;
-          work.subjects = translated.terms;
+          work.details.categoriesOriginal = translated.termsOriginal;
+          work.details.categories = translated.terms;
         }
       }
     }

@@ -79,6 +79,7 @@ router.get('/search', async (req, res) => {
     res.json({
       success: true,
       provider: 'pokemon',
+      domain: 'tcg',
       query: q,
       total: rawData.total || 0,
       count: normalized.length,
@@ -128,6 +129,8 @@ router.get('/card/:id', async (req, res) => {
     res.json({
       success: true,
       provider: 'pokemon',
+      domain: 'tcg',
+      id: normalized.id,
       data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),

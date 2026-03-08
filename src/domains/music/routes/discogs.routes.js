@@ -309,6 +309,7 @@ router.get('/releases/:id', async (req, res) => {
       type: 'release',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
     });
   } catch (error) {
@@ -349,6 +350,7 @@ router.get('/masters/:id', async (req, res) => {
       type: 'master',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
     });
   } catch (error) {
@@ -382,7 +384,11 @@ router.get('/masters/:id/versions', async (req, res) => {
       label: v.label,
       country: v.country,
       released: v.released,
-      poster: v.thumb
+      images: {
+        primary: v.thumb || null,
+        thumbnail: v.thumb || null,
+        gallery: []
+      }
     }));
     
     res.json({
@@ -432,6 +438,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
     });
   } catch (error) {
@@ -501,6 +508,7 @@ router.get('/labels/:id', async (req, res) => {
       type: 'label',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
     });
   } catch (error) {
@@ -535,7 +543,11 @@ router.get('/labels/:id/releases', async (req, res) => {
       year: r.year,
       format: r.format,
       catalogNumber: r.catno,
-      poster: r.thumb
+      images: {
+        primary: r.thumb || null,
+        thumbnail: r.thumb || null,
+        gallery: []
+      }
     }));
     
     res.json({

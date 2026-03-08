@@ -106,10 +106,7 @@ router.get('/search', async (req, res) => {
     // Normalisation
     const normalized = normalizeSearchResults(rawResults);
 
-    res.json({
-      success: true,
-      data: normalized
-    });
+    res.json(normalized);
 
   } catch (error) {
     logger.error(`[LuluBerlu] Search error: ${error.message}`);
@@ -168,7 +165,11 @@ router.get('/details', async (req, res) => {
 
     res.json({
       success: true,
-      data: normalized
+      provider: 'luluberlu',
+      domain: 'collectibles',
+      id: normalized.id,
+      data: normalized,
+      meta: { fetchedAt: new Date().toISOString() }
     });
 
   } catch (error) {
@@ -233,7 +234,11 @@ router.get('/item/:path(*)', async (req, res) => {
 
     res.json({
       success: true,
-      data: normalized
+      provider: 'luluberlu',
+      domain: 'collectibles',
+      id: normalized.id,
+      data: normalized,
+      meta: { fetchedAt: new Date().toISOString() }
     });
 
   } catch (error) {

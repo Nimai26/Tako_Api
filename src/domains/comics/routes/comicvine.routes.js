@@ -171,7 +171,7 @@ router.get('/search/characters', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang && results.data?.length > 0) {
     results = await translateSearchResults(results, targetLang, {
-      fields: ['name', 'description']
+      fields: ['title', 'description']
     });
   }
 
@@ -199,7 +199,7 @@ router.get('/search/publishers', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang && results.data?.length > 0) {
     results = await translateSearchResults(results, targetLang, {
-      fields: ['name', 'description']
+      fields: ['title', 'description']
     });
   }
 
@@ -227,7 +227,7 @@ router.get('/search/creators', asyncHandler(async (req, res) => {
 
   if (autoTradEnabled && targetLang && results.data?.length > 0) {
     results = await translateSearchResults(results, targetLang, {
-      fields: ['name', 'description']
+      fields: ['title', 'description']
     });
   }
 
@@ -256,13 +256,16 @@ router.get('/volume/:id', asyncHandler(async (req, res) => {
   let volume = await provider.getVolumeDetails(id);
 
   // Traduction de la description si activée
-  if (autoTradEnabled && targetLang && volume.description) {
-    const translated = await translateText(volume.description, targetLang, true);
+  if (autoTradEnabled && targetLang && volume.data?.description) {
+    const translated = await translateText(volume.data.description, targetLang, true);
     if (translated.translated) {
       volume = {
         ...volume,
-        description: translated.text,
-        originalDescription: volume.description
+        data: {
+          ...volume.data,
+          description: translated.text,
+          originalDescription: volume.data.description
+        }
       };
     }
   }
@@ -316,13 +319,16 @@ router.get('/issue/:id', asyncHandler(async (req, res) => {
 
   let issue = await provider.getIssueDetails(id);
 
-  if (autoTradEnabled && targetLang && issue.description) {
-    const translated = await translateText(issue.description, targetLang, true);
+  if (autoTradEnabled && targetLang && issue.data?.description) {
+    const translated = await translateText(issue.data.description, targetLang, true);
     if (translated.translated) {
       issue = {
         ...issue,
-        description: translated.text,
-        originalDescription: issue.description
+        data: {
+          ...issue.data,
+          description: translated.text,
+          originalDescription: issue.data.description
+        }
       };
     }
   }
@@ -347,13 +353,16 @@ router.get('/character/:id', asyncHandler(async (req, res) => {
 
   let character = await provider.getCharacterDetails(id);
 
-  if (autoTradEnabled && targetLang && character.description) {
-    const translated = await translateText(character.description, targetLang, true);
+  if (autoTradEnabled && targetLang && character.data?.description) {
+    const translated = await translateText(character.data.description, targetLang, true);
     if (translated.translated) {
       character = {
         ...character,
-        description: translated.text,
-        originalDescription: character.description
+        data: {
+          ...character.data,
+          description: translated.text,
+          originalDescription: character.data.description
+        }
       };
     }
   }
@@ -378,13 +387,16 @@ router.get('/creator/:id', asyncHandler(async (req, res) => {
 
   let creator = await provider.getCreatorDetails(id);
 
-  if (autoTradEnabled && targetLang && creator.description) {
-    const translated = await translateText(creator.description, targetLang, true);
+  if (autoTradEnabled && targetLang && creator.data?.description) {
+    const translated = await translateText(creator.data.description, targetLang, true);
     if (translated.translated) {
       creator = {
         ...creator,
-        description: translated.text,
-        originalDescription: creator.description
+        data: {
+          ...creator.data,
+          description: translated.text,
+          originalDescription: creator.data.description
+        }
       };
     }
   }

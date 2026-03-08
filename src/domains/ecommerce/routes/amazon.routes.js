@@ -80,30 +80,7 @@ router.get('/search', async (req, res) => {
       autoTrad: autotrad === 'true'
     });
     
-    const total = rawResults.total || normalized.length;
-    
-    res.json({
-      data: normalized,
-      domain: 'ecommerce',
-      provider: 'amazon',
-      query: q,
-      total,
-      count: normalized.length,
-      pagination: {
-        page: pageNum,
-        pageSize: limitNum,
-        totalResults: total,
-        totalPages: Math.ceil(total / limitNum),
-        hasMore: pageNum * limitNum < total
-      },
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        lang,
-        country: rawResults.country,
-        category: rawResults.category,
-        autoTrad: autotrad === 'true'
-      }
-    });
+    res.json(normalized);
     
   } catch (err) {
     logger.error('[Amazon] Erreur recherche:', err);
@@ -169,9 +146,11 @@ router.get('/product/:asin', async (req, res) => {
     });
     
     res.json({
-      data: normalized,
-      domain: 'ecommerce',
+      success: true,
       provider: 'amazon',
+      domain: 'ecommerce',
+      id: normalized.id,
+      data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,
@@ -253,6 +232,7 @@ router.get('/compare/:asin', async (req, res) => {
     }
     
     res.json({
+      success: true,
       data: normalized,
       domain: 'ecommerce',
       provider: 'amazon',
@@ -283,6 +263,7 @@ router.get('/marketplaces', async (req, res) => {
     const marketplaces = amazonProvider.getSupportedMarketplaces();
     
     res.json({
+      success: true,
       data: marketplaces,
       domain: 'ecommerce',
       provider: 'amazon',
@@ -311,6 +292,7 @@ router.get('/categories', async (req, res) => {
     const categories = amazonProvider.getSupportedCategories();
     
     res.json({
+      success: true,
       data: categories,
       domain: 'ecommerce',
       provider: 'amazon',

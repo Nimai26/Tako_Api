@@ -247,39 +247,39 @@ router.get('/series/:id', asyncHandler(async (req, res) => {
   let result = await provider.getSeries(id);
 
   // Enrichissement avec titre français
-  if (frenchEnabled && result?.title) {
-    result = await enrichWithFrenchTitle(result);
+  if (frenchEnabled && result.data?.title) {
+    result = { ...result, data: await enrichWithFrenchTitle(result.data) };
   }
 
   // Traduction automatique de la description
-  if (autoTradEnabled && targetLang && result?.description) {
-    const translated = await translateText(result.description, targetLang, { enabled: true });
+  if (autoTradEnabled && targetLang && result.data?.description) {
+    const translated = await translateText(result.data.description, targetLang, { enabled: true });
     if (translated.translated) {
-      result.description = {
+      result.data.description = {
         text: translated.text,
-        original: result.description,
+        original: result.data.description,
         translated: true,
         from: translated.from,
         to: translated.to
       };
     } else {
-      result.description = {
-        text: result.description,
+      result.data.description = {
+        text: result.data.description,
         translated: false
       };
     }
   }
 
   // Traduction des genres
-  if (autoTradEnabled && targetLang && result?.genres && Array.isArray(result.genres) && result.genres.length > 0) {
+  if (autoTradEnabled && targetLang && result.data?.details?.genres && Array.isArray(result.data.details.genres) && result.data.details.genres.length > 0) {
     const genreTranslations = await Promise.all(
-      result.genres.map(genre => translateGenre(genre, targetLang))
+      result.data.details.genres.map(genre => translateGenre(genre, targetLang))
     );
-    const wasTranslated = genreTranslations.some((g, i) => g !== result.genres[i]);
+    const wasTranslated = genreTranslations.some((g, i) => g !== result.data.details.genres[i]);
     if (wasTranslated) {
-      result.genresOriginal = result.genres;
-      result.genres = genreTranslations;
-      result.genresTranslated = true;
+      result.data.details.genresOriginal = result.data.details.genres;
+      result.data.details.genres = genreTranslations;
+      result.data.details.genresTranslated = true;
     }
   }
 
@@ -317,7 +317,14 @@ router.get('/author/:id', asyncHandler(async (req, res) => {
   }
 
   const result = await provider.getAuthor(id);
-  res.json(result);
+  res.json({
+    success: true,
+    provider: 'mangaupdates',
+    domain: 'anime-manga',
+    id: result.id,
+    data: result,
+    meta: { fetchedAt: new Date().toISOString() }
+  });
 }));
 
 /**
@@ -351,7 +358,14 @@ router.get('/publisher/:id', asyncHandler(async (req, res) => {
   }
 
   const result = await provider.getPublisher(id);
-  res.json(result);
+  res.json({
+    success: true,
+    provider: 'mangaupdates',
+    domain: 'anime-manga',
+    id: result.id,
+    data: result,
+    meta: { fetchedAt: new Date().toISOString() }
+  });
 }));
 
 // ═══════════════════════════════════════════════════════════════════════════

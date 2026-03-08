@@ -35,21 +35,26 @@ async function translateGameGenres(games, autoTrad, lang) {
     return games;
   }
   
-  // Traduire les genres ET les résumés
+  // Traduire les genres ET les descriptions
   return await Promise.all(games.map(async (game) => {
     const result = { ...game };
     
-    // Traduire les genres
-    if (game.genres && game.genres.length > 0) {
-      const { terms: translatedGenres } = await translateVideoGameGenres(game.genres, targetLang);
-      result.genres = translatedGenres;
+    // Traduire les genres (stored in details.genres)
+    if (game.details?.genres && game.details.genres.length > 0) {
+      const { terms: translatedGenres } = await translateVideoGameGenres(game.details.genres, targetLang);
+      result.details = {
+        ...result.details,
+        genresOriginal: game.details.genres,
+        genres: translatedGenres
+      };
     }
     
-    // Traduire le résumé (summary)
-    if (game.summary && game.summary.length > 20) {
-      const translated = await translateText(game.summary, targetLang, { enabled: true, sourceLang: 'en' });
+    // Traduire la description
+    if (game.description && game.description.length > 20) {
+      const translated = await translateText(game.description, targetLang, { enabled: true, sourceLang: 'en' });
       if (translated.translated) {
-        result.summary = translated.text;
+        result.descriptionOriginal = game.description;
+        result.description = translated.text;
       }
     }
     
@@ -84,10 +89,12 @@ router.get('/search', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     query: searchQuery,
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -135,10 +142,12 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     filters: { query, platforms, genres, themes, gameModes, minRating, releaseYear },
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -177,8 +186,11 @@ router.get('/game/:id', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
-    data: normalized
+    provider: 'igdb',
+    domain: 'videogames',
+    id: normalized.id,
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -209,8 +221,11 @@ router.get('/game/slug/:slug', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
-    data: normalized
+    provider: 'igdb',
+    domain: 'videogames',
+    id: normalized.id,
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -228,9 +243,11 @@ router.get('/genres', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -244,9 +261,11 @@ router.get('/platforms', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -265,9 +284,11 @@ router.get('/themes', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -280,9 +301,11 @@ router.get('/game-modes', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: gameModes.length,
-    data: gameModes
+    data: gameModes,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -295,9 +318,11 @@ router.get('/player-perspectives', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: perspectives.length,
-    data: perspectives
+    data: perspectives,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -325,10 +350,12 @@ router.get('/companies/search', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     query: searchQuery,
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -352,8 +379,10 @@ router.get('/company/:id', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
-    data: normalized
+    provider: 'igdb',
+    domain: 'videogames',
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -376,10 +405,12 @@ router.get('/developer/:id/games', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     developerId: parseInt(id),
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -402,10 +433,12 @@ router.get('/publisher/:id/games', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     publisherId: parseInt(id),
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -433,10 +466,12 @@ router.get('/franchises/search', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     query: searchQuery,
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -460,8 +495,10 @@ router.get('/franchise/:id', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
-    data: normalized
+    provider: 'igdb',
+    domain: 'videogames',
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -485,8 +522,10 @@ router.get('/collection/:id', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
-    data: normalized
+    provider: 'igdb',
+    domain: 'videogames',
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -512,9 +551,11 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -590,9 +631,11 @@ router.get('/recent', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -614,9 +657,11 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
   
   res.json({
     success: true,
-    source: 'igdb',
+    provider: 'igdb',
+    domain: 'videogames',
     count: normalized.length,
-    data: normalized
+    data: normalized,
+    meta: { fetchedAt: new Date().toISOString() }
   });
 }));
 

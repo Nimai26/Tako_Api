@@ -122,7 +122,7 @@ export class PlaymobilProvider extends BaseProvider {
     if (searchResults.data.length > 0) {
       const found = searchResults.data.find(p =>
         p.sourceId === cleanId ||
-        p.productCode === cleanId
+        p.details?.productCode === cleanId
       );
       if (found && found.urls?.source) {
         productUrl = found.urls.source;

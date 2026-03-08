@@ -93,7 +93,14 @@ router.get('/details', async (req, res) => {
     
     const normalized = normalizeDetails(details);
     
-    res.json(normalized);
+    res.json({
+      success: true,
+      provider: 'paninimania',
+      domain: 'sticker-albums',
+      id: normalized.id,
+      data: normalized,
+      meta: { fetchedAt: new Date().toISOString() }
+    });
   } catch (error) {
     logger.error(`[Paninimania] Details error: ${error.message}`);
     res.status(500).json({
@@ -130,7 +137,14 @@ router.get('/album/:id', async (req, res) => {
     
     const normalized = normalizeDetails(details);
     
-    res.json(normalized);
+    res.json({
+      success: true,
+      provider: 'paninimania',
+      domain: 'sticker-albums',
+      id: normalized.id,
+      data: normalized,
+      meta: { fetchedAt: new Date().toISOString() }
+    });
   } catch (error) {
     logger.error(`[Paninimania] Album error: ${error.message}`);
     res.status(500).json({

@@ -67,10 +67,7 @@ router.get('/search', async (req, res) => {
     
     const normalized = normalizeSearchResults(rawData);
     
-    res.json({
-      success: true,
-      data: normalized
-    });
+    res.json(normalized);
     
   } catch (error) {
     logger.error(`[Coleka] Erreur recherche: ${error.message}`);
@@ -135,7 +132,11 @@ router.get('/details', async (req, res) => {
     
     res.json({
       success: true,
-      data: normalized
+      provider: 'coleka',
+      domain: 'collectibles',
+      id: normalized.id,
+      data: normalized,
+      meta: { fetchedAt: new Date().toISOString() }
     });
     
   } catch (error) {
@@ -191,7 +192,11 @@ router.get('/item/*', async (req, res) => {
     
     res.json({
       success: true,
-      data: normalized
+      provider: 'coleka',
+      domain: 'collectibles',
+      id: normalized.id,
+      data: normalized,
+      meta: { fetchedAt: new Date().toISOString() }
     });
     
   } catch (error) {
@@ -223,10 +228,7 @@ router.get('/categories', async (req, res) => {
     const rawData = await browseColekaCategories({ lang: targetLang });
     const normalized = normalizeCategories(rawData);
     
-    res.json({
-      success: true,
-      data: normalized
-    });
+    res.json(normalized);
     
   } catch (error) {
     logger.error(`[Coleka] Erreur catégories: ${error.message}`);

@@ -173,13 +173,16 @@ router.get('/album/:id', asyncHandler(async (req, res) => {
   let album = await provider.getAlbumDetails(id);
 
   // Traduction de la description si activée et langue != français
-  if (autoTradEnabled && targetLang && targetLang !== 'fr' && album.description) {
-    const translated = await translateText(album.description, targetLang, true);
+  if (autoTradEnabled && targetLang && targetLang !== 'fr' && album.data?.description) {
+    const translated = await translateText(album.data.description, targetLang, true);
     if (translated.translated) {
       album = {
         ...album,
-        description: translated.text,
-        originalDescription: album.description
+        data: {
+          ...album.data,
+          description: translated.text,
+          originalDescription: album.data.description
+        }
       };
     }
   }
@@ -204,13 +207,16 @@ router.get('/serie/:id', asyncHandler(async (req, res) => {
 
   let serie = await provider.getSerieDetails(id);
 
-  if (autoTradEnabled && targetLang && targetLang !== 'fr' && serie.description) {
-    const translated = await translateText(serie.description, targetLang, true);
+  if (autoTradEnabled && targetLang && targetLang !== 'fr' && serie.data?.description) {
+    const translated = await translateText(serie.data.description, targetLang, true);
     if (translated.translated) {
       serie = {
         ...serie,
-        description: translated.text,
-        originalDescription: serie.description
+        data: {
+          ...serie.data,
+          description: translated.text,
+          originalDescription: serie.data.description
+        }
       };
     }
   }

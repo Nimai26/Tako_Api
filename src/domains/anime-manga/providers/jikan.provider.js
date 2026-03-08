@@ -118,18 +118,18 @@ export class JikanProvider extends BaseProvider {
     // Enrichir en parallèle (limite 3 req/sec respectée par getAnimePictures)
     const enriched = await Promise.all(
       animeList.map(async (anime) => {
-        if (!anime.malId) {
-          this.log.warn(`enrichAnimeWithBackdrops: item has no malId`, anime.id);
+        if (!anime.sourceId) {
+          this.log.warn(`enrichAnimeWithBackdrops: item has no sourceId`, anime.id);
           return anime;
         }
         
         try {
-          const pictures = await this.getAnimePictures(anime.malId);
+          const pictures = await this.getAnimePictures(anime.sourceId);
           const backdrop = this.selectBackdrop(pictures);
-          this.log.debug(`Backdrop for ${anime.malId}: ${backdrop ? 'found' : 'null'}`);
-          return { ...anime, backdrop };
+          this.log.debug(`Backdrop for ${anime.sourceId}: ${backdrop ? 'found' : 'null'}`);
+          return { ...anime, images: { ...anime.images, backdrop }, details: { ...anime.details, backdrop } };
         } catch (error) {
-          this.log.warn(`Backdrop unavailable for ${anime.malId}:`, error.message);
+          this.log.warn(`Backdrop unavailable for ${anime.sourceId}:`, error.message);
           return anime;
         }
       })

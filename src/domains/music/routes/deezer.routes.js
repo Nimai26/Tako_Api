@@ -207,6 +207,7 @@ router.get('/albums/:id', async (req, res) => {
       type: 'album',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'deezer'
     });
   } catch (error) {
@@ -287,6 +288,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'deezer'
     });
   } catch (error) {
@@ -422,6 +424,7 @@ router.get('/tracks/:id', async (req, res) => {
       type: 'track',
       id,
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'deezer'
     });
   } catch (error) {

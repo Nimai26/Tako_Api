@@ -93,24 +93,30 @@ function normalizeSearchItem(game) {
 export function normalizeSearchResult(rawData) {
   if (!rawData || !rawData.results) {
     return {
+      success: true,
+      provider: 'jvc',
+      domain: 'videogames',
       data: [],
-      results: [],
       total: 0,
       count: 0,
       query: rawData?.query || null,
-      provider: 'jvc'
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString() }
     };
   }
 
   const items = rawData.results.map(game => normalizeSearchItem(game));
 
   return {
+    success: true,
+    provider: 'jvc',
+    domain: 'videogames',
     data: items,
-    results: items,           // rétro-compat — peut être retiré après migration des routes
     total: rawData.total || items.length,
     count: items.length,
     query: rawData.query || null,
-    provider: 'jvc'
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString() }
   };
 }
 

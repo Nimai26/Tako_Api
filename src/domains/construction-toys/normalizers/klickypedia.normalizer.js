@@ -256,10 +256,6 @@ export class KlickypediaNormalizer extends BaseNormalizer {
       // Contenu détaillé (spécifique Playmobil)
       figureCount: raw.figureCount || null, // Nombre de personnages (gardé pour compatibilité)
 
-      // URLs spécifiques
-      klickypedia_url: raw.url || raw.src_url,
-      src_url: raw.url || raw.src_url,
-
       // Métadonnées encyclopédiques
       metadata: {
         source: 'klickypedia',

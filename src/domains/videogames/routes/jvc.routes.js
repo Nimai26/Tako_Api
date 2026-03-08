@@ -36,31 +36,36 @@ async function translateGameContent(games, autoTrad, targetLang) {
     
     const result = { ...game };
     
-    // Translate genres
-    if (game.genres && game.genres.length > 0) {
+    // Translate genres (stored in details.genres)
+    if (game.details?.genres && game.details.genres.length > 0) {
       try {
         const { terms: translatedGenres } = await translateVideoGameGenres(
-          game.genres,
+          game.details.genres,
           targetLang
         );
-        result.genres = translatedGenres;
+        result.details = {
+          ...result.details,
+          genresOriginal: game.details.genres,
+          genres: translatedGenres
+        };
       } catch (error) {
         log.warn(`Genre translation failed: ${error.message}`);
       }
     }
     
-    // Translate summary/description (only if target lang is not French)
+    // Translate description (only if target lang is not French)
     // JVC content is already in French
-    if (targetLang !== 'fr' && game.summary && game.summary.length > 20) {
+    if (targetLang !== 'fr' && game.description && game.description.length > 20) {
       try {
         const translated = await translateText(
-          game.summary,
+          game.description,
           targetLang,
           { enabled: true, sourceLang: 'fr' }
         );
         
         if (translated.translated) {
-          result.summary = translated.text;
+          result.descriptionOriginal = game.description;
+          result.description = translated.text;
         }
       } catch (error) {
         log.warn(`Summary translation failed: ${error.message}`);

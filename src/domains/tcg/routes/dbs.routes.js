@@ -74,6 +74,7 @@ router.get('/search', async (req, res) => {
     res.json({
       success: true,
       provider: 'dbs',
+      domain: 'tcg',
       data: normalized,
       meta: {
         query: q,
@@ -115,6 +116,8 @@ router.get('/card/:id', async (req, res) => {
     res.json({
       success: true,
       provider: 'dbs',
+      domain: 'tcg',
+      id: normalized.id,
       data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),

@@ -75,51 +75,18 @@ router.get('/search', async (req, res) => {
       country
     });
     
-    // Grouper par type
-    const results = {
-      artists: [],
-      albums: [],
-      tracks: []
-    };
+    // Grouper par type et normaliser
+    const artists = [];
+    const albums = [];
+    const tracks = [];
     
     for (const item of data.results || []) {
       if (item.wrapperType === 'artist') {
-        results.artists.push({
-          id: item.artistId,
-          name: item.artistName,
-          genre: item.primaryGenreName,
-          url: item.artistLinkUrl || item.artistViewUrl
-        });
+        artists.push(itunesNormalizer.normalizeArtistSearchItem(item, artists.length + 1));
       } else if (item.wrapperType === 'collection' || item.collectionType === 'Album') {
-        results.albums.push({
-          id: item.collectionId,
-          title: item.collectionName,
-          artist: item.artistName,
-          artistId: item.artistId,
-          cover: item.artworkUrl100?.replace('100x100', '600x600'),
-          trackCount: item.trackCount,
-          releaseDate: item.releaseDate,
-          genre: item.primaryGenreName,
-          price: item.collectionPrice,
-          currency: item.currency,
-          url: item.collectionViewUrl
-        });
+        albums.push(itunesNormalizer.normalizeAlbumSearchItem(item, albums.length + 1));
       } else if (item.wrapperType === 'track') {
-        results.tracks.push({
-          id: item.trackId,
-          title: item.trackName,
-          artist: item.artistName,
-          artistId: item.artistId,
-          album: item.collectionName,
-          albumId: item.collectionId,
-          duration: item.trackTimeMillis,
-          previewUrl: item.previewUrl,
-          cover: item.artworkUrl100?.replace('100x100', '600x600'),
-          genre: item.primaryGenreName,
-          price: item.trackPrice,
-          currency: item.currency,
-          url: item.trackViewUrl
-        });
+        tracks.push(itunesNormalizer.normalizeTrackSearchItem(item, tracks.length + 1));
       }
     }
     
@@ -129,7 +96,13 @@ router.get('/search', async (req, res) => {
       domain: 'music',
       query: q,
       total: data.resultCount,
-      results,
+      count: artists.length + albums.length + tracks.length,
+      data: {
+        artists,
+        albums,
+        tracks
+      },
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
     });
   } catch (error) {
@@ -269,6 +242,7 @@ router.get('/albums/:id', async (req, res) => {
       type: 'album',
       id: parseInt(id),
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
     });
   } catch (error) {
@@ -315,6 +289,7 @@ router.get('/artists/:id', async (req, res) => {
       type: 'artist',
       id: parseInt(id),
       data: normalized,
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
     });
   } catch (error) {
@@ -389,36 +364,44 @@ router.get('/tracks/:id', async (req, res) => {
       type: 'track',
       id: parseInt(id),
       data: {
-        id: track.trackId,
+        id: `itunes:${track.trackId}`,
+        type: 'music_track',
+        source: 'itunes',
+        sourceId: String(track.trackId),
         title: track.trackName,
-        artist: {
-          id: track.artistId,
-          name: track.artistName
+        titleOriginal: null,
+        description: null,
+        year: track.releaseDate ? new Date(track.releaseDate).getFullYear() : null,
+        images: {
+          primary: track.artworkUrl100?.replace('100x100', '600x600') || null,
+          thumbnail: track.artworkUrl60 || track.artworkUrl100 || null,
+          gallery: []
         },
-        album: {
-          id: track.collectionId,
-          title: track.collectionName,
-          cover: {
-            small: track.artworkUrl60,
-            medium: track.artworkUrl100,
-            large: track.artworkUrl100?.replace('100x100', '600x600')
-          }
+        urls: {
+          source: track.trackViewUrl || null,
+          detail: `/api/music/itunes/tracks/${track.trackId}`
         },
-        trackNumber: track.trackNumber,
-        discNumber: track.discNumber,
-        duration: track.trackTimeMillis,
-        durationFormatted: track.trackTimeMillis 
-          ? `${Math.floor(track.trackTimeMillis / 60000)}:${String(Math.floor((track.trackTimeMillis % 60000) / 1000)).padStart(2, '0')}`
-          : null,
-        genre: track.primaryGenreName,
-        releaseDate: track.releaseDate,
-        explicit: track.trackExplicitness === 'explicit',
-        previewUrl: track.previewUrl,
-        price: track.trackPrice,
-        currency: track.currency,
-        url: track.trackViewUrl,
-        isStreamable: track.isStreamable
+        details: {
+          artist: track.artistName || null,
+          artistId: track.artistId ? `itunes:${track.artistId}` : null,
+          album: track.collectionName || null,
+          albumId: track.collectionId ? `itunes:${track.collectionId}` : null,
+          trackNumber: track.trackNumber || null,
+          discNumber: track.discNumber || 1,
+          duration: track.trackTimeMillis ? Math.round(track.trackTimeMillis / 1000) : null,
+          durationFormatted: track.trackTimeMillis 
+            ? `${Math.floor(track.trackTimeMillis / 60000)}:${String(Math.floor((track.trackTimeMillis % 60000) / 1000)).padStart(2, '0')}`
+            : null,
+          genre: track.primaryGenreName || null,
+          releaseDate: track.releaseDate || null,
+          explicit: track.trackExplicitness === 'explicit',
+          preview: track.previewUrl || null,
+          price: track.trackPrice || null,
+          currency: track.currency || null,
+          isStreamable: track.isStreamable || false
+        }
       },
+      meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
     });
   } catch (error) {

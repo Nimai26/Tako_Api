@@ -82,11 +82,11 @@ router.get('/search', asyncHandler(async (req, res) => {
     
     // Traduire aussi les genres/catégories de chaque livre
     for (const book of results.data) {
-      if (book.categories && book.categories.length > 0) {
-        const translated = await translateBookGenres(book.categories, targetLang);
+      if (book.details?.categories && book.details.categories.length > 0) {
+        const translated = await translateBookGenres(book.details.categories, targetLang);
         if (translated.termsTranslated) {
-          book.categoriesOriginal = translated.termsOriginal;
-          book.categories = translated.terms;
+          book.details.categoriesOriginal = translated.termsOriginal;
+          book.details.categories = translated.terms;
         }
       }
     }
@@ -126,11 +126,11 @@ router.get('/search/author', asyncHandler(async (req, res) => {
     results.data = await translateSearchResults(results.data, true, targetLang);
     
     for (const book of results.data) {
-      if (book.categories && book.categories.length > 0) {
-        const translated = await translateBookGenres(book.categories, targetLang);
+      if (book.details?.categories && book.details.categories.length > 0) {
+        const translated = await translateBookGenres(book.details.categories, targetLang);
         if (translated.termsTranslated) {
-          book.categoriesOriginal = translated.termsOriginal;
-          book.categories = translated.terms;
+          book.details.categoriesOriginal = translated.termsOriginal;
+          book.details.categories = translated.terms;
         }
       }
     }
@@ -170,23 +170,23 @@ router.get('/:volumeId', asyncHandler(async (req, res) => {
   // Traduction automatique si activée
   if (autoTradEnabled && book) {
     // Traduire la description
-    if (book.description) {
-      const descResult = await translateText(book.description, targetLang, { 
+    if (book.data?.description) {
+      const descResult = await translateText(book.data.description, targetLang, { 
         enabled: true, 
         sourceLang: 'en' 
       });
       if (descResult.translated) {
-        book.descriptionOriginal = book.description;
-        book.description = descResult.text;
+        book.data.descriptionOriginal = book.data.description;
+        book.data.description = descResult.text;
       }
     }
     
     // Traduire les catégories
-    if (book.categories && book.categories.length > 0) {
-      const translated = await translateBookGenres(book.categories, targetLang);
+    if (book.data?.details?.categories && book.data.details.categories.length > 0) {
+      const translated = await translateBookGenres(book.data.details.categories, targetLang);
       if (translated.termsTranslated) {
-        book.categoriesOriginal = translated.termsOriginal;
-        book.categories = translated.terms;
+        book.data.details.categoriesOriginal = translated.termsOriginal;
+        book.data.details.categories = translated.terms;
       }
     }
   }

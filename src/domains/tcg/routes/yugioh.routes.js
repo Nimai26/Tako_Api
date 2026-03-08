@@ -72,6 +72,7 @@ router.get('/search', async (req, res) => {
     res.json({
       success: true,
       provider: 'yugioh',
+      domain: 'tcg',
       query: q,
       total: rawData.total_cards || 0,
       count: normalizedData.length,
@@ -121,6 +122,8 @@ router.get('/card/:id', async (req, res) => {
     res.json({
       success: true,
       provider: 'yugioh',
+      domain: 'tcg',
+      id: normalizedCard.id,
       data: normalizedCard,
       meta: {
         fetchedAt: new Date().toISOString(),
@@ -211,6 +214,7 @@ router.get('/archetype', async (req, res) => {
     res.json({
       success: true,
       provider: 'yugioh',
+      domain: 'tcg',
       archetype: name,
       total: rawData.total_cards || 0,
       count: normalizedData.length,
