@@ -233,9 +233,10 @@ router.get('/compare/:asin', async (req, res) => {
     
     res.json({
       success: true,
-      data: normalized,
-      domain: 'ecommerce',
       provider: 'amazon',
+      domain: 'ecommerce',
+      id: asin,
+      data: normalized,
       meta: {
         fetchedAt: new Date().toISOString()
       }
@@ -264,11 +265,13 @@ router.get('/marketplaces', async (req, res) => {
     
     res.json({
       success: true,
-      data: marketplaces,
-      domain: 'ecommerce',
       provider: 'amazon',
+      domain: 'ecommerce',
+      query: null,
       total: marketplaces.length,
       count: marketplaces.length,
+      data: marketplaces,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString()
       }
@@ -296,11 +299,13 @@ router.get('/categories', async (req, res) => {
     
     res.json({
       success: true,
-      data: categories,
-      domain: 'ecommerce',
       provider: 'amazon',
+      domain: 'ecommerce',
+      query: null,
       total: categories.length,
       count: categories.length,
+      data: categories,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString()
       }

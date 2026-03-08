@@ -776,6 +776,7 @@ router.get('/seasons/now', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'season',
+    query: null,
     ...result,
     meta: {
       ...result.meta,
@@ -823,6 +824,7 @@ router.get('/seasons/:year/:season', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'season',
+    query: null,
     ...result,
     meta: {
       ...result.meta,
@@ -876,6 +878,7 @@ router.get('/top/anime', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'top-anime',
+    query: null,
     ...result,
     meta: {
       ...result.meta,
@@ -927,6 +930,7 @@ router.get('/top/manga', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'top-manga',
+    query: null,
     ...result,
     meta: {
       ...result.meta,
@@ -968,6 +972,7 @@ router.get('/schedules', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'schedule',
+    query: null,
     ...result,
     meta: {
       ...result.meta,
@@ -1008,6 +1013,7 @@ router.get('/schedules/:day', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'schedule',
+    query: null,
     ...result,
     meta: {
       ...result.meta,
@@ -1030,12 +1036,17 @@ router.get('/genres/anime', asyncHandler(async (req, res) => {
   const result = await provider.getAnimeGenres();
 
   res.json({
-    ...result,
     success: true,
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'genres',
-    contentType: 'anime'
+    contentType: 'anime',
+    query: null,
+    total: result.total,
+    count: result.count,
+    data: result.data,
+    pagination: null,
+    meta: result.meta
   });
 }));
 
@@ -1047,12 +1058,17 @@ router.get('/genres/manga', asyncHandler(async (req, res) => {
   const result = await provider.getMangaGenres();
 
   res.json({
-    ...result,
     success: true,
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'genres',
-    contentType: 'manga'
+    contentType: 'manga',
+    query: null,
+    total: result.total,
+    count: result.count,
+    data: result.data,
+    pagination: null,
+    meta: result.meta
   });
 }));
 
@@ -1253,6 +1269,7 @@ router.get('/top', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'top',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1329,6 +1346,7 @@ router.get('/trending', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'trending',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1407,6 +1425,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'upcoming',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1486,6 +1505,7 @@ router.get('/trending/tv', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'trending',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1568,6 +1588,7 @@ router.get('/trending/movie', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'trending',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1685,6 +1706,7 @@ router.get('/top/tv', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'top',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1801,6 +1823,7 @@ router.get('/top/movie', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'top',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1881,6 +1904,7 @@ router.get('/upcoming/tv', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'upcoming',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -1960,6 +1984,7 @@ router.get('/upcoming/movie', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'upcoming',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,
@@ -2043,6 +2068,7 @@ router.get('/schedule', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     endpoint: 'schedule',
+    query: null,
     total: results.data?.length || 0,
     count: results.data?.length || 0,
     data: results.data,

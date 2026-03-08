@@ -120,7 +120,6 @@ export function normalizeAlbumSearchResponse(data, query) {
     pagination: {
       page: 1,
       limit: results.length,
-      totalResults: data.total || results.length,
       hasMore: !!data.next
     },
     meta: buildMeta()
@@ -173,7 +172,6 @@ export function normalizeArtistSearchResponse(data, query) {
     pagination: {
       page: 1,
       limit: results.length,
-      totalResults: data.total || results.length,
       hasMore: !!data.next
     },
     meta: buildMeta()
@@ -223,7 +221,6 @@ export function normalizeTrackSearchResponse(data, query) {
     pagination: {
       page: 1,
       limit: results.length,
-      totalResults: data.total || results.length,
       hasMore: !!data.next
     },
     meta: buildMeta()

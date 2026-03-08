@@ -164,7 +164,6 @@ export class OpenLibraryProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit,
-        totalResults: numFound,
         hasMore: numFound > limit
       },
       lang
@@ -242,7 +241,7 @@ export class OpenLibraryProvider extends BaseProvider {
         query: isbn,
         searchType: 'isbn',
         total: 0,
-        pagination: { page: 1, limit: 0, totalResults: 0, hasMore: false }
+        pagination: { page: 1, limit: 0, hasMore: false }
       });
     }
 
@@ -252,7 +251,7 @@ export class OpenLibraryProvider extends BaseProvider {
       query: isbn,
       searchType: 'isbn',
       total: 1,
-      pagination: { page: 1, limit: 1, totalResults: 1, hasMore: false }
+      pagination: { page: 1, limit: 1, hasMore: false }
     });
   }
 
@@ -287,7 +286,6 @@ export class OpenLibraryProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit,
-        totalResults: numFound,
         hasMore: numFound > limit
       },
       lang
@@ -613,7 +611,6 @@ export class OpenLibraryProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit,
-        totalResults: numFound,
         hasMore: numFound > limit
       },
       data: authors,

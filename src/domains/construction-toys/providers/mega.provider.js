@@ -103,8 +103,6 @@ export class MegaProvider extends BaseProvider {
       pagination: {
         page,
         limit,
-        totalResults: total,
-        totalPages: Math.ceil(total / limit),
         hasMore: offset + results.length < total
       }
     });
@@ -183,8 +181,6 @@ export class MegaProvider extends BaseProvider {
       pagination: {
         page,
         limit,
-        totalResults: total,
-        totalPages: Math.ceil(total / limit),
         hasMore: offset + results.length < total
       }
     });

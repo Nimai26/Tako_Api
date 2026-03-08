@@ -147,8 +147,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -428,8 +426,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: data.results?.length || 0,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -475,8 +471,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: data.results?.length || 0,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -537,8 +531,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -590,8 +582,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -643,8 +633,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -718,8 +706,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -766,8 +752,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl
@@ -814,8 +798,6 @@ export class TmdbProvider extends BaseProvider {
       pagination: {
         page: data.page,
         limit: results.length,
-        totalPages: data.total_pages,
-        totalResults: data.total_results,
         hasMore: data.page < data.total_pages
       },
       imageBaseUrl: this.imageBaseUrl

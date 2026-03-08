@@ -535,6 +535,7 @@ router.get('/charts', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       endpoint: 'charts',
+      query: null,
       total: normalized.total || 0,
       count: (normalized.data || []).length,
       data: normalized.data || [],

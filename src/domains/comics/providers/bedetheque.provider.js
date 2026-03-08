@@ -274,7 +274,6 @@ export class BedethequeProvider extends BaseProvider {
         pagination: {
           page: 1,
           limit: maxResults,
-          totalResults: results.length,
           hasMore: false
         }
       });
@@ -336,7 +335,6 @@ export class BedethequeProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit: maxResults,
-        totalResults: results.length,
         hasMore: false
       }
     });
@@ -368,7 +366,6 @@ export class BedethequeProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit: maxResults,
-        totalResults: results.length,
         hasMore: false
       }
     });
@@ -439,7 +436,6 @@ export class BedethequeProvider extends BaseProvider {
         pagination: {
           page: 1,
           limit: maxResults,
-          totalResults: albums.length,
           hasMore: false
         }
       });

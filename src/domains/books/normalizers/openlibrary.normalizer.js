@@ -80,7 +80,6 @@ export class OpenLibraryNormalizer extends BaseNormalizer {
       pagination: pagination && Object.keys(pagination).length > 0 ? pagination : {
         page: 1,
         limit: items.length,
-        totalResults: total,
         hasMore: false
       },
       meta: {

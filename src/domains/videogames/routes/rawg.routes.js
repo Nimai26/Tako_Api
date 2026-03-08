@@ -130,7 +130,6 @@ router.get('/search', asyncHandler(async (req, res) => {
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: results.count || 0,
       hasMore: !!results.next
     },
     count: normalized.length,
@@ -215,7 +214,6 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: results.count || 0,
       hasMore: !!results.next
     },
     count: normalized.length,
@@ -990,6 +988,7 @@ router.get('/popular', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     endpoint: 'popular',
+    query: null,
     total: normalized.length,
     count: normalized.length,
     data: normalized,
@@ -1056,6 +1055,7 @@ router.get('/trending', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     endpoint: 'trending',
+    query: null,
     total: normalized.length,
     count: normalized.length,
     data: normalized,

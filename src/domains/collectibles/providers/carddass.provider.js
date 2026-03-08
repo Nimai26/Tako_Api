@@ -155,7 +155,6 @@ export async function getLicenses(options = {}) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
       hasMore: offset + rows.length < total
     }
   };
@@ -269,7 +268,6 @@ export async function getCollections(licenseId, options = {}) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
       hasMore: offset + rows.length < total
     }
   };
@@ -354,7 +352,6 @@ export async function getSeries(collectionId, options = {}) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
       hasMore: offset + rows.length < total
     }
   };
@@ -437,7 +434,6 @@ export async function getCards(seriesId, options = {}) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
       hasMore: offset + rows.length < total
     }
   };
@@ -670,7 +666,6 @@ export async function searchCards(query, options = {}) {
     pagination: {
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
       hasMore: offset + rows.length < total
     }
   };

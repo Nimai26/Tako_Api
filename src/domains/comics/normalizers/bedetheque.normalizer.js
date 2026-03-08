@@ -66,7 +66,6 @@ export class BedethequeNormalizer extends BaseNormalizer {
       pagination: pagination || {
         page: 1,
         limit: items.length,
-        totalResults: total,
         hasMore: false
       },
       meta: {

@@ -207,7 +207,6 @@ export class ComicVineProvider extends BaseProvider {
         pagination: {
           page,
           limit,
-          totalResults,
           hasMore: offset + results.length < totalResults
         }
       });
@@ -457,7 +456,6 @@ export class ComicVineProvider extends BaseProvider {
       const pagination = {
         page,
         limit,
-        totalResults,
         hasMore: offset + paginatedVolumes.length < totalResults
       };
 
@@ -511,7 +509,6 @@ export class ComicVineProvider extends BaseProvider {
         pagination: {
           page,
           limit,
-          totalResults,
           hasMore: offset + results.length < totalResults
         }
       });

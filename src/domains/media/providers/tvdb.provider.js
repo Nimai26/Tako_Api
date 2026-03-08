@@ -198,7 +198,6 @@ export class TvdbProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit: results.length,
-        totalResults: results.length,
         hasMore: false // TVDB ne pagine pas vraiment
       }
     });

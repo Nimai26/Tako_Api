@@ -109,8 +109,6 @@ export class RebrickableProvider extends BaseProvider {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: total,
-        totalPages: Math.ceil(total / pageSize),
         hasMore: response.next !== null
       },
       lang: 'en'
@@ -215,7 +213,6 @@ export class RebrickableProvider extends BaseProvider {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: response.count,
         hasMore: response.next !== null
       }
     };
@@ -294,7 +291,6 @@ export class RebrickableProvider extends BaseProvider {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: response.count,
         hasMore: response.next !== null
       }
     };
@@ -327,7 +323,6 @@ export class RebrickableProvider extends BaseProvider {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: response.count,
         hasMore: response.next !== null
       }
     };

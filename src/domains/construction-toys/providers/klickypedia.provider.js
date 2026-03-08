@@ -108,7 +108,6 @@ export class KlickypediaProvider extends BaseProvider {
       pagination: {
         page: 1,
         limit: max,
-        totalResults: products.length,
         hasMore: false
       },
       lang: normalizedLang

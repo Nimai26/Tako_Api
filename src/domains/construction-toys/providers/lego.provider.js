@@ -1143,8 +1143,6 @@ export class LegoProvider extends BaseProvider {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: result.total,
-        totalPages: Math.ceil(result.total / pageSize),
         hasMore: page * pageSize < result.total
       },
       lang: 'fr'

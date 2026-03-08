@@ -103,8 +103,6 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: totalHits,
-        totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
       meta: {
@@ -364,8 +362,6 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: totalHits,
-        totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
       meta: {
@@ -469,7 +465,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       success: true,
       provider: 'mangaupdates',
       domain: 'anime-manga',
-      authorId: String(authorId),
+      query: null,
       total: list.length,
       count: list.length,
       data: list.map(s => ({
@@ -479,7 +475,9 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         year: s.year || null,
         url: s.url || null
       })),
+      pagination: null,
       meta: {
+        authorId: String(authorId),
         fetchedAt: new Date().toISOString()
       }
     };
@@ -515,8 +513,6 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: totalHits,
-        totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
       meta: {
@@ -601,8 +597,6 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: totalHits,
-        totalPages: Math.ceil(totalHits / pageSize),
         hasMore: (page * pageSize) < totalHits
       },
       meta: {

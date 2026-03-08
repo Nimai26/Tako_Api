@@ -291,10 +291,9 @@ router.get('/barcode/:barcode', async (req, res) => {
 // ============================================================================
 
 /**
- * GET /releases/:id
- * Détails d'une release
+ * Handler partagé pour les détails d'une release
  */
-router.get('/releases/:id', async (req, res) => {
+async function handleReleaseDetail(req, res) {
   try {
     const { id } = req.params;
     
@@ -318,13 +317,16 @@ router.get('/releases/:id', async (req, res) => {
       error: error.message
     });
   }
-});
+}
+
+/**
+ * GET /releases/:id
+ * Détails d'une release
+ */
+router.get('/releases/:id', handleReleaseDetail);
 
 // Alias /albums/:id -> /releases/:id
-router.get('/albums/:id', async (req, res) => {
-  req.params.id = req.params.id;
-  return router.handle(req, res);
-});
+router.get('/albums/:id', handleReleaseDetail);
 
 // ============================================================================
 // DÉTAILS MASTER
@@ -414,7 +416,6 @@ router.get('/masters/:id/versions', async (req, res) => {
       pagination: {
         page: data.pagination?.page || 1,
         limit: data.pagination?.per_page || 50,
-        totalPages: data.pagination?.pages || 1,
         hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
       },
       data: versions,
@@ -584,7 +585,6 @@ router.get('/labels/:id/releases', async (req, res) => {
       pagination: {
         page: data.pagination?.page || 1,
         limit: data.pagination?.per_page || 50,
-        totalPages: data.pagination?.pages || 1,
         hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
       },
       data: releases,

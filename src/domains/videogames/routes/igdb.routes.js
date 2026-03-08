@@ -250,8 +250,11 @@ router.get('/genres', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    query: null,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -268,8 +271,11 @@ router.get('/platforms', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    query: null,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -291,8 +297,11 @@ router.get('/themes', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    query: null,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -308,8 +317,11 @@ router.get('/game-modes', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    query: null,
+    total: gameModes.length,
     count: gameModes.length,
     data: gameModes,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -325,8 +337,11 @@ router.get('/player-perspectives', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    query: null,
+    total: perspectives.length,
     count: perspectives.length,
     data: perspectives,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -570,6 +585,7 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     endpoint: 'top-rated',
+    query: null,
     total: normalized.length,
     count: normalized.length,
     data: normalized,
@@ -619,6 +635,7 @@ router.get('/popular', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     endpoint: 'popular',
+    query: null,
     total: normalized.length,
     count: normalized.length,
     data: normalized,
@@ -657,6 +674,7 @@ router.get('/recent', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     endpoint: 'recent',
+    query: null,
     total: normalized.length,
     count: normalized.length,
     data: normalized,
@@ -686,6 +704,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     endpoint: 'upcoming',
+    query: null,
     total: normalized.length,
     count: normalized.length,
     data: normalized,
