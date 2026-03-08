@@ -201,6 +201,7 @@ export function normalizeCategories(rawData) {
       success: true,
       provider: 'coleka',
       domain: 'collectibles',
+      query: null,
       total: 0,
       count: 0,
       data: [],
@@ -215,6 +216,7 @@ export function normalizeCategories(rawData) {
     success: true,
     provider: 'coleka',
     domain: 'collectibles',
+    query: null,
     total: rawData.categories.length,
     count: rawData.categories.length,
     data: rawData.categories.map(cat => ({

@@ -46,7 +46,7 @@ export function normalizeSearchResult(game) {
     },
     urls: {
       source: game.slug ? `https://rawg.io/games/${game.slug}` : null,
-      detail: `/api/videogames/rawg/${sourceId}`
+      detail: `/api/videogames/rawg/game/${sourceId}`
     },
     details: {
       slug: game.slug || null,
@@ -89,7 +89,7 @@ export function normalizeGame(game) {
     },
     urls: {
       source: game.slug ? `https://rawg.io/games/${game.slug}` : null,
-      detail: `/api/videogames/rawg/${sourceId}`
+      detail: `/api/videogames/rawg/game/${sourceId}`
     },
     details: {
       // Basic info

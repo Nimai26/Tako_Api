@@ -36,7 +36,7 @@ async function translateGameContent(games, autoTrad, targetLang) {
     if (game.details?.alternateNames && game.details.alternateNames.length > 0) {
       const localizedName = bggNormalizer.findLocalizedName(game.details.alternateNames, targetLang);
       if (localizedName) {
-        translatedGame.localizedName = localizedName;
+        translatedGame.details = { ...translatedGame.details, localizedName };
       }
     }
     
