@@ -75,15 +75,19 @@ router.get('/search', async (req, res) => {
       success: true,
       provider: 'dbs',
       domain: 'tcg',
+      query: q,
+      total: rawData.total || 0,
+      count: normalized.length,
       data: normalized,
+      pagination: rawData.total > 0 ? {
+        page: rawData.page || parseInt(page),
+        limit: rawData.pageSize || parseInt(max),
+        hasMore: (rawData.page || 1) * (rawData.pageSize || parseInt(max)) < (rawData.total || 0),
+      } : null,
       meta: {
-        query: q,
-        game: game || 'all',
-        total: rawData.total,
-        page: rawData.page,
-        pageSize: rawData.pageSize,
-        count: rawData.count,
         fetchedAt: new Date().toISOString(),
+        lang,
+        game: game || 'all',
       },
     });
   } catch (error) {
@@ -151,10 +155,12 @@ router.get('/sets', async (req, res) => {
     res.json({
       success: true,
       provider: 'dbs',
+      domain: 'tcg',
+      total: rawData.total || 0,
+      count: normalized.length,
       data: normalized,
       meta: {
         game: game || 'all',
-        total: rawData.total,
         fetchedAt: new Date().toISOString(),
       },
     });
@@ -183,6 +189,8 @@ router.get('/sets/:code', async (req, res) => {
     res.json({
       success: true,
       provider: 'dbs',
+      domain: 'tcg',
+      id: `dbs:${code}`,
       data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),

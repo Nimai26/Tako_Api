@@ -36,6 +36,7 @@ router.get('/search', async (req, res) => {
     
     if (!q) {
       return res.status(400).json({
+        success: false,
         error: 'Missing required parameter: q'
       });
     }
@@ -57,8 +58,9 @@ router.get('/search', async (req, res) => {
   } catch (error) {
     logger.error(`[Paninimania] Search error: ${error.message}`);
     res.status(500).json({
-      error: 'Search failed',
-      message: error.message
+      success: false,
+      provider: 'paninimania',
+      error: error.message
     });
   }
 });
@@ -78,6 +80,7 @@ router.get('/details', async (req, res) => {
     
     if (!id) {
       return res.status(400).json({
+        success: false,
         error: 'Missing required parameter: id'
       });
     }
@@ -104,8 +107,9 @@ router.get('/details', async (req, res) => {
   } catch (error) {
     logger.error(`[Paninimania] Details error: ${error.message}`);
     res.status(500).json({
-      error: 'Failed to get details',
-      message: error.message
+      success: false,
+      provider: 'paninimania',
+      error: error.message
     });
   }
 });
@@ -148,8 +152,9 @@ router.get('/album/:id', async (req, res) => {
   } catch (error) {
     logger.error(`[Paninimania] Album error: ${error.message}`);
     res.status(500).json({
-      error: 'Failed to get album',
-      message: error.message
+      success: false,
+      provider: 'paninimania',
+      error: error.message
     });
   }
 });

@@ -408,8 +408,10 @@ router.get('/anime/random', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'anime',
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré'
@@ -443,9 +445,10 @@ router.get('/anime/:id', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'anime',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -570,8 +573,10 @@ router.get('/manga/random', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'manga',
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled,
       note: 'Contenu adulte NON filtré'
@@ -605,9 +610,10 @@ router.get('/manga/:id', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'manga',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -1011,9 +1017,10 @@ router.get('/characters/:id', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'character',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -1050,9 +1057,10 @@ router.get('/people/:id', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'person',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -1089,9 +1097,10 @@ router.get('/producers/:id', asyncHandler(async (req, res) => {
     provider: 'jikan',
     domain: 'anime-manga',
     type: 'producer',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }

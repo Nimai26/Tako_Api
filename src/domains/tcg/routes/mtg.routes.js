@@ -75,8 +75,12 @@ router.get('/search', async (req, res) => {
       query: q,
       total: rawData.total || 0,
       count: normalized.length,
-      hasMore: rawData.hasMore || false,
       data: normalized,
+      pagination: rawData.hasMore ? {
+        page: 1,
+        limit: parseInt(max),
+        hasMore: true,
+      } : null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,
@@ -160,6 +164,7 @@ router.get('/sets', async (req, res) => {
     res.json({
       success: true,
       provider: 'mtg',
+      domain: 'tcg',
       total: rawData.total || 0,
       count: normalized.length,
       data: normalized,

@@ -364,7 +364,7 @@ router.get('/cards/:id', asyncHandler(async (req, res) => {
     success: true,
     provider: 'carddass',
     domain: 'collectibles',
-    id: normalized?.id || `carddass_${id}`,
+    id: normalized?.id || `carddass:${id}`,
     data: normalized,
     meta: {
       source: 'database',

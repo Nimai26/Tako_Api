@@ -147,7 +147,7 @@ export function normalizeSearchResults(rawData) {
       count: 0,
       data: [],
       pagination: null,
-      meta: { fetchedAt: new Date().toISOString() }
+      meta: { fetchedAt: new Date().toISOString(), lang: null, cached: false, cacheAge: null }
     };
   }
   
@@ -162,7 +162,7 @@ export function normalizeSearchResults(rawData) {
     count: items.length,
     data: items,
     pagination: null,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { fetchedAt: new Date().toISOString(), lang: null, cached: false, cacheAge: null }
   };
 }
 

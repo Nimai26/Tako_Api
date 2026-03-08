@@ -231,9 +231,10 @@ router.get('/movies/:id', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'movie',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -268,9 +269,10 @@ router.get('/series/:id', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'series',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -356,9 +358,10 @@ router.get('/seasons/:id', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'season',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -447,9 +450,10 @@ router.get('/episodes/:id', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'episode',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -485,9 +489,10 @@ router.get('/lists/:id', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'list',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -531,9 +536,10 @@ router.get('/persons/:id', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'person',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }

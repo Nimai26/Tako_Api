@@ -138,6 +138,7 @@ export class MegaProvider extends BaseProvider {
       success: true,
       provider: 'mega',
       domain: 'construction-toys',
+      id: normalized.id,
       data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),

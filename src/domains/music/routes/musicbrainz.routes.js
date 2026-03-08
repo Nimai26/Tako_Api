@@ -229,7 +229,7 @@ router.get('/albums/:id', async (req, res) => {
       provider: 'musicbrainz',
       domain: 'music',
       type: 'album',
-      id,
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'musicbrainz'
@@ -319,7 +319,7 @@ router.get('/artists/:id', async (req, res) => {
       provider: 'musicbrainz',
       domain: 'music',
       type: 'artist',
-      id,
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'musicbrainz'

@@ -77,6 +77,7 @@ router.get('/search', async (req, res) => {
       total: rawData.total_cards || 0,
       count: normalizedData.length,
       data: normalizedData,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,
@@ -166,6 +167,7 @@ router.get('/sets', async (req, res) => {
     res.json({
       success: true,
       provider: 'yugioh',
+      domain: 'tcg',
       total: normalizedSets.length,
       count: normalizedSets.length,
       data: normalizedSets,

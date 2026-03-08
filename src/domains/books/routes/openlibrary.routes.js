@@ -321,11 +321,11 @@ router.get('/:olId', asyncHandler(async (req, res) => {
     }
     
     // Traduire les sujets/catégories
-    if (result.data.categories && result.data.categories.length > 0) {
-      const translated = await translateBookGenres(result.data.categories, targetLang);
+    if (result.data.details?.categories && result.data.details.categories.length > 0) {
+      const translated = await translateBookGenres(result.data.details.categories, targetLang);
       if (translated.termsTranslated) {
-        result.data.categoriesOriginal = translated.termsOriginal;
-        result.data.categories = translated.terms;
+        result.data.details.categoriesOriginal = translated.termsOriginal;
+        result.data.details.categories = translated.terms;
       }
     }
   }

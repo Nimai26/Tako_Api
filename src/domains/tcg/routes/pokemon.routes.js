@@ -83,8 +83,12 @@ router.get('/search', async (req, res) => {
       query: q,
       total: rawData.total || 0,
       count: normalized.length,
-      page: rawData.page || 1,
       data: normalized,
+      pagination: (rawData.total || 0) > normalized.length ? {
+        page: rawData.page || 1,
+        limit: parseInt(max),
+        hasMore: (rawData.page || 1) * parseInt(max) < (rawData.total || 0),
+      } : null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,
@@ -181,6 +185,7 @@ router.get('/sets', async (req, res) => {
     res.json({
       success: true,
       provider: 'pokemon',
+      domain: 'tcg',
       total: rawData.total || 0,
       count: normalized.length,
       data: normalized,

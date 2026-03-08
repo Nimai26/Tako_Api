@@ -85,9 +85,12 @@ router.get('/search', async (req, res) => {
       query: q,
       total: rawData.total_cards || 0,
       count: normalizedData.length,
-      page: rawData.page || 1,
-      totalPages: rawData.total_pages || 1,
       data: normalizedData,
+      pagination: (rawData.total_pages || 1) > 1 ? {
+        page: rawData.page || 1,
+        limit: maxResults,
+        hasMore: (rawData.page || 1) < (rawData.total_pages || 1),
+      } : null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,
@@ -193,6 +196,7 @@ router.get('/sets', async (req, res) => {
     res.json({
       success: true,
       provider: 'lorcana',
+      domain: 'tcg',
       total: normalizedSets.length,
       count: normalizedSets.length,
       data: normalizedSets,

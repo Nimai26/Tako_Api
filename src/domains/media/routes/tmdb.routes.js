@@ -259,9 +259,10 @@ router.get('/movies/:id', asyncHandler(async (req, res) => {
     provider: 'tmdb',
     domain: 'media',
     type: 'movie',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -296,9 +297,10 @@ router.get('/series/:id', asyncHandler(async (req, res) => {
     provider: 'tmdb',
     domain: 'media',
     type: 'series',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -360,10 +362,12 @@ router.get('/series/:id/season/:season', asyncHandler(async (req, res) => {
     provider: 'tmdb',
     domain: 'media',
     type: 'season',
+    id: result.id,
     seriesId: id,
     seasonNumber,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -406,11 +410,13 @@ router.get('/series/:id/season/:season/episode/:episode', asyncHandler(async (re
     provider: 'tmdb',
     domain: 'media',
     type: 'episode',
+    id: result.id,
     seriesId: id,
     seasonNumber,
     episodeNumber,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -467,9 +473,10 @@ router.get('/collections/:id', asyncHandler(async (req, res) => {
     provider: 'tmdb',
     domain: 'media',
     type: 'collection',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }
@@ -505,9 +512,10 @@ router.get('/persons/:id', asyncHandler(async (req, res) => {
     provider: 'tmdb',
     domain: 'media',
     type: 'person',
-    id,
+    id: result.id,
     data: result,
     meta: {
+      fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled
     }

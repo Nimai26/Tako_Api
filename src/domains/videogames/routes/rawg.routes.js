@@ -126,6 +126,7 @@ router.get('/search', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     query: searchQuery,
+    total: results.count || 0,
     pagination: {
       page: parseInt(page),
       pageSize: parseInt(pageSize),

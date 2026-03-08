@@ -95,13 +95,9 @@ router.get('/search', async (req, res) => {
       provider: 'itunes',
       domain: 'music',
       query: q,
-      total: data.resultCount,
+      total: artists.length + albums.length + tracks.length,
       count: artists.length + albums.length + tracks.length,
-      data: {
-        artists,
-        albums,
-        tracks
-      },
+      data: [...artists, ...albums, ...tracks],
       meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
     });
@@ -240,7 +236,7 @@ router.get('/albums/:id', async (req, res) => {
       provider: 'itunes',
       domain: 'music',
       type: 'album',
-      id: parseInt(id),
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
@@ -287,7 +283,7 @@ router.get('/artists/:id', async (req, res) => {
       provider: 'itunes',
       domain: 'music',
       type: 'artist',
-      id: parseInt(id),
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'itunes'
@@ -362,7 +358,7 @@ router.get('/tracks/:id', async (req, res) => {
       provider: 'itunes',
       domain: 'music',
       type: 'track',
-      id: parseInt(id),
+      id: `itunes:${track.trackId}`,
       data: {
         id: `itunes:${track.trackId}`,
         type: 'music_track',

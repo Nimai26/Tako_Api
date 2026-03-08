@@ -307,7 +307,7 @@ router.get('/releases/:id', async (req, res) => {
       provider: 'discogs',
       domain: 'music',
       type: 'release',
-      id,
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
@@ -348,7 +348,7 @@ router.get('/masters/:id', async (req, res) => {
       provider: 'discogs',
       domain: 'music',
       type: 'master',
-      id,
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
@@ -436,7 +436,7 @@ router.get('/artists/:id', async (req, res) => {
       provider: 'discogs',
       domain: 'music',
       type: 'artist',
-      id,
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'
@@ -506,7 +506,7 @@ router.get('/labels/:id', async (req, res) => {
       provider: 'discogs',
       domain: 'music',
       type: 'label',
-      id,
+      id: normalized.id,
       data: normalized,
       meta: { fetchedAt: new Date().toISOString() },
       source: 'discogs'

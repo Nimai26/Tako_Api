@@ -74,6 +74,7 @@ router.get('/search', async (req, res) => {
       total: rawData.total_cards || 0,
       count: normalizedData.length,
       data: normalizedData,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,

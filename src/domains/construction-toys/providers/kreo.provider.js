@@ -146,6 +146,7 @@ export class KreoProvider extends BaseProvider {
       success: true,
       provider: 'kreo',
       domain: 'construction-toys',
+      id: normalized.id,
       data: normalized,
       meta: {
         fetchedAt: new Date().toISOString(),

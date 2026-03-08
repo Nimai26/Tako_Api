@@ -92,8 +92,10 @@ router.get('/search', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     query: searchQuery,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));

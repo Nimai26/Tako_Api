@@ -125,7 +125,9 @@ export class ComicVineNormalizer extends BaseNormalizer {
       },
       meta: {
         fetchedAt: new Date().toISOString(),
-        source: 'comicvine'
+        lang: null,
+        cached: false,
+        cacheAge: null
       }
     };
   }
@@ -329,7 +331,9 @@ export class ComicVineNormalizer extends BaseNormalizer {
       },
       meta: {
         fetchedAt: new Date().toISOString(),
-        source: 'comicvine'
+        lang: null,
+        cached: false,
+        cacheAge: null
       }
     };
   }
@@ -571,7 +575,9 @@ export class ComicVineNormalizer extends BaseNormalizer {
       },
       meta: {
         fetchedAt: new Date().toISOString(),
-        source: 'comicvine'
+        lang: null,
+        cached: false,
+        cacheAge: null
       }
     };
   }
