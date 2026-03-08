@@ -172,8 +172,18 @@ export class JikanNormalizer extends BaseNormalizer {
         resourceType: anime.type?.toLowerCase() || 'anime',
         titleEnglish: anime.title_english,
         titleAlternatives: anime.titles?.map(t => ({ type: t.type, title: t.title })) || [],
-        trailer: anime.trailer?.url || null,
-        trailerEmbed: anime.trailer?.embed_url || null,
+        trailer: anime.trailer ? {
+          url: anime.trailer.url || null,
+          embedUrl: anime.trailer.embed_url || null,
+          youtubeId: anime.trailer.youtube_id || null,
+          images: anime.trailer.images ? {
+            default: anime.trailer.images.image_url || null,
+            small: anime.trailer.images.small_image_url || null,
+            medium: anime.trailer.images.medium_image_url || null,
+            large: anime.trailer.images.large_image_url || null,
+            maximum: anime.trailer.images.maximum_image_url || null
+          } : null
+        } : null,
         format: anime.type,
         sourceMaterial: anime.source,
         episodes: anime.episodes,
@@ -462,6 +472,8 @@ export class JikanNormalizer extends BaseNormalizer {
         titleJapanese: ep.title_japanese,
         titleRomanji: ep.title_romanji,
         aired: ep.aired,
+        score: ep.score ?? null,
+        url: ep.url || null,
         filler: ep.filler,
         recap: ep.recap,
         forumUrl: ep.forum_url

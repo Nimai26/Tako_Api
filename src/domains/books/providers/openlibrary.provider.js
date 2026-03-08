@@ -780,6 +780,8 @@ export class OpenLibraryProvider extends BaseProvider {
         personalName: data.personal_name || null,
         birthDate: data.birth_date || null,
         deathDate: data.death_date || null,
+        wikipedia: data.wikipedia || null,
+        remoteIds: data.remote_ids || null,
         links: (data.links || []).map(link => ({
           title: link.title,
           url: link.url

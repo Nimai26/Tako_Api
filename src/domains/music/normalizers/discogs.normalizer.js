@@ -191,6 +191,7 @@ export function normalizeSearchItem(item, position = null) {
       genres: item.genre || [],
       styles: item.style || [],
       labels: item.label || [],
+      catalogNumber: item.catno || null,
       position
     }
   };
@@ -278,6 +279,25 @@ export function normalizeReleaseDetail(release) {
         type: id.type,
         value: id.value
       })),
+      companies: (release.companies || []).map(c => ({
+        id: `${SOURCE}:${c.id}`,
+        sourceId: String(c.id),
+        name: c.name,
+        role: c.entity_type_name || null,
+        catalogNumber: c.catno || null
+      })),
+      extraArtists: (release.extraartists || []).map(a => ({
+        id: `${SOURCE}:${a.id}`,
+        sourceId: String(a.id),
+        name: a.name,
+        role: a.role || null
+      })),
+      videos: (release.videos || []).map(v => ({
+        title: v.title || null,
+        url: v.uri || null,
+        duration: v.duration || null,
+        description: v.description || null
+      })),
       resourceUrl: release.resource_url
     }
   };
@@ -298,7 +318,8 @@ export function normalizeMasterDetail(master) {
     position: t.position || String(idx + 1),
     title: t.title,
     duration: t.duration || null,
-    durationSeconds: parseDuration(t.duration)
+    durationSeconds: parseDuration(t.duration),
+    artists: t.artists?.map(a => a.name) || null
   }));
 
   const rawImages = (master.images || []).map(img => ({
@@ -317,7 +338,7 @@ export function normalizeMasterDetail(master) {
     sourceId: String(master.id),
     title: master.title,
     titleOriginal: null,
-    description: null,
+    description: master.notes || null,
     year: master.year || null,
     images: {
       primary: primaryImg,
@@ -390,8 +411,15 @@ export function normalizeArtistDetail(artist) {
     },
     details: {
       realName: artist.realname || null,
+      nameVariations: artist.namevariations || [],
       members,
       aliases,
+      groups: (artist.groups || []).map(g => ({
+        id: `${SOURCE}:${g.id}`,
+        sourceId: String(g.id),
+        name: g.name,
+        active: g.active
+      })),
       externalUrls: artist.urls || [],
       resourceUrl: artist.resource_url
     }

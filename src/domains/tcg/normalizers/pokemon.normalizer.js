@@ -142,7 +142,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   if (rawCard.tcgplayer?.prices) {
     const tcgPrices = rawCard.tcgplayer.prices;
     
-    // Prioriser holofoil, puis normal
+    // Prioriser holofoil, puis normal pour les prix principaux
     const priceVariant = tcgPrices.holofoil || tcgPrices.normal || 
                          tcgPrices['1stEditionHolofoil'] || tcgPrices['1stEditionNormal'] ||
                          tcgPrices.reverseHolofoil || tcgPrices.unlimitedHolofoil ||
@@ -156,7 +156,16 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         high: priceVariant.high || null,
         market: priceVariant.market || null,
         source: 'tcgplayer',
-        updatedAt: rawCard.tcgplayer.updatedAt || null
+        updatedAt: rawCard.tcgplayer.updatedAt || null,
+        variants: Object.fromEntries(
+          Object.entries(tcgPrices).map(([variant, p]) => [variant, {
+            low: p.low || null,
+            mid: p.mid || null,
+            high: p.high || null,
+            market: p.market || null,
+            directLow: p.directLow || null
+          }])
+        )
       };
     }
   }

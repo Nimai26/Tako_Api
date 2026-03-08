@@ -195,17 +195,14 @@ export function normalizeDetails(rawData) {
 export function normalizePlatforms(rawData) {
   if (!rawData || !rawData.results) {
     return {
-      items: [],
+      data: [],
       total: 0,
-      metadata: {
-        source: 'consolevariations',
-        type: 'platforms',
-        brand: null
-      }
+      type: rawData?.type || 'platforms',
+      brand: null
     };
   }
   
-  const items = rawData.results.map(item => ({
+  const data = rawData.results.map(item => ({
     id: item.id || item.slug,
     slug: item.slug,
     name: item.name,
@@ -214,13 +211,10 @@ export function normalizePlatforms(rawData) {
   }));
   
   return {
-    items,
-    total: items.length,
-    metadata: {
-      source: 'consolevariations',
-      type: rawData.type || 'platforms',
-      brand: rawData.brand || null
-    }
+    data,
+    total: data.length,
+    type: rawData.type || 'platforms',
+    brand: rawData.brand || null
   };
 }
 

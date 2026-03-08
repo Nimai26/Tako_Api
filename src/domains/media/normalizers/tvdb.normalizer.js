@@ -394,6 +394,16 @@ export class TvdbNormalizer extends BaseNormalizer {
         // Genres
         genres,
 
+        // Noms alternatifs
+        aliases: series.aliases || [],
+
+        // Informations de diffusion
+        broadcast: (series.airsDays || series.airsTime) ? {
+          days: series.airsDays || null,
+          time: series.airsTime || null,
+          timeUTC: series.airsTimeUTC || null
+        } : null,
+
         // Notes (TVDB score = popularité cumulative, pas une note /10)
         rating: null,
         popularityScore: series.score || null,

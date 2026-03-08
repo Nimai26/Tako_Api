@@ -674,8 +674,11 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    endpoint: 'upcoming',
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));

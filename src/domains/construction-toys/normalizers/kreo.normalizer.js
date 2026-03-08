@@ -158,6 +158,7 @@ export class KreoNormalizer extends BaseNormalizer {
         subLine: raw.sub_line,
         productType: raw.product_type,
         archivedAt: raw.discovered_at || null,
+        updatedAt: raw.updated_at || null,
         wikiUrl: raw.wiki_url || null
       }
     };

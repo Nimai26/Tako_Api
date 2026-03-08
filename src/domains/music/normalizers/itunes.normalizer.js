@@ -276,6 +276,8 @@ export function normalizeAlbumDetail(data) {
     id: `${SOURCE}:${t.trackId}`,
     sourceId: String(t.trackId),
     title: t.trackName,
+    artist: t.artistName || null,
+    artistId: t.artistId ? `${SOURCE}:${t.artistId}` : null,
     duration: t.trackTimeMillis ? Math.round(t.trackTimeMillis / 1000) : null,
     durationFormatted: t.trackTimeMillis ? formatDuration(t.trackTimeMillis) : null,
     discNumber: t.discNumber || 1,

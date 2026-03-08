@@ -252,8 +252,10 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       prices: {
         usd: rawCard.prices?.usd || null,
         usdFoil: rawCard.prices?.usd_foil || null,
+        usdEtched: rawCard.prices?.usd_etched || null,
         eur: rawCard.prices?.eur || null,
         eurFoil: rawCard.prices?.eur_foil || null,
+        eurEtched: rawCard.prices?.eur_etched || null,
         tix: rawCard.prices?.tix || null,
         currency: 'USD/EUR',
         source: 'scryfall',

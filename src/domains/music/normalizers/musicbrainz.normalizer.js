@@ -274,6 +274,7 @@ export function normalizeAlbumDetail(rg, tracks = []) {
     details: {
       artist: formatArtistName(rg['artist-credit']),
       artists,
+      disambiguation: rg.disambiguation || null,
       releaseDate: rg['first-release-date'] || null,
       primaryType: rg['primary-type'] || null,
       secondaryTypes: rg['secondary-types'] || [],
@@ -347,6 +348,8 @@ export function normalizeArtistDetail(artist) {
       beginDate: artist['life-span']?.begin || null,
       endDate: artist['life-span']?.end || null,
       active: !artist['life-span']?.ended,
+      beginArea: artist['begin-area']?.name || null,
+      endArea: artist['end-area']?.name || null,
       aliases,
       tags,
       rating: artist.rating ? {

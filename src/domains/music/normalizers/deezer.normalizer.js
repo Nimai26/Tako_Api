@@ -282,10 +282,13 @@ export function normalizeAlbumDetail(album) {
     id: `${SOURCE}:${t.id}`,
     sourceId: String(t.id),
     title: t.title,
+    artist: t.artist?.name || null,
+    artistId: t.artist?.id ? `${SOURCE}:${t.artist.id}` : null,
     duration: t.duration || null,
     durationFormatted: t.duration ? formatDuration(t.duration) : null,
     preview: t.preview || null,
-    explicit: t.explicit_lyrics || false
+    explicit: t.explicit_lyrics || false,
+    rank: t.rank || null
   }));
 
   const contributors = (album.contributors || []).map(c => ({
@@ -418,6 +421,7 @@ export function normalizeTrackDetail(track) {
       releaseDate: track.release_date || null,
       bpm: track.bpm || null,
       gain: track.gain || null,
+      rank: track.rank || null,
       preview: track.preview || null,
       explicit: track.explicit_lyrics || false,
       isrc: track.isrc || null,

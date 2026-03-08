@@ -213,9 +213,14 @@ router.get('/platforms', asyncHandler(async (req, res) => {
     success: true,
     provider: 'consolevariations',
     domain: 'videogames',
-    ...normalized,
+    type: normalized.type,
+    query: brand || null,
+    total: normalized.total,
+    count: normalized.data.length,
+    data: normalized.data,
+    pagination: null,
     meta: {
-      source: 'consolevariations',
+      brand: normalized.brand,
       fetchedAt: new Date().toISOString()
     }
   });

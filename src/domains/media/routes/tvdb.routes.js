@@ -302,13 +302,15 @@ router.get('/series/:id/seasons', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'seasons',
-    seriesId: id,
-    seriesName: result.seriesName,
     total: result.total,
+    count: result.seasons?.length || 0,
     data: result.seasons,
+    pagination: null,
     meta: {
       fetchedAt: new Date().toISOString(),
-      lang
+      lang,
+      seriesId: id,
+      seriesName: result.seriesName
     }
   });
 }));
@@ -415,14 +417,19 @@ router.get('/series/:id/episodes', asyncHandler(async (req, res) => {
     domain: 'media',
     type: 'episodes',
     total: result.total,
+    count: result.episodes?.length || 0,
     data: result.episodes,
+    pagination: {
+      page: parseInt(page) || 0,
+      limit: result.episodes?.length || 0,
+      hasMore: !!result.links?.next
+    },
     meta: {
       fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled,
       seriesId: id,
-      season: season ? parseInt(season) : null,
-      links: result.links
+      season: season ? parseInt(season) : null
     }
   });
 }));
