@@ -64,7 +64,7 @@ async function translateGameContent(games, autoTrad, targetLang) {
         );
         
         if (translated.translated) {
-          result.descriptionOriginal = game.description;
+          result.details = { ...result.details, descriptionOriginal: game.description };
           result.description = translated.text;
         }
       } catch (error) {

@@ -53,7 +53,7 @@ async function translateGameGenres(games, autoTrad, lang) {
     if (game.description && game.description.length > 20) {
       const translated = await translateText(game.description, targetLang, { enabled: true, sourceLang: 'en' });
       if (translated.translated) {
-        result.descriptionOriginal = game.description;
+        result.details = { ...result.details, descriptionOriginal: game.description };
         result.description = translated.text;
       }
     }
@@ -966,11 +966,13 @@ router.get('/popular', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     endpoint: 'popular',
+    total: normalized.length,
+    count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: {
       fetchedAt: new Date().toISOString(),
       page: parseInt(page),
-      totalResults: normalized.length,
       platforms: platforms || 'all',
       genres: genres || 'all',
       cached: fromCache,
@@ -1030,11 +1032,13 @@ router.get('/trending', asyncHandler(async (req, res) => {
     provider: 'rawg',
     domain: 'videogames',
     endpoint: 'trending',
+    total: normalized.length,
+    count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: {
       fetchedAt: new Date().toISOString(),
       page: parseInt(page),
-      totalResults: normalized.length,
       platforms: platforms || 'all',
       genres: genres || 'all',
       ordering: 'recently_added',

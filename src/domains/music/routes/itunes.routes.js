@@ -469,17 +469,37 @@ router.get('/charts', async (req, res) => {
     }
     
     // Normalisation simplifiée
-    const results = feed.entry.map((item, index) => ({
-      position: index + 1,
-      id: item.id?.attributes?.['im:id'],
-      title: item['im:name']?.label || item.title?.label,
-      artist: item['im:artist']?.label,
-      cover: item['im:image']?.[2]?.label || item['im:image']?.[1]?.label,
-      genre: item.category?.attributes?.label,
-      releaseDate: item['im:releaseDate']?.label,
-      price: item['im:price']?.label,
-      url: item.link?.attributes?.href
-    }));
+    const results = feed.entry.map((item, index) => {
+      const itunesId = item.id?.attributes?.['im:id'];
+      const cover = item['im:image']?.[2]?.label || item['im:image']?.[1]?.label || null;
+      return {
+        id: `itunes:${itunesId}`,
+        type: category === 'songs' ? 'music_track' : 'music_album',
+        source: 'itunes',
+        sourceId: String(itunesId),
+        title: item['im:name']?.label || item.title?.label || '',
+        titleOriginal: null,
+        description: null,
+        year: item['im:releaseDate']?.label ? new Date(item['im:releaseDate']?.label).getFullYear() : null,
+        images: {
+          primary: cover,
+          thumbnail: cover,
+          gallery: []
+        },
+        urls: {
+          source: item.link?.attributes?.href || null,
+          detail: null
+        },
+        details: {
+          position: index + 1,
+          artist: item['im:artist']?.label || null,
+          genre: item.category?.attributes?.label || null,
+          releaseDate: item['im:releaseDate']?.label || null,
+          price: item['im:price']?.label || null,
+          rights: item.rights?.label || null
+        }
+      };
+    });
     
     res.json({
       success: true,

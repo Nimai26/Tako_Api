@@ -59,7 +59,7 @@ async function translateDetailResult(result, targetLang, autoTradEnabled) {
   if (result.description) {
     const { text, translated: wasTranslated } = await translateText(result.description, targetLang, { enabled: true });
     if (wasTranslated) {
-      translated.descriptionOriginal = result.description;
+      translated.details.descriptionOriginal = result.description;
       translated.description = text;
     }
   }

@@ -61,10 +61,13 @@ async function enrichWithFrenchTitle(item) {
     if (frResult) {
       return {
         ...item,
-        titleFrench: frResult.titleFrench,
-        nautiljon: {
-          url: frResult.url,
-          confidence: frResult.confidence
+        details: {
+          ...item.details,
+          titleFrench: frResult.titleFrench,
+          nautiljon: {
+            url: frResult.url,
+            confidence: frResult.confidence
+          }
         }
       };
     }
@@ -255,18 +258,12 @@ router.get('/series/:id', asyncHandler(async (req, res) => {
   if (autoTradEnabled && targetLang && result.data?.description) {
     const translated = await translateText(result.data.description, targetLang, { enabled: true });
     if (translated.translated) {
-      result.data.description = {
-        text: translated.text,
-        original: result.data.description,
-        translated: true,
-        from: translated.from,
-        to: translated.to
+      result.data.details = {
+        ...result.data.details,
+        descriptionOriginal: result.data.description,
+        descriptionTranslated: true
       };
-    } else {
-      result.data.description = {
-        text: result.data.description,
-        translated: false
-      };
+      result.data.description = translated.text;
     }
   }
 

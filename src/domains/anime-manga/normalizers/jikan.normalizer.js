@@ -201,8 +201,16 @@ export class JikanNormalizer extends BaseNormalizer {
         producers: this.extractNames(anime.producers),
         licensors: this.extractNames(anime.licensors),
         genres: this.extractNames(anime.genres),
+        explicitGenres: this.extractNames(anime.explicit_genres),
         themes: this.extractNames(anime.themes),
-        demographics: this.extractNames(anime.demographics)
+        demographics: this.extractNames(anime.demographics),
+        titleSynonyms: anime.title_synonyms || [],
+        broadcast: anime.broadcast ? {
+          day: anime.broadcast.day,
+          time: anime.broadcast.time,
+          timezone: anime.broadcast.timezone,
+          string: anime.broadcast.string
+        } : null
       }
     };
   }
@@ -289,8 +297,10 @@ export class JikanNormalizer extends BaseNormalizer {
           url: s.url
         })) || [],
         genres: this.extractNames(manga.genres),
+        explicitGenres: this.extractNames(manga.explicit_genres),
         themes: this.extractNames(manga.themes),
-        demographics: this.extractNames(manga.demographics)
+        demographics: this.extractNames(manga.demographics),
+        titleSynonyms: manga.title_synonyms || []
       }
     };
   }

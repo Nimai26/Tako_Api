@@ -143,6 +143,7 @@ export function normalizeAlbumSearchItem(item, position = null) {
       releaseDate: item['first-release-date'] || null,
       primaryType: item['primary-type'] || null,
       secondaryTypes: item['secondary-types'] || [],
+      disambiguation: item.disambiguation || null,
       score: item.score || null,
       position
     }

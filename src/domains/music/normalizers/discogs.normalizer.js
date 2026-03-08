@@ -336,7 +336,8 @@ export function normalizeMasterDetail(master) {
       styles: master.styles || [],
       tracks,
       trackCount: tracks.length,
-      versionsCount: master.num_for_sale || 0,
+      versionsCount: master.versions?.length || 0,
+      numForSale: master.num_for_sale || 0,
       mainReleaseId: master.main_release ? String(master.main_release) : null,
       resourceUrl: master.resource_url
     }

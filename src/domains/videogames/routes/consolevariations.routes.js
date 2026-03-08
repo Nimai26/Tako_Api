@@ -69,13 +69,12 @@ router.get('/search', asyncHandler(async (req, res) => {
     success: true,
     provider: 'consolevariations',
     domain: 'videogames',
+    query: q,
     total: normalized.total,
     count: normalized.data.length,
     data: normalized.data,
     pagination: null,
     meta: {
-      source: 'consolevariations',
-      query: q,
       type,
       fetchedAt: new Date().toISOString()
     }

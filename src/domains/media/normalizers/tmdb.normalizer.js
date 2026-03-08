@@ -200,6 +200,7 @@ export class TmdbNormalizer extends BaseNormalizer {
       details: {
         knownForDepartment: person.known_for_department || null,
         popularity: person.popularity || null,
+        gender: person.gender ?? null,
         adult: person.adult || false,
         knownFor: (person.known_for || []).map(item => ({
           sourceId: String(item.id),

@@ -42,7 +42,7 @@ export function normalizeSearchResult(game) {
     images: {
       primary: game.background_image || null,
       thumbnail: game.background_image || null,
-      gallery: []
+      gallery: game.short_screenshots?.map(s => s.image).filter(Boolean) || []
     },
     urls: {
       source: game.slug ? `https://rawg.io/games/${game.slug}` : null,

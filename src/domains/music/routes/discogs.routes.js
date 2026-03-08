@@ -375,17 +375,31 @@ router.get('/masters/:id/versions', async (req, res) => {
     });
     
     const versions = (data.versions || []).map((v, idx) => ({
-      id: `discogs:release:${v.id}`,
+      id: `discogs:${v.id}`,
+      type: 'music_album',
+      source: 'discogs',
       sourceId: String(v.id),
       title: v.title,
-      format: v.format,
-      label: v.label,
-      country: v.country,
-      released: v.released,
+      titleOriginal: null,
+      description: null,
+      year: v.released ? parseInt(v.released.substring(0, 4)) || null : null,
       images: {
         primary: v.thumb || null,
         thumbnail: v.thumb || null,
         gallery: []
+      },
+      urls: {
+        source: null,
+        detail: `/api/music/discogs/releases/${v.id}`
+      },
+      details: {
+        position: idx + 1,
+        format: v.format,
+        label: v.label,
+        country: v.country,
+        released: v.released,
+        catalogNumber: v.catno || null,
+        status: v.status || null
       }
     }));
     
@@ -394,7 +408,7 @@ router.get('/masters/:id/versions', async (req, res) => {
       provider: 'discogs',
       domain: 'music',
       type: 'master-versions',
-      masterId: id,
+      query: id,
       total: data.pagination?.items || versions.length,
       count: versions.length,
       pagination: {
@@ -404,7 +418,7 @@ router.get('/masters/:id/versions', async (req, res) => {
         hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
       },
       data: versions,
-      meta: { fetchedAt: new Date().toISOString() }
+      meta: { fetchedAt: new Date().toISOString(), masterId: id }
     });
   } catch (error) {
     log.error('Get master versions failed', { error: error.message });
@@ -533,18 +547,29 @@ router.get('/labels/:id/releases', async (req, res) => {
     });
     
     const releases = (data.releases || []).map((r, idx) => ({
-      id: `discogs:release:${r.id}`,
+      id: `discogs:${r.id}`,
+      type: 'music_album',
+      source: 'discogs',
       sourceId: String(r.id),
-      position: idx + 1,
-      artist: r.artist,
       title: r.title,
-      year: r.year,
-      format: r.format,
-      catalogNumber: r.catno,
+      titleOriginal: null,
+      description: null,
+      year: r.year || null,
       images: {
         primary: r.thumb || null,
         thumbnail: r.thumb || null,
         gallery: []
+      },
+      urls: {
+        source: null,
+        detail: `/api/music/discogs/releases/${r.id}`
+      },
+      details: {
+        position: idx + 1,
+        artist: r.artist,
+        format: r.format,
+        catalogNumber: r.catno || null,
+        status: r.status || null
       }
     }));
     
@@ -553,7 +578,7 @@ router.get('/labels/:id/releases', async (req, res) => {
       provider: 'discogs',
       domain: 'music',
       type: 'label-releases',
-      labelId: id,
+      query: id,
       total: data.pagination?.items || releases.length,
       count: releases.length,
       pagination: {

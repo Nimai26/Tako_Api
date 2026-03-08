@@ -245,10 +245,12 @@ router.get('/albums/:id/tracks', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       type: 'album-tracks',
-      albumId: id,
+      query: id,
       total: data.total || tracks.length,
+      count: tracks.length,
       data: tracks,
-      meta: { fetchedAt: new Date().toISOString() }
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), albumId: id }
     });
   } catch (error) {
     log.error('Get album tracks failed', { error: error.message });
@@ -318,10 +320,12 @@ router.get('/artists/:id/albums', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       type: 'artist-albums',
-      artistId: id,
+      query: id,
       total: data.total || albums.length,
+      count: albums.length,
       data: albums,
-      meta: { fetchedAt: new Date().toISOString() }
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), artistId: id }
     });
   } catch (error) {
     log.error('Get artist albums failed', { error: error.message });
@@ -352,10 +356,12 @@ router.get('/artists/:id/top', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       type: 'artist-top',
-      artistId: id,
+      query: id,
       total: tracks.length,
+      count: tracks.length,
       data: tracks,
-      meta: { fetchedAt: new Date().toISOString() }
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), artistId: id }
     });
   } catch (error) {
     log.error('Get artist top tracks failed', { error: error.message });
@@ -386,10 +392,12 @@ router.get('/artists/:id/related', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       type: 'related-artists',
-      artistId: id,
+      query: id,
       total: artists.length,
+      count: artists.length,
       data: artists,
-      meta: { fetchedAt: new Date().toISOString() }
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), artistId: id }
     });
   } catch (error) {
     log.error('Get related artists failed', { error: error.message });
@@ -525,13 +533,14 @@ router.get('/charts', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       endpoint: 'charts',
+      total: normalized.total || 0,
+      count: (normalized.data || []).length,
       data: normalized.data || [],
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         category,
         limit: parseInt(limit),
-        count: (normalized.data || []).length,
-        total: normalized.total || 0,
         cached: fromCache,
         cacheKey
       }

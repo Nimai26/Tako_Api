@@ -247,6 +247,32 @@ export function normalizeGame(game) {
         category: mapWebsiteCategory(w.category),
         url: w.url,
         trusted: w.trusted || false
+      })) || [],
+
+      // Game engines
+      gameEngines: game.game_engines?.map(e => ({
+        id: e.id || e,
+        name: e.name || null
+      })) || [],
+
+      // Alternative names
+      alternativeNames: game.alternative_names?.map(n => ({
+        name: n.name || n,
+        comment: n.comment || null
+      })) || [],
+
+      // Release dates per platform
+      releaseDates: game.release_dates?.map(rd => ({
+        platform: rd.platform?.name || null,
+        date: dateFromTimestamp(rd.date),
+        region: rd.region || null,
+        human: rd.human || null
+      })) || [],
+
+      // Language supports
+      languageSupports: game.language_supports?.map(ls => ({
+        language: ls.language?.name || null,
+        type: ls.language_support_type?.name || null
       })) || []
     }
   };

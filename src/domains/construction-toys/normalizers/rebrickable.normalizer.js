@@ -254,7 +254,7 @@ export class RebrickableNormalizer extends BaseNormalizer {
       parts: this.extractParts(raw),
       
       // Minifigs détaillées (si enrichi)
-      minifigs: this.extractMinifigs(raw),
+      minifigsDetails: this.extractMinifigs(raw),
       
       // Métadonnées Rebrickable
       rebrickable: {
