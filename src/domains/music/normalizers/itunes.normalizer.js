@@ -131,6 +131,8 @@ export function normalizeAlbumSearchItem(item, position = null) {
       explicit: item.collectionExplicitness === 'explicit',
       price: item.collectionPrice || null,
       currency: item.currency || null,
+      country: item.country || null,
+      copyright: item.copyright || null,
       position
     }
   };
@@ -185,6 +187,7 @@ export function normalizeArtistSearchItem(item, position = null) {
     },
     details: {
       genre: item.primaryGenreName || null,
+      artistType: item.artistType || null,
       position
     }
   };
@@ -283,6 +286,7 @@ export function normalizeAlbumDetail(data) {
     discNumber: t.discNumber || 1,
     preview: t.previewUrl || null,
     explicit: t.trackExplicitness === 'explicit',
+    url: t.trackViewUrl || null,
     price: t.trackPrice || null
   }));
 
@@ -351,7 +355,9 @@ export function normalizeArtistDetail(data) {
       detail: `${BASE_DETAIL}/artists/${artistInfo.artistId}`
     },
     details: {
-      genre: artistInfo.primaryGenreName || null
+      genre: artistInfo.primaryGenreName || null,
+      artistType: artistInfo.artistType || null,
+      amgArtistId: artistInfo.amgArtistId || null
     }
   };
 }

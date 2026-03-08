@@ -183,6 +183,7 @@ export class BricksetNormalizer extends BaseNormalizer {
       brand: 'LEGO',
       theme: this.cleanString(raw.theme),
       subtheme: this.cleanString(raw.subtheme),
+      themeGroup: this.cleanString(raw.themeGroup),
       category: this.cleanString(raw.category),
       
       // Spécifications standardisées
@@ -198,6 +199,13 @@ export class BricksetNormalizer extends BaseNormalizer {
       
       // Prix
       price: this.extractPrice(frPrice),
+      pricesByRegion: {
+        FR: legoCom.FR ? this.extractPrice(legoCom.FR) : null,
+        US: legoCom.US ? this.extractPrice(legoCom.US) : null,
+        UK: legoCom.UK ? this.extractPrice(legoCom.UK) : null,
+        DE: legoCom.DE ? this.extractPrice(legoCom.DE) : null,
+        CA: legoCom.CA ? this.extractPrice(legoCom.CA) : null
+      },
       
       // Disponibilité
       availability: this.mapAvailability(raw),
@@ -205,6 +213,7 @@ export class BricksetNormalizer extends BaseNormalizer {
       retirementDate: null, // Pas dispo dans l'API standard
       
       // Instructions
+      instructionsCount: raw.instructionsCount || 0,
       instructionsUrl: raw.instructionsCount > 0
         ? `https://www.lego.com/service/buildinginstructions/${raw.number}`
         : null,

@@ -82,6 +82,17 @@ export function normalizeSearchResult(game) {
       ratingCount: game.total_rating_count || 0,
       platforms: game.platforms?.map(p => p.name || p) || [],
       genres: game.genres?.map(g => g.name || g) || [],
+      themes: game.themes?.map(t => t.name || t) || [],
+      gameModes: game.game_modes?.map(m => m.name || m) || [],
+      developers: game.involved_companies
+        ?.filter(ic => ic.developer)
+        .map(ic => ic.company?.name || null)
+        .filter(Boolean) || [],
+      publishers: game.involved_companies
+        ?.filter(ic => ic.publisher)
+        .map(ic => ic.company?.name || null)
+        .filter(Boolean) || [],
+      screenshots: game.screenshots?.slice(0, 3).map(s => getImageUrl(s.image_id, 't_screenshot_med')) || [],
       category: mapCategory(game.category)
     }
   };
@@ -212,34 +223,45 @@ export function normalizeGame(game) {
       })) || [],
       collection: game.collection ? {
         id: game.collection.id || game.collection,
-        name: game.collection.name || null
+        name: game.collection.name || null,
+        games: game.collection.games?.map(g => ({
+          id: g.id,
+          name: g.name || null,
+          cover: g.cover?.image_id ? getImageUrl(g.cover.image_id, 't_cover_small') : null
+        })) || []
       } : null,
 
       // Related games
       parentGame: game.parent_game ? {
         id: game.parent_game.id || game.parent_game,
-        name: game.parent_game.name || null
+        name: game.parent_game.name || null,
+        cover: game.parent_game.cover?.image_id ? getImageUrl(game.parent_game.cover.image_id, 't_cover_small') : null
       } : null,
       dlcs: game.dlcs?.map(d => ({
         id: d.id || d,
-        name: d.name || null
+        name: d.name || null,
+        cover: d.cover?.image_id ? getImageUrl(d.cover.image_id, 't_cover_small') : null
       })) || [],
       expansions: game.expansions?.map(e => ({
         id: e.id || e,
-        name: e.name || null
+        name: e.name || null,
+        cover: e.cover?.image_id ? getImageUrl(e.cover.image_id, 't_cover_small') : null
       })) || [],
       remakes: game.remakes?.map(r => ({
         id: r.id || r,
-        name: r.name || null
+        name: r.name || null,
+        cover: r.cover?.image_id ? getImageUrl(r.cover.image_id, 't_cover_small') : null
       })) || [],
       remasters: game.remasters?.map(r => ({
         id: r.id || r,
-        name: r.name || null
+        name: r.name || null,
+        cover: r.cover?.image_id ? getImageUrl(r.cover.image_id, 't_cover_small') : null
       })) || [],
       similarGames: game.similar_games?.map(s => ({
         id: s.id || s,
         name: s.name || null,
-        cover: s.cover?.image_id ? getImageUrl(s.cover.image_id, 't_cover_small') : null
+        cover: s.cover?.image_id ? getImageUrl(s.cover.image_id, 't_cover_small') : null,
+        rating: s.total_rating ? Math.round(s.total_rating * 10) / 10 : null
       })) || [],
 
       // Websites
@@ -272,6 +294,7 @@ export function normalizeGame(game) {
       // Language supports
       languageSupports: game.language_supports?.map(ls => ({
         language: ls.language?.name || null,
+        nativeName: ls.language?.native_name || null,
         type: ls.language_support_type?.name || null
       })) || []
     }

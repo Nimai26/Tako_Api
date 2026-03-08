@@ -148,6 +148,7 @@ export function normalizeAlbumSearchItem(item, position = null) {
     details: {
       artist: item.artist?.name || null,
       artistId: item.artist?.id ? `${SOURCE}:${item.artist.id}` : null,
+      recordType: item.record_type || null,
       trackCount: item.nb_tracks || null,
       explicit: item.explicit_lyrics || false,
       position
@@ -278,7 +279,7 @@ export function normalizeTrackSearchItem(item, position = null) {
  */
 export function normalizeAlbumDetail(album) {
   const tracks = (album.tracks?.data || []).map((t, idx) => ({
-    position: idx + 1,
+    position: t.track_position || idx + 1,
     id: `${SOURCE}:${t.id}`,
     sourceId: String(t.id),
     title: t.title,
@@ -286,6 +287,7 @@ export function normalizeAlbumDetail(album) {
     artistId: t.artist?.id ? `${SOURCE}:${t.artist.id}` : null,
     duration: t.duration || null,
     durationFormatted: t.duration ? formatDuration(t.duration) : null,
+    discNumber: t.disk_number || 1,
     preview: t.preview || null,
     explicit: t.explicit_lyrics || false,
     rank: t.rank || null
@@ -315,6 +317,7 @@ export function normalizeAlbumDetail(album) {
     },
     details: {
       upc: album.upc || null,
+      recordType: album.record_type || null,
       artist: album.artist?.name || null,
       artistId: album.artist?.id ? `${SOURCE}:${album.artist.id}` : null,
       artistImage: album.artist?.picture_medium || null,
@@ -325,6 +328,7 @@ export function normalizeAlbumDetail(album) {
       durationFormatted: album.duration ? formatDuration(album.duration) : null,
       tracks,
       trackCount: album.nb_tracks || tracks.length,
+      discCount: album.nb_disk || 1,
       contributors,
       explicit: album.explicit_lyrics || false,
       fans: album.fans || 0
@@ -346,7 +350,8 @@ export function normalizeArtistDetail(artist, topTracks = [], albums = []) {
     album: t.album?.title || null,
     albumCover: t.album?.cover_medium || null,
     preview: t.preview || null,
-    rank: t.rank || null
+    rank: t.rank || null,
+    explicit: t.explicit_lyrics || false
   }));
 
   const normalizedAlbums = (albums.data || albums || []).map((a, idx) => ({
@@ -357,7 +362,9 @@ export function normalizeArtistDetail(artist, topTracks = [], albums = []) {
     cover: a.cover_medium || a.cover,
     releaseDate: a.release_date || null,
     year: extractYear(a.release_date),
-    type: a.record_type || 'album'
+    type: a.record_type || 'album',
+    trackCount: a.nb_tracks || null,
+    fans: a.fans || 0
   }));
 
   return {
@@ -409,6 +416,8 @@ export function normalizeTrackDetail(track) {
       detail: `${BASE_DETAIL}/tracks/${track.id}`
     },
     details: {
+      titleShort: track.title_short || null,
+      titleVersion: track.title_version || null,
       artist: track.artist?.name || null,
       artistId: track.artist?.id ? `${SOURCE}:${track.artist.id}` : null,
       album: track.album?.title || null,

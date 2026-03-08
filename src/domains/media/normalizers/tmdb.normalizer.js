@@ -206,7 +206,10 @@ export class TmdbNormalizer extends BaseNormalizer {
           sourceId: String(item.id),
           mediaType: item.media_type,
           title: item.title || item.name,
-          poster: this.buildImageUrl(item.poster_path, 'w185')
+          poster: this.buildImageUrl(item.poster_path, 'w185'),
+          year: this.extractYear(item.release_date || item.first_air_date),
+          rating: item.vote_average || null,
+          overview: item.overview || null
         }))
       }
     };
@@ -381,6 +384,7 @@ export class TmdbNormalizer extends BaseNormalizer {
       },
       details: {
         mediaType: 'tv',
+        seriesType: series.type || null,
         tagline: series.tagline || null,
 
         // Dates
@@ -430,6 +434,9 @@ export class TmdbNormalizer extends BaseNormalizer {
           airDate: series.last_episode_to_air.air_date,
           seasonNumber: series.last_episode_to_air.season_number,
           episodeNumber: series.last_episode_to_air.episode_number,
+          runtime: series.last_episode_to_air.runtime || null,
+          still: this.buildImageUrl(series.last_episode_to_air.still_path, 'w300'),
+          episodeType: series.last_episode_to_air.episode_type || null,
           rating: series.last_episode_to_air.vote_average || null
         } : null,
         nextEpisodeToAir: series.next_episode_to_air ? {
@@ -579,6 +586,10 @@ export class TmdbNormalizer extends BaseNormalizer {
         seriesId: seriesId || null,
         seasonNumber: season.season_number,
         episodeCount: season.episodes?.length || 0,
+        rating: season.vote_average != null ? {
+          average: season.vote_average,
+          voteCount: season.vote_count || 0
+        } : null,
 
         episodes: season.episodes?.map(ep => ({
           id: ep.id,

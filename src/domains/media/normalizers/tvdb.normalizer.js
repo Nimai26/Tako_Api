@@ -384,6 +384,7 @@ export class TvdbNormalizer extends BaseNormalizer {
 
         // Statut
         status: series.status?.name || null,
+        defaultSeasonType: series.defaultSeasonType || null,
         averageRuntime: series.averageRuntime || null,
         episodeRuntime: series.averageRuntime || null,
 
@@ -571,6 +572,7 @@ export class TvdbNormalizer extends BaseNormalizer {
         absoluteNumber: episode.absoluteNumber || null,
         airDate: episode.aired || null,
         runtime: episode.runtime || null,
+        productionCode: episode.productionCode || null,
         isMovie: episode.isMovie || false,
         finaleType: episode.finaleType || null,
         rating: episode.rating

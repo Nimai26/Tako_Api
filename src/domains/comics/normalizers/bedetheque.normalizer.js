@@ -161,6 +161,7 @@ export class BedethequeNormalizer extends BaseNormalizer {
       details: {
         resourceType: 'album',
         serie: album.serie || null,
+        tome: album.tome || null,
         authors,
         publisher: album.editeur || null,
         releaseDate: album.dateParution || null,

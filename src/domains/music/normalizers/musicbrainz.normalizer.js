@@ -201,7 +201,9 @@ export function normalizeArtistSearchItem(item, position = null) {
       sortName: item['sort-name'] || null,
       disambiguation: item.disambiguation || null,
       artistType: item.type || null,
+      gender: item.gender || null,
       country: item.country || null,
+      area: item.area?.name || null,
       beginDate: item['life-span']?.begin || null,
       endDate: item['life-span']?.end || null,
       active: !item['life-span']?.ended,
@@ -229,7 +231,11 @@ export function normalizeAlbumDetail(rg, tracks = []) {
     status: r.status || null,
     date: r.date || null,
     country: r.country || null,
-    barcode: r.barcode || null
+    barcode: r.barcode || null,
+    trackCount: r['track-count'] || null,
+    packaging: r.packaging || null,
+    label: r['label-info']?.[0]?.label?.name || null,
+    catalogNumber: r['label-info']?.[0]?.['catalog-number'] || null
   }));
 
   const normalizedTracks = tracks.map((t, idx) => ({

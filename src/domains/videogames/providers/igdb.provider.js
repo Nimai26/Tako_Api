@@ -118,7 +118,7 @@ export async function search(query, options = {}) {
   const { limit = 20, offset = 0, platforms, genres, themes } = options;
   
   let body = `search "${query}";`;
-  body += `fields id,name,slug,summary,rating,aggregated_rating,total_rating,first_release_date,`;
+  body += `fields id,name,slug,summary,rating,aggregated_rating,total_rating,total_rating_count,first_release_date,`;
   body += `cover.image_id,genres.id,genres.name,genres.slug,platforms.id,platforms.name,platforms.abbreviation,`;
   body += `involved_companies.company.id,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,`;
   body += `themes.id,themes.name,game_modes.id,game_modes.name,player_perspectives.id,player_perspectives.name,`;
@@ -162,7 +162,7 @@ export async function advancedSearch(options = {}) {
     body += `search "${query}";`;
   }
   
-  body += `fields id,name,slug,summary,rating,aggregated_rating,total_rating,first_release_date,`;
+  body += `fields id,name,slug,summary,rating,aggregated_rating,total_rating,total_rating_count,first_release_date,`;
   body += `cover.image_id,genres.id,genres.name,genres.slug,platforms.id,platforms.name,platforms.abbreviation,`;
   body += `involved_companies.company.id,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,`;
   body += `themes.id,themes.name,game_modes.id,game_modes.name,player_perspectives.id,player_perspectives.name,`;
@@ -224,6 +224,7 @@ export async function getGame(id) {
     involved_companies.company.id,involved_companies.company.name,involved_companies.company.logo.image_id,
     involved_companies.developer,involved_companies.publisher,involved_companies.porting,involved_companies.supporting,
     franchises.id,franchises.name,
+    franchise.id,franchise.name,
     collection.id,collection.name,collection.games.id,collection.games.name,collection.games.cover.image_id,
     age_ratings.category,age_ratings.rating,age_ratings.content_descriptions.description,
     websites.category,websites.url,

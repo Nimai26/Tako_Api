@@ -143,6 +143,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
           score: series.bayesian_rating || null,
           votes: series.rating_votes || 0
         },
+        latestChapter: series.latest_chapter || null,
         lastUpdated: series.last_updated?.as_rfc3339 || null
       }
     };
@@ -217,6 +218,9 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
           startYear: series.anime.start,
           endYear: series.anime.end
         } : null,
+
+        // Chapitre le plus récent
+        latestChapter: series.latest_chapter || null,
 
         // Statistiques
         stats: {

@@ -214,6 +214,7 @@ export class PlaymobilNormalizer extends BaseNormalizer {
       // Marque et classification
       brand: 'Playmobil',
       category: raw.category || null,
+      category2: raw.category2 || null,
       theme: raw.theme || null,
 
       // Spécifications standardisées

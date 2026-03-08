@@ -192,6 +192,11 @@ export function normalizeSearchItem(item, position = null) {
       styles: item.style || [],
       labels: item.label || [],
       catalogNumber: item.catno || null,
+      barcodes: item.barcode || [],
+      community: item.community ? {
+        have: item.community.have || 0,
+        want: item.community.want || 0
+      } : null,
       position
     }
   };
@@ -279,6 +284,8 @@ export function normalizeReleaseDetail(release) {
         type: id.type,
         value: id.value
       })),
+      numForSale: release.num_for_sale || 0,
+      lowestPrice: release.lowest_price || null,
       companies: (release.companies || []).map(c => ({
         id: `${SOURCE}:${c.id}`,
         sourceId: String(c.id),
@@ -359,7 +366,15 @@ export function normalizeMasterDetail(master) {
       trackCount: tracks.length,
       versionsCount: master.versions?.length || 0,
       numForSale: master.num_for_sale || 0,
+      lowestPrice: master.lowest_price || null,
       mainReleaseId: master.main_release ? String(master.main_release) : null,
+      mostRecentReleaseId: master.most_recent_release ? String(master.most_recent_release) : null,
+      videos: (master.videos || []).map(v => ({
+        title: v.title || null,
+        url: v.uri || null,
+        duration: v.duration || null,
+        description: v.description || null
+      })),
       resourceUrl: master.resource_url
     }
   };
@@ -454,6 +469,8 @@ export function normalizeArtistReleases(data, artistId) {
       role: r.role,
       format: r.format,
       label: r.label,
+      catalogNumber: r.catno || null,
+      country: r.country || null,
       position: idx + 1
     }
   }));

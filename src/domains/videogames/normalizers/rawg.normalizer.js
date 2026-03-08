@@ -112,6 +112,7 @@ export function normalizeGame(game) {
         percent: r.percent
       })) || [],
       metacritic: game.metacritic || null,
+      metacriticUrl: game.metacritic_url || null,
       metacriticPlatforms: game.metacritic_platforms?.map(mp => ({
         platform: mp.platform?.name || mp.platform,
         score: mp.metascore,
