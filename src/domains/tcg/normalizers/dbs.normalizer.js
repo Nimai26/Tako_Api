@@ -170,8 +170,8 @@ export async function normalizeSetDetails(rawData, options = {}) {
       game: rawData.game,
       cardCount: rawData.card_count || 0,
       source: rawData.source,
+      cards: (rawData.cards || []).map(card => normalizeCard(card)),
     },
-    cards: (rawData.cards || []).map(card => normalizeCard(card)),
   };
 }
 

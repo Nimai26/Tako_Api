@@ -534,7 +534,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
     const items = volumes.map((vol, index) => {
       const sourceId = String(vol.id);
       const images = this.buildImages(vol.image);
-      const basePosition = ((pagination?.page - 1) * (pagination?.pageSize || 0)) || 0;
+      const basePosition = ((pagination?.page - 1) * (pagination?.limit || 0)) || 0;
 
       return {
         id: `comicvine:${sourceId}`,

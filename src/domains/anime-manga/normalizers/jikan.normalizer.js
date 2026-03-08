@@ -316,7 +316,8 @@ export class JikanNormalizer extends BaseNormalizer {
     
     // Mettre à jour les positions
     combined.forEach((item, idx) => {
-      item.position = idx + 1;
+      if (!item.details) item.details = {};
+      item.details.position = idx + 1;
     });
     
     const totalAnime = animeResults?.total || 0;

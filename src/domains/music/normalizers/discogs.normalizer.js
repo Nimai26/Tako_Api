@@ -520,7 +520,7 @@ export function normalizeBarcodeSearch(data, barcode) {
     provider: SOURCE,
     domain: DOMAIN,
     id: item.id,
-    data: { ...item, barcode },
+    data: { ...item, details: { ...item.details, barcode } },
     meta: { ...buildMeta(), barcode, found: true }
   };
 }

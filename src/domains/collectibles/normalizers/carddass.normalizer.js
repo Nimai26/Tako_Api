@@ -191,7 +191,7 @@ export function normalizeDetails(data) {
  */
 export function normalizeLicenses(response) {
   if (!response) {
-    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
+    return { success: true, provider: 'carddass', domain: 'collectibles', query: null, total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
   const items = (response.items || []).map(item => ({
@@ -211,6 +211,7 @@ export function normalizeLicenses(response) {
     success: true,
     provider: 'carddass',
     domain: 'collectibles',
+    query: null,
     total: response.total || 0,
     count: items.length,
     data: items,
@@ -226,7 +227,7 @@ export function normalizeLicenses(response) {
  */
 export function normalizeCollections(response) {
   if (!response) {
-    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
+    return { success: true, provider: 'carddass', domain: 'collectibles', query: null, total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
   const items = (response.items || []).map(item => ({
@@ -243,12 +244,12 @@ export function normalizeCollections(response) {
     success: true,
     provider: 'carddass',
     domain: 'collectibles',
-    license: response.license || null,
+    query: null,
     total: response.total || 0,
     count: items.length,
     data: items,
     pagination: response.pagination || null,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { fetchedAt: new Date().toISOString(), license: response.license || null }
   };
 }
 
@@ -259,7 +260,7 @@ export function normalizeCollections(response) {
  */
 export function normalizeSeries(response) {
   if (!response) {
-    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
+    return { success: true, provider: 'carddass', domain: 'collectibles', query: null, total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
   const items = (response.items || []).map(item => ({
@@ -278,13 +279,12 @@ export function normalizeSeries(response) {
     success: true,
     provider: 'carddass',
     domain: 'collectibles',
-    license: response.license || null,
-    collection: response.collection || null,
+    query: null,
     total: response.total || 0,
     count: items.length,
     data: items,
     pagination: response.pagination || null,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { fetchedAt: new Date().toISOString(), license: response.license || null, collection: response.collection || null }
   };
 }
 
@@ -295,7 +295,7 @@ export function normalizeSeries(response) {
  */
 export function normalizeCards(response) {
   if (!response) {
-    return { success: true, provider: 'carddass', domain: 'collectibles', total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
+    return { success: true, provider: 'carddass', domain: 'collectibles', query: null, total: 0, count: 0, data: [], pagination: null, meta: { fetchedAt: new Date().toISOString() } };
   }
 
   const items = (response.items || []).map(item => ({
@@ -315,14 +315,12 @@ export function normalizeCards(response) {
     success: true,
     provider: 'carddass',
     domain: 'collectibles',
-    license: response.license || null,
-    collection: response.collection || null,
-    series: response.series || null,
+    query: null,
     total: response.total || 0,
     count: items.length,
     data: items,
     pagination: response.pagination || null,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { fetchedAt: new Date().toISOString(), license: response.license || null, collection: response.collection || null, series: response.series || null }
   };
 }
 

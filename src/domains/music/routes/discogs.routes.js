@@ -396,10 +396,12 @@ router.get('/masters/:id/versions', async (req, res) => {
       type: 'master-versions',
       masterId: id,
       total: data.pagination?.items || versions.length,
+      count: versions.length,
       pagination: {
         page: data.pagination?.page || 1,
         limit: data.pagination?.per_page || 50,
-        totalPages: data.pagination?.pages || 1
+        totalPages: data.pagination?.pages || 1,
+        hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
       },
       data: versions,
       meta: { fetchedAt: new Date().toISOString() }
@@ -553,10 +555,12 @@ router.get('/labels/:id/releases', async (req, res) => {
       type: 'label-releases',
       labelId: id,
       total: data.pagination?.items || releases.length,
+      count: releases.length,
       pagination: {
         page: data.pagination?.page || 1,
         limit: data.pagination?.per_page || 50,
-        totalPages: data.pagination?.pages || 1
+        totalPages: data.pagination?.pages || 1,
+        hasMore: (data.pagination?.page || 1) < (data.pagination?.pages || 1)
       },
       data: releases,
       meta: { fetchedAt: new Date().toISOString() }

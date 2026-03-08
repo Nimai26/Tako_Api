@@ -727,7 +727,7 @@ export class OpenLibraryProvider extends BaseProvider {
 
       src_url: `${OPENLIBRARY_BASE_URL}/authors/${doc.key}`,
 
-      metadata: {
+      meta: {
         position,
         source: 'openlibrary'
       }
@@ -772,7 +772,7 @@ export class OpenLibraryProvider extends BaseProvider {
       src_image_url: photos.length > 0 ? photos[0].large : null,
       src_url: `${OPENLIBRARY_BASE_URL}/authors/${authorId}`,
 
-      metadata: {
+      meta: {
         detailLevel: 'full',
         source: 'openlibrary',
         lastModified: data.last_modified?.value || null
@@ -805,7 +805,7 @@ export class OpenLibraryProvider extends BaseProvider {
       src_url: workId ? `${OPENLIBRARY_BASE_URL}/works/${workId}` : null,
       src_image_url: coverUrl,
 
-      metadata: {
+      meta: {
         position,
         source: 'openlibrary',
         created: entry.created?.value || null

@@ -233,7 +233,7 @@ router.get('/parts', asyncHandler(async (req, res) => {
     data: result.parts,
     pagination: result.pagination ? {
       page: result.pagination.page,
-      limit: result.pagination.pageSize,
+      limit: result.pagination.limit,
       hasMore: result.pagination.hasMore
     } : null,
     meta: {
@@ -279,7 +279,7 @@ router.get('/minifigs', asyncHandler(async (req, res) => {
     data: result.minifigs,
     pagination: result.pagination ? {
       page: result.pagination.page,
-      limit: result.pagination.pageSize,
+      limit: result.pagination.limit,
       hasMore: result.pagination.hasMore
     } : null,
     meta: {
@@ -403,7 +403,7 @@ router.get('/sets/:id/parts', asyncHandler(async (req, res) => {
     data: result.parts,
     pagination: result.pagination ? {
       page: result.pagination.page,
-      limit: result.pagination.pageSize,
+      limit: result.pagination.limit,
       hasMore: result.pagination.hasMore
     } : null,
     meta: {
