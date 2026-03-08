@@ -258,12 +258,12 @@ router.get('/browse/:platform', asyncHandler(async (req, res) => {
     success: true,
     provider: 'consolevariations',
     domain: 'videogames',
+    query: platform,
     total: normalized.total,
     count: normalized.data.length,
     data: normalized.data,
     pagination: null,
     meta: {
-      source: 'consolevariations',
       platform,
       fetchedAt: new Date().toISOString()
     }

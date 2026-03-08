@@ -282,16 +282,16 @@ router.get('/game/:idOrSlug/screenshots', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    gameId: idOrSlug,
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { gameId: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -308,10 +308,12 @@ router.get('/game/:idOrSlug/stores', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    gameId: idOrSlug,
+    query: null,
+    total: data.results?.length || 0,
     count: data.results?.length || 0,
     data: data.results || [],
-    meta: { fetchedAt: new Date().toISOString() }
+    pagination: null,
+    meta: { gameId: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -340,16 +342,16 @@ router.get('/game/:idOrSlug/series', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    gameId: idOrSlug,
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { gameId: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -378,16 +380,16 @@ router.get('/game/:idOrSlug/additions', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    gameId: idOrSlug,
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { gameId: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -410,16 +412,16 @@ router.get('/game/:idOrSlug/achievements', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    gameId: idOrSlug,
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { gameId: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -437,10 +439,12 @@ router.get('/game/:idOrSlug/movies', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    gameId: idOrSlug,
+    query: null,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    pagination: null,
+    meta: { gameId: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -467,10 +471,11 @@ router.get('/genres', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -493,6 +498,7 @@ router.get('/genre/:idOrSlug', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    id: normalized.id,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -517,10 +523,11 @@ router.get('/platforms', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -540,8 +547,11 @@ router.get('/platforms/parents', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.results?.length || 0,
     count: data.results?.length || 0,
     data: data.results || [],
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -565,10 +575,11 @@ router.get('/tags', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -596,10 +607,11 @@ router.get('/stores', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -630,10 +642,11 @@ router.get('/developers', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -656,6 +669,7 @@ router.get('/developer/:idOrSlug', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    id: normalized.id,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -687,16 +701,16 @@ router.get('/developer/:idOrSlug/games', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    developer: idOrSlug,
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { developer: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -718,10 +732,11 @@ router.get('/publishers', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -744,6 +759,7 @@ router.get('/publisher/:idOrSlug', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    id: normalized.id,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -775,16 +791,16 @@ router.get('/publisher/:idOrSlug/games', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    publisher: idOrSlug,
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    meta: { publisher: idOrSlug, fetchedAt: new Date().toISOString() }
   });
 }));
 
@@ -810,10 +826,11 @@ router.get('/creators', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -836,6 +853,7 @@ router.get('/creator/:idOrSlug', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    id: normalized.id,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -869,10 +887,12 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    endpoint: 'top-rated',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -905,10 +925,12 @@ router.get('/recent', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    endpoint: 'recent',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,
@@ -1074,10 +1096,12 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
+    endpoint: 'upcoming',
+    query: null,
+    total: data.count || 0,
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),
-      total: data.count || 0,
       hasMore: !!data.next
     },
     count: normalized.length,

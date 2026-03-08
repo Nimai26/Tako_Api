@@ -12,6 +12,20 @@
 // ============================================================================
 
 /**
+ * Normalise la pagination au format {page, limit, hasMore}
+ * @param {Object|null} pagination - Pagination brute du provider
+ * @returns {Object|null}
+ */
+function normalizePagination(pagination) {
+  if (!pagination) return null;
+  return {
+    page: pagination.page,
+    limit: pagination.limit,
+    hasMore: pagination.hasMore || false
+  };
+}
+
+/**
  * Extrait le texte d'une valeur string ou objet de traduction
  * @param {string|Object} value
  * @returns {string|null}
@@ -119,7 +133,7 @@ export function normalizeSearchResults(response) {
     total: response.total || 0,
     count: items.length,
     data: items,
-    pagination: response.pagination || null,
+    pagination: normalizePagination(response.pagination),
     meta: { fetchedAt: new Date().toISOString() }
   };
 }
@@ -215,7 +229,7 @@ export function normalizeLicenses(response) {
     total: response.total || 0,
     count: items.length,
     data: items,
-    pagination: response.pagination || null,
+    pagination: normalizePagination(response.pagination),
     meta: { fetchedAt: new Date().toISOString() }
   };
 }
@@ -248,7 +262,7 @@ export function normalizeCollections(response) {
     total: response.total || 0,
     count: items.length,
     data: items,
-    pagination: response.pagination || null,
+    pagination: normalizePagination(response.pagination),
     meta: { fetchedAt: new Date().toISOString(), license: response.license || null }
   };
 }
@@ -283,7 +297,7 @@ export function normalizeSeries(response) {
     total: response.total || 0,
     count: items.length,
     data: items,
-    pagination: response.pagination || null,
+    pagination: normalizePagination(response.pagination),
     meta: { fetchedAt: new Date().toISOString(), license: response.license || null, collection: response.collection || null }
   };
 }
@@ -319,7 +333,7 @@ export function normalizeCards(response) {
     total: response.total || 0,
     count: items.length,
     data: items,
-    pagination: response.pagination || null,
+    pagination: normalizePagination(response.pagination),
     meta: { fetchedAt: new Date().toISOString(), license: response.license || null, collection: response.collection || null, series: response.series || null }
   };
 }

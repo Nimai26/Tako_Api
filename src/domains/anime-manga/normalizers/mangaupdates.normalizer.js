@@ -593,7 +593,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       success: true,
       provider: 'mangaupdates',
       domain: 'anime-manga',
-      search,
+      query: search || null,
       searchType: 'release',
       total: totalHits,
       count: items.length,
@@ -652,7 +652,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       success: true,
       provider: 'mangaupdates',
       domain: 'anime-manga',
-      seriesId: String(seriesId),
+      query: null,
       total: list.length,
       count: list.length,
       data: list.map(r => ({
@@ -673,8 +673,10 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
           weight: r.weight || 0
         }
       })),
+      pagination: null,
       meta: {
-        fetchedAt: new Date().toISOString()
+        fetchedAt: new Date().toISOString(),
+        seriesId: String(seriesId)
       }
     };
   }

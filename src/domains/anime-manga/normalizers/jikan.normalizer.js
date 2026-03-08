@@ -139,8 +139,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: pagination.items?.total || results.length,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
@@ -243,8 +241,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: pagination.items?.total || results.length,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
@@ -356,7 +352,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: totalAnime + totalManga,
         hasMore: (animeResults?.pagination?.hasMore || false) || (mangaResults?.pagination?.hasMore || false)
       },
       meta: {
@@ -462,7 +457,7 @@ export class JikanNormalizer extends BaseNormalizer {
       success: true,
       provider: 'jikan',
       domain: 'anime-manga',
-      animeId,
+      query: null,
       total: pagination.items?.total || episodes.length,
       count: episodes.length,
       data: episodes.map(ep => ({
@@ -481,10 +476,10 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pagination.items?.per_page || 100,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
+        animeId,
         fetchedAt: new Date().toISOString()
       }
     };
@@ -502,8 +497,7 @@ export class JikanNormalizer extends BaseNormalizer {
       success: true,
       provider: 'jikan',
       domain: 'anime-manga',
-      animeId,
-      mangaId,
+      query: null,
       total: characters.length,
       count: characters.length,
       data: characters.map(item => ({
@@ -531,7 +525,10 @@ export class JikanNormalizer extends BaseNormalizer {
           })) || []
         }
       })),
+      pagination: null,
       meta: {
+        animeId,
+        mangaId,
         fetchedAt: new Date().toISOString()
       }
     };
@@ -579,8 +576,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: pagination.items?.total || results.length,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
@@ -652,7 +647,7 @@ export class JikanNormalizer extends BaseNormalizer {
       success: true,
       provider: 'jikan',
       domain: 'anime-manga',
-      animeId,
+      query: null,
       total: staff.length,
       count: staff.length,
       data: staff.map(item => ({
@@ -677,7 +672,9 @@ export class JikanNormalizer extends BaseNormalizer {
           positions: item.positions || []
         }
       })),
+      pagination: null,
       meta: {
+        animeId,
         fetchedAt: new Date().toISOString()
       }
     };
@@ -695,8 +692,7 @@ export class JikanNormalizer extends BaseNormalizer {
       success: true,
       provider: 'jikan',
       domain: 'anime-manga',
-      sourceId,
-      sourceType: type,
+      query: null,
       total: recommendations.length,
       count: recommendations.length,
       data: recommendations.map(rec => ({
@@ -718,7 +714,10 @@ export class JikanNormalizer extends BaseNormalizer {
           votes: rec.votes
         }
       })),
+      pagination: null,
       meta: {
+        sourceId,
+        sourceType: type,
         fetchedAt: new Date().toISOString()
       }
     };
@@ -738,19 +737,19 @@ export class JikanNormalizer extends BaseNormalizer {
       success: true,
       provider: 'jikan',
       domain: 'anime-manga',
-      year,
-      season,
-      current: current || false,
+      query: null,
       total: pagination.items?.total || results.length,
       count: items.length,
       data: items,
       pagination: {
         page,
         limit: pagination.items?.per_page || 25,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
+        year,
+        season,
+        current: current || false,
         fetchedAt: new Date().toISOString()
       }
     };
@@ -782,7 +781,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pagination.items?.per_page || 25,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
@@ -840,8 +838,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: pagination.items?.total || results.length,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
@@ -958,8 +954,6 @@ export class JikanNormalizer extends BaseNormalizer {
       pagination: {
         page,
         limit: pageSize,
-        totalResults: pagination.items?.total || results.length,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
@@ -1042,17 +1036,17 @@ export class JikanNormalizer extends BaseNormalizer {
       success: true,
       provider: 'jikan',
       domain: 'anime-manga',
-      day: day || 'all',
+      query: day || null,
       total: pagination.items?.total || results.length,
       count: items.length,
       data: items,
       pagination: {
         page,
         limit: pagination.items?.per_page || 25,
-        totalPages: pagination.last_visible_page || 1,
         hasMore: pagination.has_next_page || false
       },
       meta: {
+        day: day || 'all',
         fetchedAt: new Date().toISOString()
       }
     };

@@ -269,15 +269,20 @@ router.get('/albums/:id/cover', async (req, res) => {
       provider: 'musicbrainz',
       domain: 'music',
       type: 'cover-art',
-      albumId: id,
+      query: id,
       total: images.length,
+      count: images.length,
       data: images,
-      defaultCover: {
-        small: musicbrainzProvider.getCoverUrl(id, '250'),
-        medium: musicbrainzProvider.getCoverUrl(id, '500'),
-        large: musicbrainzProvider.getCoverUrl(id, '1200')
-      },
-      meta: { fetchedAt: new Date().toISOString() }
+      pagination: null,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        albumId: id,
+        defaultCover: {
+          small: musicbrainzProvider.getCoverUrl(id, '250'),
+          medium: musicbrainzProvider.getCoverUrl(id, '500'),
+          large: musicbrainzProvider.getCoverUrl(id, '1200')
+        }
+      }
     });
   } catch (error) {
     log.error('Get cover art failed', { error: error.message });

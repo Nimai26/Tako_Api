@@ -552,12 +552,15 @@ router.get('/directors/:id/movies', asyncHandler(async (req, res) => {
     provider: 'tmdb',
     domain: 'media',
     type: 'director_filmography',
-    directorId: id,
-    director: result.person,
+    query: null,
     total: result.total,
+    count: result.movies.length,
     data: result.movies,
+    pagination: null,
     meta: {
       fetchedAt: new Date().toISOString(),
+      directorId: id,
+      director: result.person,
       lang,
       autoTrad: autoTradEnabled
     }

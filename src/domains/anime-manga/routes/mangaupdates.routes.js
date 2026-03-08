@@ -379,7 +379,18 @@ router.get('/publisher/:id', asyncHandler(async (req, res) => {
  */
 router.get('/genres', asyncHandler(async (req, res) => {
   const result = await provider.getGenres();
-  res.json(result);
+  res.json({
+    success: true,
+    provider: 'mangaupdates',
+    domain: 'anime-manga',
+    type: 'genres',
+    query: null,
+    total: result.total || result.data?.length || 0,
+    count: result.data?.length || 0,
+    data: result.data || [],
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString() }
+  });
 }));
 
 /**

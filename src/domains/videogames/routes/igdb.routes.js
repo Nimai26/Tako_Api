@@ -358,8 +358,10 @@ router.get('/companies/search', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     query: searchQuery,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -386,6 +388,7 @@ router.get('/company/:id', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    id: normalized.id || `igdb:${id}`,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -405,17 +408,19 @@ router.get('/developer/:id/games', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
   if (autoTradEnabled && targetLang && normalized.length > 0) {
-    normalized = await translateSearchResults(normalized, true, targetLang);
+    normalized = await translateSearchResults(normalized, targetLang, { enabled: true });
   }
   
   res.json({
     success: true,
     provider: 'igdb',
     domain: 'videogames',
-    developerId: parseInt(id),
+    query: null,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString(), developerId: parseInt(id) }
   });
 }));
 
@@ -433,17 +438,19 @@ router.get('/publisher/:id/games', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
   if (autoTradEnabled && targetLang && normalized.length > 0) {
-    normalized = await translateSearchResults(normalized, true, targetLang);
+    normalized = await translateSearchResults(normalized, targetLang, { enabled: true });
   }
   
   res.json({
     success: true,
     provider: 'igdb',
     domain: 'videogames',
-    publisherId: parseInt(id),
+    query: null,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
-    meta: { fetchedAt: new Date().toISOString() }
+    pagination: null,
+    meta: { fetchedAt: new Date().toISOString(), publisherId: parseInt(id) }
   });
 }));
 
@@ -474,8 +481,10 @@ router.get('/franchises/search', asyncHandler(async (req, res) => {
     provider: 'igdb',
     domain: 'videogames',
     query: searchQuery,
+    total: normalized.length,
     count: normalized.length,
     data: normalized,
+    pagination: null,
     meta: { fetchedAt: new Date().toISOString() }
   });
 }));
@@ -502,6 +511,7 @@ router.get('/franchise/:id', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    id: normalized.id || `igdb:${id}`,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -529,6 +539,7 @@ router.get('/collection/:id', asyncHandler(async (req, res) => {
     success: true,
     provider: 'igdb',
     domain: 'videogames',
+    id: normalized.id || `igdb:${id}`,
     data: normalized,
     meta: { fetchedAt: new Date().toISOString() }
   });
@@ -551,7 +562,7 @@ router.get('/top-rated', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
   if (autoTradEnabled && targetLang && normalized.length > 0) {
-    normalized = await translateSearchResults(normalized, true, targetLang);
+    normalized = await translateSearchResults(normalized, targetLang, { enabled: true });
   }
   
   res.json({
@@ -638,7 +649,7 @@ router.get('/recent', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
   if (autoTradEnabled && targetLang && normalized.length > 0) {
-    normalized = await translateSearchResults(normalized, true, targetLang);
+    normalized = await translateSearchResults(normalized, targetLang, { enabled: true });
   }
   
   res.json({
@@ -667,7 +678,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
   if (autoTradEnabled && targetLang && normalized.length > 0) {
-    normalized = await translateSearchResults(normalized, true, targetLang);
+    normalized = await translateSearchResults(normalized, targetLang, { enabled: true });
   }
   
   res.json({

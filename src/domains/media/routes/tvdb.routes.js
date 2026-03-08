@@ -302,6 +302,7 @@ router.get('/series/:id/seasons', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'seasons',
+    query: null,
     total: result.total,
     count: result.seasons?.length || 0,
     data: result.seasons,
@@ -416,6 +417,7 @@ router.get('/series/:id/episodes', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'episodes',
+    query: null,
     total: result.total,
     count: result.episodes?.length || 0,
     data: result.episodes,
@@ -573,20 +575,23 @@ router.get('/directors/:id/works', asyncHandler(async (req, res) => {
 
   const result = await provider.getDirectorWorks(id, { lang });
 
+  const allWorks = [...result.movies.map(m => ({ ...m, mediaType: 'movie' })), ...result.series.map(s => ({ ...s, mediaType: 'series' }))];
+
   res.json({
     success: true,
     provider: 'tvdb',
     domain: 'media',
     type: 'director_works',
-    data: {
-      director: result.person,
-      movies: result.movies,
-      series: result.series
-    },
+    query: null,
+    total: allWorks.length,
+    count: allWorks.length,
+    data: allWorks,
+    pagination: null,
     meta: {
       fetchedAt: new Date().toISOString(),
       lang,
       directorId: id,
+      director: result.person,
       totalMovies: result.totalMovies,
       totalSeries: result.totalSeries
     }

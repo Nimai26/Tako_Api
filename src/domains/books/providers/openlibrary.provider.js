@@ -694,8 +694,6 @@ export class OpenLibraryProvider extends BaseProvider {
       pagination: {
         page: currentPage,
         limit,
-        offset,
-        totalResults: totalWorks,
         hasMore: offset + works.length < totalWorks
       },
       data: works,

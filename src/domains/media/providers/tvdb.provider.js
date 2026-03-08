@@ -474,8 +474,8 @@ export class TvdbProvider extends BaseProvider {
     return {
       person: {
         id: person.sourceId,
-        name: person.name,
-        image: person.image
+        name: person.title,
+        image: person.images?.primary
       },
       movies: directedMovies,
       series: directedSeries,

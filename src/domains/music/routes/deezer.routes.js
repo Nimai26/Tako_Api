@@ -452,7 +452,11 @@ router.get('/genres', async (req, res) => {
       provider: 'deezer',
       domain: 'music',
       type: 'genres',
-      ...normalized,
+      query: null,
+      total: normalized.total || normalized.data?.length || 0,
+      count: normalized.data?.length || 0,
+      data: normalized.data || [],
+      pagination: null,
       meta: { fetchedAt: new Date().toISOString() }
     });
   } catch (error) {

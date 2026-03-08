@@ -361,8 +361,8 @@ export class TmdbProvider extends BaseProvider {
   async getDirectorMovies(id, options = {}) {
     const person = await this.getPerson(id, options);
     
-    // Filtrer uniquement les films où la personne est réalisateur
-    const directedMovies = (person.movieCredits?.crew || [])
+    // person est normalisé Format B — movieCredits est dans details
+    const directedMovies = (person.details?.movieCredits?.crew || [])
       .filter(credit => credit.job === 'Director')
       .sort((a, b) => {
         // Trier par date de sortie décroissante
@@ -374,9 +374,9 @@ export class TmdbProvider extends BaseProvider {
     return {
       person: {
         id: person.id,
-        name: person.name,
-        profile: person.profile,
-        knownForDepartment: person.knownForDepartment
+        name: person.title,
+        profile: person.images?.primary,
+        knownForDepartment: person.details?.knownForDepartment
       },
       movies: directedMovies,
       total: directedMovies.length
