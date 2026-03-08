@@ -455,13 +455,16 @@ router.get('/charts', async (req, res) => {
         provider: 'itunes',
         domain: 'music',
         endpoint: 'charts',
+        query: null,
+        total: 0,
+        count: 0,
         data: [],
+        pagination: null,
         meta: {
           fetchedAt: new Date().toISOString(),
           country: country.toUpperCase(),
           category,
           limit: parseInt(limit),
-          count: 0,
           cached: fromCache,
           cacheKey
         }
@@ -506,13 +509,16 @@ router.get('/charts', async (req, res) => {
       provider: 'itunes',
       domain: 'music',
       endpoint: 'charts',
+      query: null,
+      total: results.length,
+      count: results.length,
       data: results,
+      pagination: null,
       meta: {
         fetchedAt: new Date().toISOString(),
         country: country.toUpperCase(),
         category,
         limit: parseInt(limit),
-        count: results.length,
         updated: feed.updated?.label,
         cached: fromCache,
         cacheKey

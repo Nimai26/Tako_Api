@@ -267,15 +267,19 @@ router.get('/series/:id', asyncHandler(async (req, res) => {
     }
   }
 
-  // Traduction des genres
+  // Traduction des genres (objets {id, name})
   if (autoTradEnabled && targetLang && result.data?.details?.genres && Array.isArray(result.data.details.genres) && result.data.details.genres.length > 0) {
+    const genreObjects = result.data.details.genres;
+    const genreNames = genreObjects.map(g => typeof g === 'object' ? (g.name || g) : g);
     const genreTranslations = await Promise.all(
-      result.data.details.genres.map(genre => translateGenre(genre, targetLang))
+      genreNames.map(name => translateGenre(name, targetLang))
     );
-    const wasTranslated = genreTranslations.some((g, i) => g !== result.data.details.genres[i]);
+    const wasTranslated = genreTranslations.some((g, i) => g !== genreNames[i]);
     if (wasTranslated) {
-      result.data.details.genresOriginal = result.data.details.genres;
-      result.data.details.genres = genreTranslations;
+      result.data.details.genresOriginal = genreObjects;
+      result.data.details.genres = genreObjects.map((obj, i) =>
+        typeof obj === 'object' ? { ...obj, name: genreTranslations[i] } : genreTranslations[i]
+      );
       result.data.details.genresTranslated = true;
     }
   }

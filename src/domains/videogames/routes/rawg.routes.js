@@ -209,7 +209,9 @@ router.post('/search/advanced', asyncHandler(async (req, res) => {
     success: true,
     provider: 'rawg',
     domain: 'videogames',
-    filters: { query, platforms, genres, tags, developers, publishers, metacritic, ordering },
+    query: query || null,
+    total: results.count || 0,
+    filters: { platforms, genres, tags, developers, publishers, metacritic, ordering },
     pagination: {
       page: parseInt(page),
       limit: parseInt(pageSize),

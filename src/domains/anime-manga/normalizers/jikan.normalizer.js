@@ -57,26 +57,22 @@ export class JikanNormalizer extends BaseNormalizer {
   }
 
   /**
-   * Extrait toutes les images disponibles
+   * Extrait toutes les images disponibles (URLs uniquement, dédupliquées)
    */
   extractAllImages(images) {
     if (!images) return [];
     
-    const result = [];
+    const urls = [];
     
-    if (images.jpg) {
-      if (images.jpg.large_image_url) result.push({ type: 'jpg', size: 'large', url: images.jpg.large_image_url });
-      if (images.jpg.image_url) result.push({ type: 'jpg', size: 'medium', url: images.jpg.image_url });
-      if (images.jpg.small_image_url) result.push({ type: 'jpg', size: 'small', url: images.jpg.small_image_url });
-    }
+    // WebP d'abord (meilleure qualité/poids)
+    if (images.webp?.large_image_url) urls.push(images.webp.large_image_url);
+    if (images.webp?.image_url) urls.push(images.webp.image_url);
     
-    if (images.webp) {
-      if (images.webp.large_image_url) result.push({ type: 'webp', size: 'large', url: images.webp.large_image_url });
-      if (images.webp.image_url) result.push({ type: 'webp', size: 'medium', url: images.webp.image_url });
-      if (images.webp.small_image_url) result.push({ type: 'webp', size: 'small', url: images.webp.small_image_url });
-    }
+    // JPG en fallback
+    if (images.jpg?.large_image_url) urls.push(images.jpg.large_image_url);
+    if (images.jpg?.image_url) urls.push(images.jpg.image_url);
     
-    return result;
+    return [...new Set(urls)];
   }
 
   /**

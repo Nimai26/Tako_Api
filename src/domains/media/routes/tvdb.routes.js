@@ -344,7 +344,7 @@ router.get('/seasons/:id', asyncHandler(async (req, res) => {
             if (ep.description) {
               const { text, translated } = await translateText(ep.description, targetLang, { enabled: true });
               if (translated) {
-                return { ...ep, descriptionOriginal: ep.description, description: text };
+                return { ...ep, description: text, details: { ...ep.details, descriptionOriginal: ep.description, descriptionTranslated: true } };
               }
             }
             return ep;
@@ -401,7 +401,7 @@ router.get('/series/:id/episodes', asyncHandler(async (req, res) => {
         if (ep.description) {
           const { text, translated } = await translateText(ep.description, targetLang, { enabled: true });
           if (translated) {
-            return { ...ep, descriptionOriginal: ep.description, description: text };
+            return { ...ep, description: text, details: { ...ep.details, descriptionOriginal: ep.description, descriptionTranslated: true } };
           }
         }
         return ep;
@@ -414,14 +414,14 @@ router.get('/series/:id/episodes', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'episodes',
-    seriesId: id,
-    season: season ? parseInt(season) : null,
     total: result.total,
     data: result.episodes,
     meta: {
       fetchedAt: new Date().toISOString(),
       lang,
       autoTrad: autoTradEnabled,
+      seriesId: id,
+      season: season ? parseInt(season) : null,
       links: result.links
     }
   });
@@ -571,15 +571,17 @@ router.get('/directors/:id/works', asyncHandler(async (req, res) => {
     provider: 'tvdb',
     domain: 'media',
     type: 'director_works',
-    directorId: id,
-    director: result.person,
-    movies: result.movies,
-    series: result.series,
-    totalMovies: result.totalMovies,
-    totalSeries: result.totalSeries,
+    data: {
+      director: result.person,
+      movies: result.movies,
+      series: result.series
+    },
     meta: {
       fetchedAt: new Date().toISOString(),
-      lang
+      lang,
+      directorId: id,
+      totalMovies: result.totalMovies,
+      totalSeries: result.totalSeries
     }
   });
 }));

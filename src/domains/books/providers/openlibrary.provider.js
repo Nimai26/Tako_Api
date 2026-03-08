@@ -688,7 +688,7 @@ export class OpenLibraryProvider extends BaseProvider {
       success: true,
       provider: 'openlibrary',
       domain: 'books',
-      authorId: cleanId,
+      query: cleanId,
       total: totalWorks,
       count: works.length,
       pagination: {
@@ -704,38 +704,44 @@ export class OpenLibraryProvider extends BaseProvider {
   }
 
   /**
-   * Parser un document auteur de recherche
+   * Parser un document auteur de recherche → Format B canonique
    */
   parseAuthorDoc(doc, position) {
+    const sourceId = doc.key || null;
     return {
-      sourceId: doc.key || null,
-      provider: 'openlibrary',
+      id: sourceId ? `openlibrary:${sourceId}` : null,
       type: 'author',
-      resourceType: 'author',
-
-      name: doc.name || null,
-      alternateNames: doc.alternate_names || [],
-      birthDate: doc.birth_date || null,
-      deathDate: doc.death_date || null,
-
-      topWork: doc.top_work || null,
-      workCount: doc.work_count || 0,
-      topSubjects: doc.top_subjects?.slice(0, 5) || [],
-
-      ratingsAverage: doc.ratings_average || null,
-      ratingsCount: doc.ratings_count || 0,
-
-      src_url: `${OPENLIBRARY_BASE_URL}/authors/${doc.key}`,
-
-      meta: {
-        position,
-        source: 'openlibrary'
+      source: 'openlibrary',
+      sourceId,
+      title: doc.name || null,
+      titleOriginal: null,
+      description: null,
+      year: null,
+      images: {
+        primary: null,
+        thumbnail: null,
+        gallery: []
+      },
+      urls: {
+        source: sourceId ? `${OPENLIBRARY_BASE_URL}/authors/${sourceId}` : null,
+        detail: sourceId ? `/api/books/openlibrary/author/${sourceId}` : null
+      },
+      details: {
+        alternateNames: doc.alternate_names || [],
+        birthDate: doc.birth_date || null,
+        deathDate: doc.death_date || null,
+        topWork: doc.top_work || null,
+        workCount: doc.work_count || 0,
+        topSubjects: doc.top_subjects?.slice(0, 5) || [],
+        ratingsAverage: doc.ratings_average || null,
+        ratingsCount: doc.ratings_count || 0,
+        position
       }
     };
   }
 
   /**
-   * Parser les détails d'un auteur
+   * Parser les détails d'un auteur → Format B canonique
    */
   parseAuthorDetail(data, authorId) {
     const bio = typeof data.bio === 'string' 
@@ -748,40 +754,44 @@ export class OpenLibraryProvider extends BaseProvider {
       large: `${OPENLIBRARY_COVERS_URL}/a/olid/${authorId}-L.jpg`
     }));
 
+    const primaryImg = photos.length > 0 ? photos[0].large : null;
+    const thumbImg = photos.length > 0 ? photos[0].small : null;
+
     return {
-      sourceId: authorId,
-      provider: 'openlibrary',
+      id: `openlibrary:${authorId}`,
       type: 'author',
-      resourceType: 'author',
-
-      name: data.name || null,
-      alternateNames: data.alternate_names || [],
-      personalName: data.personal_name || null,
-      
-      birthDate: data.birth_date || null,
-      deathDate: data.death_date || null,
-      
-      bio,
-      
-      links: (data.links || []).map(link => ({
-        title: link.title,
-        url: link.url
-      })),
-
-      photos,
-      src_image_url: photos.length > 0 ? photos[0].large : null,
-      src_url: `${OPENLIBRARY_BASE_URL}/authors/${authorId}`,
-
-      meta: {
-        detailLevel: 'full',
-        source: 'openlibrary',
+      source: 'openlibrary',
+      sourceId: authorId,
+      title: data.name || null,
+      titleOriginal: data.personal_name || null,
+      description: bio,
+      year: null,
+      images: {
+        primary: primaryImg,
+        thumbnail: thumbImg,
+        gallery: photos.map(p => p.large).filter(Boolean)
+      },
+      urls: {
+        source: `${OPENLIBRARY_BASE_URL}/authors/${authorId}`,
+        detail: `/api/books/openlibrary/author/${authorId}`
+      },
+      details: {
+        alternateNames: data.alternate_names || [],
+        personalName: data.personal_name || null,
+        birthDate: data.birth_date || null,
+        deathDate: data.death_date || null,
+        links: (data.links || []).map(link => ({
+          title: link.title,
+          url: link.url
+        })),
+        photos,
         lastModified: data.last_modified?.value || null
       }
     };
   }
 
   /**
-   * Parser une œuvre d'auteur
+   * Parser une œuvre d'auteur → Format B canonique
    */
   parseAuthorWork(entry, position) {
     const workId = entry.key?.replace('/works/', '') || null;
@@ -789,26 +799,38 @@ export class OpenLibraryProvider extends BaseProvider {
     const coverUrl = coverIds.length > 0 
       ? `${OPENLIBRARY_COVERS_URL}/b/id/${coverIds[0]}-L.jpg`
       : null;
+    const thumbUrl = coverIds.length > 0
+      ? `${OPENLIBRARY_COVERS_URL}/b/id/${coverIds[0]}-M.jpg`
+      : null;
+    const desc = typeof entry.description === 'string'
+      ? entry.description
+      : entry.description?.value || null;
 
     return {
+      id: workId ? `openlibrary:${workId}` : null,
+      type: 'book',
+      source: 'openlibrary',
       sourceId: workId,
-      provider: 'openlibrary',
-      type: 'work',
-      resourceType: 'work',
-
       title: entry.title || null,
-      subjects: entry.subjects?.slice(0, 10) || [],
-      subjectPlaces: entry.subject_places || [],
-      subjectPeople: entry.subject_people || [],
-      subjectTimes: entry.subject_times || [],
-
-      src_url: workId ? `${OPENLIBRARY_BASE_URL}/works/${workId}` : null,
-      src_image_url: coverUrl,
-
-      meta: {
-        position,
-        source: 'openlibrary',
-        created: entry.created?.value || null
+      titleOriginal: null,
+      description: desc,
+      year: entry.first_publish_date ? parseInt(String(entry.first_publish_date).match(/\d{4}/)?.[0]) || null : null,
+      images: {
+        primary: coverUrl,
+        thumbnail: thumbUrl,
+        gallery: coverUrl ? [coverUrl] : []
+      },
+      urls: {
+        source: workId ? `${OPENLIBRARY_BASE_URL}/works/${workId}` : null,
+        detail: workId ? `/api/books/openlibrary/${workId}` : null
+      },
+      details: {
+        subjects: entry.subjects?.slice(0, 10) || [],
+        subjectPlaces: entry.subject_places || [],
+        subjectPeople: entry.subject_people || [],
+        subjectTimes: entry.subject_times || [],
+        created: entry.created?.value || null,
+        position
       }
     };
   }

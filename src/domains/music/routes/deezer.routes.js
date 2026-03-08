@@ -229,16 +229,9 @@ router.get('/albums/:id/tracks', async (req, res) => {
     
     const data = await deezerProvider.getAlbumTracks(id, { limit: parseInt(limit) });
     
-    const tracks = (data.data || []).map((t, idx) => ({
-      position: idx + 1,
-      id: `deezer:track:${t.id}`,
-      sourceId: String(t.id),
-      title: t.title,
-      duration: t.duration,
-      durationFormatted: t.duration ? `${Math.floor(t.duration / 60)}:${(t.duration % 60).toString().padStart(2, '0')}` : null,
-      preview: t.preview,
-      explicit: t.explicit_lyrics || false
-    }));
+    const tracks = (data.data || []).map((t, idx) =>
+      deezerNormalizer.normalizeTrackSearchItem(t, idx + 1)
+    );
     
     res.json({
       success: true,
@@ -486,8 +479,13 @@ router.get('/chart/albums', async (req, res) => {
       success: true,
       provider: 'deezer',
       domain: 'music',
-      ...normalized,
-      meta: { fetchedAt: new Date().toISOString() }
+      endpoint: 'charts',
+      query: null,
+      total: normalized.total || 0,
+      count: (normalized.data || []).length,
+      data: normalized.data || [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), category: 'albums' }
     });
   } catch (error) {
     log.error('Get chart albums failed', { error: error.message });
@@ -569,8 +567,13 @@ router.get('/chart/tracks', async (req, res) => {
       success: true,
       provider: 'deezer',
       domain: 'music',
-      ...normalized,
-      meta: { fetchedAt: new Date().toISOString() }
+      endpoint: 'charts',
+      query: null,
+      total: normalized.total || 0,
+      count: (normalized.data || []).length,
+      data: normalized.data || [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), category: 'tracks' }
     });
   } catch (error) {
     log.error('Get chart tracks failed', { error: error.message });
@@ -596,8 +599,13 @@ router.get('/chart/artists', async (req, res) => {
       success: true,
       provider: 'deezer',
       domain: 'music',
-      ...normalized,
-      meta: { fetchedAt: new Date().toISOString() }
+      endpoint: 'charts',
+      query: null,
+      total: normalized.total || 0,
+      count: (normalized.data || []).length,
+      data: normalized.data || [],
+      pagination: null,
+      meta: { fetchedAt: new Date().toISOString(), category: 'artists' }
     });
   } catch (error) {
     log.error('Get chart artists failed', { error: error.message });

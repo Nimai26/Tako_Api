@@ -347,7 +347,7 @@ router.get('/series/:id/season/:season', asyncHandler(async (req, res) => {
             if (ep.description) {
               const { text, translated } = await translateText(ep.description, targetLang, { enabled: true });
               if (translated) {
-                return { ...ep, descriptionOriginal: ep.description, description: text };
+                return { ...ep, description: text, details: { ...ep.details, descriptionOriginal: ep.description, descriptionTranslated: true } };
               }
             }
             return ep;
@@ -363,13 +363,13 @@ router.get('/series/:id/season/:season', asyncHandler(async (req, res) => {
     domain: 'media',
     type: 'season',
     id: result.id,
-    seriesId: id,
-    seasonNumber,
     data: result,
     meta: {
       fetchedAt: new Date().toISOString(),
       lang,
-      autoTrad: autoTradEnabled
+      autoTrad: autoTradEnabled,
+      seriesId: id,
+      seasonNumber
     }
   });
 }));
@@ -411,14 +411,14 @@ router.get('/series/:id/season/:season/episode/:episode', asyncHandler(async (re
     domain: 'media',
     type: 'episode',
     id: result.id,
-    seriesId: id,
-    seasonNumber,
-    episodeNumber,
     data: result,
     meta: {
       fetchedAt: new Date().toISOString(),
       lang,
-      autoTrad: autoTradEnabled
+      autoTrad: autoTradEnabled,
+      seriesId: id,
+      seasonNumber,
+      episodeNumber
     }
   });
 }));

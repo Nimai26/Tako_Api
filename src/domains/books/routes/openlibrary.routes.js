@@ -198,17 +198,19 @@ router.get('/author/:id', asyncHandler(async (req, res) => {
 
   let result = await provider.getAuthorDetails(id.trim());
 
-  // Traduction automatique si activée
-  if (autoTradEnabled && result) {
-    if (result.bio) {
-      const bioResult = await translateText(result.bio, targetLang, {
-        enabled: true,
-        sourceLang: 'en'
-      });
-      if (bioResult.translated) {
-        result.bioOriginal = result.bio;
-        result.bio = bioResult.text;
-      }
+  // Traduction automatique si activée (description = bio dans Format B)
+  if (autoTradEnabled && result?.description) {
+    const bioResult = await translateText(result.description, targetLang, {
+      enabled: true,
+      sourceLang: 'en'
+    });
+    if (bioResult.translated) {
+      result.details = {
+        ...result.details,
+        descriptionOriginal: result.description,
+        descriptionTranslated: true
+      };
+      result.description = bioResult.text;
     }
   }
 
@@ -216,7 +218,7 @@ router.get('/author/:id', asyncHandler(async (req, res) => {
     success: true,
     provider: 'openlibrary',
     domain: 'books',
-    id: `openlibrary:${result.sourceId || id.trim()}`,
+    id: result.id || `openlibrary:${id.trim()}`,
     data: result,
     meta: { fetchedAt: new Date().toISOString() }
   });

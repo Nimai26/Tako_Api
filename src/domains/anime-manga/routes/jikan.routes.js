@@ -120,17 +120,20 @@ async function translateDetailResult(result, targetLang, autoTradEnabled) {
     }
   }
 
-  // Traduire les genres (strings dans details.genres)
+  // Traduire les genres (objets {id, name, url} dans details.genres)
   if (result.details?.genres?.length > 0) {
-    const genreNames = result.details.genres;
+    const genreObjects = result.details.genres;
+    const genreNames = genreObjects.map(g => typeof g === 'object' ? (g.name || g) : g);
     const translatedGenres = await Promise.all(
-      genreNames.map(genre => translateGenre(genre, targetLang))
+      genreNames.map(name => translateGenre(name, targetLang))
     );
     const wasTranslatedGenres = translatedGenres.some((g, i) => g !== genreNames[i]);
     if (wasTranslatedGenres) {
       translated.details = translated.details || {};
-      translated.details.genresOriginal = genreNames;
-      translated.details.genres = translatedGenres;
+      translated.details.genresOriginal = genreObjects;
+      translated.details.genres = genreObjects.map((obj, i) =>
+        typeof obj === 'object' ? { ...obj, name: translatedGenres[i] } : translatedGenres[i]
+      );
       translated.details.genresTranslated = true;
     }
   }

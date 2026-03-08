@@ -23,6 +23,19 @@ function extractText(value) {
   return String(value);
 }
 
+/**
+ * Extract a 4-digit year (integer) from a date string
+ * Handles formats like "2024", "janvier 2024", "2024-03-15", etc.
+ * @param {string|number|null} dateStr
+ * @returns {number|null}
+ */
+function extractYearFromDate(dateStr) {
+  if (!dateStr) return null;
+  if (typeof dateStr === 'number') return dateStr;
+  const match = String(dateStr).match(/\b(19|20)\d{2}\b/);
+  return match ? parseInt(match[0]) : null;
+}
+
 // ============================================================================
 // ITEM NORMALIZATION — Canonical Format B
 // ============================================================================
@@ -45,7 +58,7 @@ export function normalizeSearchItem(item) {
     title: extractText(item.title) || '',
     titleOriginal: null,
     description: null,
-    year: item.year || null,
+    year: extractYearFromDate(item.year),
     images: {
       primary: item.image || null,
       thumbnail: item.thumbnail || item.image || null,
@@ -181,7 +194,7 @@ export function normalizeDetails(data) {
     title: extractText(data.title) || '',
     titleOriginal: null,
     description: extractText(data.description) || null,
-    year: null,
+    year: extractYearFromDate(data.releaseDate),
     images: {
       primary: data.mainImage || null,
       thumbnail: data.mainImage || null,
