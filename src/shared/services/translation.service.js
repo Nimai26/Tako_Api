@@ -118,8 +118,8 @@ async function translateChunk(chunk, destLang = 'fr') {
       const result = await translate(chunk, {
         to: destLang,
         autoCorrect: false,
-        forceBatch: true,      // Utiliser batch endpoint (moins de rate-limit)
-        fallbackBatch: true    // Fallback si single échoue
+        forceBatch: false,     // Utiliser endpoint single (batch bloqué par Google)
+        fallbackBatch: false   // Ne pas fallback sur batch (rate-limité)
       });
 
       semaphore.release();
