@@ -19,9 +19,10 @@ const log = createLogger('TranslationService');
 
 // Configuration
 const MAX_CHUNK_LENGTH = 500;  // Longueur max d'un chunk (comme auto_trad)
-const MAX_CONCURRENT = 3;      // Nombre max de traductions parallèles
-const MAX_RETRIES = 2;         // Nombre de retry en cas d'erreur
-const RETRY_DELAY_MS = 500;    // Délai entre les retry
+const MAX_CONCURRENT = 1;      // Séquentiel pour éviter rate-limit Google
+const MAX_RETRIES = 3;         // Nombre de retry en cas d'erreur
+const RETRY_DELAY_MS = 1500;   // Délai entre les retry (augmenté)
+const INTER_REQUEST_DELAY = 300; // Délai entre chaque requête (ms)
 
 // Sémaphore simple pour limiter la concurrence
 class Semaphore {
@@ -53,6 +54,26 @@ class Semaphore {
 }
 
 const semaphore = new Semaphore(MAX_CONCURRENT);
+
+/**
+ * Request function personnalisée pour utiliser translate.googleapis.com
+ * au lieu de translate.google.com (rate-limité).
+ * La lib envoie un POST vers translate.google.com/translate_a/single?client=at
+ * On le convertit en GET vers translate.googleapis.com/translate_a/single?client=gtx
+ */
+function customRequestFunction(url, fetchInit) {
+  // Extraire les params du body POST (sl=auto&tl=fr&q=text)
+  const bodyText = fetchInit?.body || '';
+  const bodyParams = new URLSearchParams(bodyText);
+  const sl = bodyParams.get('sl') || 'auto';
+  const tl = bodyParams.get('tl') || 'fr';
+  const q = bodyParams.get('q') || '';
+  
+  // Construire l'URL GET vers googleapis.com
+  const newUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=rm&dj=1&q=${encodeURIComponent(q)}`;
+  
+  return fetch(newUrl, { credentials: 'omit' });
+}
 
 /**
  * Découpe une chaîne en morceaux de moins de 500 caractères
@@ -118,11 +139,15 @@ async function translateChunk(chunk, destLang = 'fr') {
       const result = await translate(chunk, {
         to: destLang,
         autoCorrect: false,
-        forceBatch: false,     // Utiliser endpoint single (batch bloqué par Google)
-        fallbackBatch: false   // Ne pas fallback sur batch (rate-limité)
+        forceBatch: false,       // Utiliser endpoint single
+        fallbackBatch: false,    // Ne pas fallback sur batch
+        requestFunction: customRequestFunction  // Utiliser translate.googleapis.com
       });
 
       semaphore.release();
+
+      // Petit délai entre requêtes pour éviter rate-limit
+      await sleep(INTER_REQUEST_DELAY);
 
       return {
         text: result.text,
@@ -132,8 +157,9 @@ async function translateChunk(chunk, destLang = 'fr') {
       semaphore.release();
       
       if (attempt < MAX_RETRIES - 1) {
-        log.warn(`Retry traduction (tentative ${attempt + 1}): ${err.message}`);
-        await sleep(RETRY_DELAY_MS);
+        const delay = RETRY_DELAY_MS * (attempt + 1); // Backoff exponentiel
+        log.warn(`Retry traduction (tentative ${attempt + 1}), attente ${delay}ms: ${err.message}`);
+        await sleep(delay);
       } else {
         log.error(`Erreur de traduction pour: "${chunk.substring(0, 50)}..." - ${err.message}`);
         // Retourner l'original en cas d'échec
@@ -178,21 +204,15 @@ export async function translateText(text, destLang = 'fr') {
     };
   }
 
-  // Traduire tous les chunks en parallèle (limité par sémaphore)
+  // Traduire les chunks séquentiellement pour éviter le rate-limit Google
   log.debug(`Traduction de ${chunks.length} chunks vers ${destLang}`);
   
-  const promises = chunks.map((chunk, idx) => 
-    translateChunk(chunk, destLang).then(result => ({ idx, result }))
-  );
-
-  const results = await Promise.all(promises);
-  
-  // Reconstruire dans l'ordre
-  const translatedChunks = new Array(chunks.length);
+  const translatedChunks = [];
   let sourceLang = null;
   
-  for (const { idx, result } of results) {
-    translatedChunks[idx] = result.text;
+  for (const chunk of chunks) {
+    const result = await translateChunk(chunk, destLang);
+    translatedChunks.push(result.text);
     if (!sourceLang && result.from) {
       sourceLang = result.from;
     }
@@ -243,21 +263,12 @@ export async function translateTexts(texts, destLang = 'fr') {
     }
   }
 
-  // Exécuter tous les jobs en parallèle (limité par sémaphore)
+  // Exécuter tous les jobs séquentiellement pour éviter le rate-limit Google
   const resultsMap = new Map(); // "textIdx:chunkIdx" -> result
 
-  const promises = jobs.map(job => 
-    translateChunk(job.chunk, destLang).then(result => ({
-      key: `${job.textIdx}:${job.chunkIdx}`,
-      textIdx: job.textIdx,
-      result
-    }))
-  );
-
-  const jobResults = await Promise.all(promises);
-
-  for (const { key, result } of jobResults) {
-    resultsMap.set(key, result);
+  for (const job of jobs) {
+    const result = await translateChunk(job.chunk, destLang);
+    resultsMap.set(`${job.textIdx}:${job.chunkIdx}`, result);
   }
 
   // Reconstruire les résultats
