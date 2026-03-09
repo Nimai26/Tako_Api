@@ -229,10 +229,14 @@ router.get('/albums/:id', async (req, res) => {
         }
       }
 
-      // Traduire les tags (genres MusicBrainz)
+      // Traduire les tags (genres MusicBrainz) — tags sont des {name, count}
       if (normalized.details?.tags && normalized.details.tags.length > 0) {
-        const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.details.tags, targetLang);
-        normalized.details.tags = translatedTags;
+        const tagNames = normalized.details.tags.map(t => typeof t === 'string' ? t : t.name);
+        const { terms: translatedNames, termsOriginal } = await translateMusicGenres(tagNames, targetLang);
+        normalized.details.tags = normalized.details.tags.map((t, i) => {
+          if (typeof t === 'string') return translatedNames[i];
+          return { ...t, name: translatedNames[i] };
+        });
         if (termsOriginal) normalized.details.tagsOriginal = termsOriginal;
       }
     }
@@ -336,10 +340,14 @@ router.get('/artists/:id', async (req, res) => {
         }
       }
 
-      // Traduire les tags (genres MusicBrainz)
+      // Traduire les tags (genres MusicBrainz) — tags sont des {name, count}
       if (normalized.details?.tags && normalized.details.tags.length > 0) {
-        const { terms: translatedTags, termsOriginal } = await translateMusicGenres(normalized.details.tags, targetLang);
-        normalized.details.tags = translatedTags;
+        const tagNames = normalized.details.tags.map(t => typeof t === 'string' ? t : t.name);
+        const { terms: translatedNames, termsOriginal } = await translateMusicGenres(tagNames, targetLang);
+        normalized.details.tags = normalized.details.tags.map((t, i) => {
+          if (typeof t === 'string') return translatedNames[i];
+          return { ...t, name: translatedNames[i] };
+        });
         if (termsOriginal) normalized.details.tagsOriginal = termsOriginal;
       }
     }
