@@ -2,7 +2,8 @@
 
 > Documentation complète de toutes les routes disponibles par domaine et provider.
 > 
-> **Dernière mise à jour** : 4 mars 2026 - **Phase 6 : Dragon Ball** ✅ Complétée  
+> **Dernière mise à jour** : mars 2026 - **v2.6.1 — 37 providers, 12 domaines, ~260+ routes**  
+> **Format** : Format B normalisé (noyau 11 clés + `details`)  
 > **Endpoints discovery** : 19 (TMDB 7, Jikan 4, RAWG 2, IGDB 1, Deezer 1, iTunes 1)  
 > **Cache** : PostgreSQL actif - 93% réduction latence  
 > **Archives** : 130 102 cartes (Carddass 122 200 + DBS 7 902)
@@ -24,6 +25,7 @@
    - [Playmobil](#playmobil)
    - [Klickypedia](#klickypedia)
    - [MEGA](#mega)
+   - [KRE-O](#kre-o)
 4. [Anime & Manga](#-anime--manga)
    - [MangaUpdates](#mangaupdates)
    - [Jikan (MyAnimeList)](#jikan-myanimelist)
@@ -39,15 +41,27 @@
    - [BoardGameGeek (BGG)](#boardgamegeek-bgg)
 8. [Collectibles / Objets de collection](#-collectibles--objets-de-collection)
    - [Coleka](#coleka)
+   - [Lulu-Berlu](#lulu-berlu)
+   - [Transformerland](#transformerland)
    - [Carddass](#carddass)
-9. [Music / Musique](#-music--musique)
-   - [Discogs](#discogs)
-   - [Deezer](#deezer)
-   - [MusicBrainz](#musicbrainz)
-   - [iTunes](#itunes)
-10. [E-commerce](#-e-commerce)
+9. [Sticker-Albums / Albums de vignettes](#-sticker-albums--albums-de-vignettes)
+   - [Paninimania](#paninimania)
+10. [TCG / Trading Card Games](#-tcg--trading-card-games)
+    - [Pokémon TCG](#pokémon-tcg)
+    - [Dragon Ball Super Card Game (DBS)](#dragon-ball-super-card-game-dbs)
+    - [Magic: The Gathering (MTG)](#magic-the-gathering-mtg)
+    - [Yu-Gi-Oh! TCG](#yu-gi-oh-tcg)
+    - [Digimon TCG](#digimon-tcg)
+    - [Lorcana TCG](#lorcana-tcg)
+    - [One Piece TCG](#one-piece-tcg)
+11. [Music / Musique](#-music--musique)
+    - [Discogs](#discogs)
+    - [Deezer](#deezer)
+    - [MusicBrainz](#musicbrainz)
+    - [iTunes](#itunes)
+12. [E-commerce](#-e-commerce)
     - [Amazon](#amazon)
-11. [Cache & Administration](#-cache--administration)
+13. [Cache & Administration](#-cache--administration)
     - [Cache Admin](#cache-admin)
 
 ---
@@ -314,6 +328,32 @@
 **Paramètres** :
 - `q` : Terme de recherche
 - `maxResults` : Nombre max de résultats (défaut: 20)
+
+---
+
+### KRE-O
+
+> **Base URL** : `/api/construction-toys/kreo`  
+> **Source** : Archive Hasbro (2011-2017)  
+> **API Key** : ❌ Non requise (base de données locale)  
+> **Note** : Données d'archive. Source PostgreSQL + MinIO (images/PDFs)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check (vérifie BDD + MinIO) | ✅ Fonctionne |
+| `GET /search?q=` | Recherche plein texte dans l'archive | ✅ Fonctionne |
+| `GET /franchises` | Liste des franchises avec comptage | ✅ Fonctionne |
+| `GET /franchise/:name` | Produits filtrés par franchise | ✅ Fonctionne |
+| `GET /sublines` | Sous-lignes disponibles avec comptages | ✅ Fonctionne |
+| `GET /file/:setNumber/image` | Redirect 301 vers image statique MinIO | ✅ Fonctionne |
+| `GET /:id` | Détails d'un produit (par numéro de set) | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche (requis pour /search)
+- `page` : Numéro de page (défaut: 1)
+- `pageSize` : Résultats par page (défaut: 20, max: 100)
+- `franchise` : Filtre par franchise (transformers, battleship, gi-joe…)
+- `subLine` : Filtre par sous-ligne
 
 ---
 
@@ -1325,6 +1365,8 @@ GET /api/collectibles/transformerland/health
 - Site potentiellement protégé par Cloudflare (d'où FlareSolverr)
 
 ---
+
+## 🏷️ Sticker-Albums / Albums de vignettes
 
 ### Paninimania
 
@@ -2400,7 +2442,89 @@ L'API pokemontcg.io peut parfois être lente ou indisponible. En cas d'erreur 50
 
 ---
 
-## �🎵 Music / Musique
+### Digimon TCG
+
+> **Base URL** : `/api/tcg/digimon`  
+> **Source** : [digimoncard.dev](https://digimoncard.dev)  
+> **API Key** : ❌ Non requise  
+> **Rate Limit** : Non spécifié
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de cartes Digimon | ✅ Fonctionne |
+| `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Terme de recherche (requis)
+- `type` : Type de carte (Digimon, Tamer, Option)
+- `color` : Couleur (Red, Blue, Yellow, Green, Black, Purple, White)
+- `level` : Niveau
+- `series` : Série (défaut: "Digimon Card Game")
+- `attribute` : Attribut
+- `rarity` : Rareté
+- `stage` : Stage d'évolution
+- `max` : Résultats max (défaut: 100, max: 250)
+- `lang` : Langue (défaut: en)
+- `autoTrad` : Traduction automatique (défaut: false)
+
+---
+
+### Lorcana TCG
+
+> **Base URL** : `/api/tcg/lorcana`  
+> **Source** : API Lorcana  
+> **API Key** : ❌ Non requise  
+> **Note** : Langues supportées pour `/card/:id` et `/sets` : en, fr, de, it (validation stricte, 400 sinon)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de cartes Lorcana | ✅ Fonctionne |
+| `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
+| `GET /sets` | Liste de tous les sets | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Terme de recherche (requis)
+- `color` : Encre (Amber, Amethyst, Emerald, Ruby, Sapphire, Steel)
+- `type` : Type (Character, Item, Action, Location)
+- `rarity` : Rareté
+- `set` : Code du set
+- `cost` : Coût en encre (entier)
+- `inkable` : Peut produire de l'encre ("true" ou "false")
+- `max` : Résultats max (défaut: 100, max: 250)
+- `page` : Page (défaut: 1)
+- `lang` : Langue (défaut: en, validé: en/fr/de/it)
+- `autoTrad` : Traduction automatique (défaut: false)
+
+---
+
+### One Piece TCG
+
+> **Base URL** : `/api/tcg/onepiece`  
+> **Source** : API One Piece TCG  
+> **API Key** : ❌ Non requise  
+> **Note** : `q` est **optionnel** (recherche sans filtre texte possible)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check | ✅ Fonctionne |
+| `GET /search` | Recherche de cartes One Piece | ✅ Fonctionne |
+| `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
+
+**Paramètres de recherche** :
+- `q` : Terme de recherche (**optionnel**, une chaîne vide est acceptée)
+- `color` : Couleur
+- `type` : Type (Leader, Character, Event, Stage)
+- `rarity` : Rareté
+- `cost` : Coût (entier)
+- `max` : Résultats max (défaut: 100, max: 250)
+- `lang` : Langue (défaut: en)
+- `autoTrad` : Traduction automatique (défaut: false)
+
+---
+
+## 🎵 Music / Musique
 
 ### Discogs
 

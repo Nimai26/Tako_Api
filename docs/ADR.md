@@ -209,3 +209,45 @@ config.cache.ttl
 
 ❌ **Inconvénients** :
 - Import obligatoire depuis `config/`
+
+---
+
+## ADR-006: Format B — Noyau commun + objet `details`
+
+**Date**: 2026-03  
+**Statut**: Accepté — DÉFINITIF et NON NÉGOCIABLE
+
+### Contexte
+
+La migration v2.0.0 a produit un format plat (`...base, ...details`) contraire à la spécification.
+La v2.0.1 a déclaré "100% conforme" alors que seul le wrapper externe avait été ajouté.
+Résultat en v2.6.0 : **6 formats distincts coexistaient**, chaque domaine ayant son propre vocabulaire.
+
+### Décision
+
+**Format B** : Chaque item retourné par l'API possède exactement 11 clés au premier niveau :
+
+```json
+{
+  "id": "source:sourceId",
+  "type": "string",
+  "source": "string",
+  "sourceId": "string",
+  "title": "string",
+  "titleOriginal": "string | null",
+  "description": "string | null",
+  "year": "number | null",
+  "images": { "primary": "url?", "thumbnail": "url?", "gallery": [] },
+  "urls": { "source": "url?", "detail": "string" },
+  "details": { /* variable selon type/provider */ }
+}
+```
+
+**Pagination** : Uniquement `{page, limit, hasMore}`. Pas de `totalResults`, `totalPages`, `offset`, `pageSize`.
+
+### Conséquences
+
+- Les 37 providers × 12 domaines ont été migrés (audits v10-v13, commit `64ead00`)
+- `coreItemSchema` + `createItemSchema(detailsSchema)` sont la source de vérité Zod
+- Voir [RESPONSE-FORMAT.md](./RESPONSE-FORMAT.md) pour la spécification complète
+- Voir l'Annexe A du [DEVELOPER_GUIDE](./DEVELOPER_GUIDE_TAKO_API.md) pour les champs `details` par provider

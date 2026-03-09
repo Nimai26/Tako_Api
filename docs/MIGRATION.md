@@ -64,56 +64,47 @@ Ce document décrit le processus de migration de l'ancienne API `toys_api` vers 
 - [x] `BaseNormalizer` - Classe abstraite normalizer (`src/core/normalizers/`)
 - [x] Schémas Zod avec noyau commun (`src/core/schemas/content-types.js`)
 - [x] Documentation du format de réponse (`docs/RESPONSE-FORMAT.md`)
-- [ ] `BaseRouter` - Factory pour routes
+- [x] Routes par domaine via Express Router
 
-### Phase 3 : Infrastructure
-- [x] Module database (`src/infrastructure/database/`) - **EN COURS**
+### Phase 3 : Infrastructure ✅
+- [x] Module database (`src/infrastructure/database/`)
   - [x] Schéma discovery_cache (trending/popular/charts/upcoming)
   - [x] Repository pattern avec cache PostgreSQL
   - [x] Refresh scheduler avec cron jobs échelonnés
-  - [ ] Tests unitaires du cache
-  - [ ] Migration complète de tous les endpoints discovery
-- [ ] Client HTTP avec retry (`src/infrastructure/http/`)
-- [ ] Module scraping (`src/infrastructure/scraping/`)
-- [ ] Monitoring (`src/infrastructure/monitoring/`)
+- [x] Module scraping (`src/infrastructure/scraping/`) — FlareSolverrClient
+- [x] Gestion d'erreurs HTTP structurée
 
-### Phase 4 : Domaines
+### Phase 4 : Domaines ✅ (12/12 domaines, 37 providers)
 
-#### 4.1 construction-toys (EN COURS)
-| Provider | Status | Notes |
-|----------|--------|-------|
-| Brickset | ✅ Done | API REST, normalizer complet |
-| Rebrickable | ✅ Done | API REST avec enrichissement parts/minifigs |
-| LEGO (officiel) | ✅ Done | Scraping HTML via FlareSolverr (GraphQL retiré - erreur 400) |
-| Playmobil | 🔜 TODO | Scraping |
-| Klickypedia | 🔜 TODO | Scraping |
-| Mega Construx | 🔜 TODO | SearchSpring API |
+| Domaine | Providers | Status |
+|---------|-----------|--------|
+| construction-toys | Brickset, Rebrickable, LEGO, Playmobil, Klickypedia, Mega, KRE-O | ✅ Done |
+| books | Google Books, OpenLibrary | ✅ Done |
+| videogames | IGDB, RAWG, JVC, ConsoleVariations | ✅ Done |
+| media | TMDB, TVDB | ✅ Done |
+| anime-manga | Jikan, MangaUpdates | ✅ Done |
+| comics | ComicVine, Bedetheque | ✅ Done |
+| tcg | Pokemon, MTG, Yu-Gi-Oh, DBS, Digimon, Lorcana, One Piece | ✅ Done |
+| collectibles | Carddass, Coleka, Luluberlu, Transformerland | ✅ Done |
+| music | Deezer, Discogs, iTunes, MusicBrainz | ✅ Done |
+| ecommerce | Amazon | ✅ Done |
+| boardgames | BGG | ✅ Done |
+| sticker-albums | Paninimania | ✅ Done |
 
-**LEGO Provider - Implémenté le 29/01/2026 :**
-- Méthodes : `search()`, `getById()`
-- Extraction : `__NEXT_DATA__`, HTML parsing, `data-test` attributes
-- Données : titre, prix, pièces, âge, thème, disponibilité, images (19), vidéos (2)
-- Exclusions : Mosaic Maker, Gift Cards, VIP Rewards
-- Test : `./scripts/test-lego.sh`
+### Phase 5 : Format B — Normalisation complète ✅
 
-#### 4.2-4.11 Autres domaines (À FAIRE)
-2. [ ] `books`
-3. [ ] `games`
-4. [ ] `media`
-5. [ ] `anime-manga`
-6. [ ] `comics`
-7. [ ] `tcg`
-8. [ ] `collectibles`
-9. [ ] `music`
-10. [ ] `ecommerce`
-11. [ ] `board-games`
+La migration vers le **Format B** (noyau commun 11 clés + `details`) a été complétée via les audits v10 à v13 :
+- [x] Tous les normalizers produisent le format `{id, type, source, sourceId, title, titleOriginal, description, year, images, urls, details}`
+- [x] Pagination normalisée : `{page, limit, hasMore}` uniquement (pas de totalResults, totalPages, offset)
+- [x] Wrappers de réponse uniformes (search/list/detail)
+- [x] Schémas Zod définis pour les 12 types officiels
+- [x] Documentation exhaustive (`DEVELOPER_GUIDE_TAKO_API.md`, `RESPONSE-FORMAT.md`)
 
-### Phase 5 : Finalisation
-- [ ] Tests unitaires pour chaque domaine
-- [ ] Tests d'intégration
-- [ ] Documentation OpenAPI
-- [ ] Dockerfile optimisé
-- [ ] CI/CD
+### Phase 6 : Déploiement ✅
+- [x] Dockerfile optimisé (multi-stage)
+- [x] docker-compose.yaml avec PostgreSQL
+- [x] Déploiement automatisé Louis (10.20.0.10)
+- [x] Health checks fonctionnels
 
 ## 📝 Procédure de migration d'un domaine
 
@@ -219,7 +210,7 @@ Pas de middleware d'authentification : l'API est conçue pour un usage personnel
 
 ### Cache
 
-Le système de cache PostgreSQL est **en cours d'implémentation** pour les endpoints discovery (trending/popular/charts/upcoming).
+Le système de cache PostgreSQL est **opérationnel** pour les endpoints discovery (trending/popular/charts/upcoming).
 
 **Architecture** :
 - Table dédiée `discovery_cache` avec cache_key unique

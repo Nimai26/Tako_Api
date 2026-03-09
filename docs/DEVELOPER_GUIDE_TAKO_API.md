@@ -108,7 +108,7 @@ res = requests.get(f"{BASE_URL}/api/tcg/pokemon/search", params={"q": "pikachu",
 cards = res.json()["data"]
 
 for card in cards:
-    print(f"{card['title']} - {card['metadata']['rarity']} - {card['image']}")
+    print(f"{card['title']} - {card['details']['rarity']} - {card['images']['primary']}")
 ```
 
 ---
@@ -206,9 +206,7 @@ Chaque élément retourné par l'API suit **le même schéma de base**, quel que
   "data": [ /* tableau d'items normalisés */ ],
   "pagination": {
     "page": 1,
-    "pageSize": 20,
-    "totalResults": 42,
-    "totalPages": 3,
+    "limit": 20,
     "hasMore": true
   },
   "meta": {
@@ -259,19 +257,25 @@ Ces paramètres sont disponibles sur **la plupart** des endpoints de recherche :
 
 ## 6. Pagination
 
-Toutes les réponses de recherche incluent un bloc `pagination` :
+Toutes les réponses de recherche incluent un bloc `pagination` avec exactement **3 champs** :
 
 ```json
 {
   "pagination": {
     "page": 1,
-    "pageSize": 20,
-    "totalResults": 150,
-    "totalPages": 8,
+    "limit": 20,
     "hasMore": true
   }
 }
 ```
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `page` | number | Page courante (1-indexed) |
+| `limit` | number | Nombre maximum d'éléments par page |
+| `hasMore` | boolean | `true` s'il existe une page suivante |
+
+> **Note** : Il n'y a PAS de champs `totalResults`, `totalPages`, `pageSize` ou `offset`. Seuls `page`, `limit` et `hasMore` sont retournés. Pour les endpoints sans pagination (listes complètes), `pagination` vaut `null`.
 
 Pour naviguer entre les pages :
 
@@ -1391,9 +1395,9 @@ cards = requests.get(f"{BASE}/api/tcg/pokemon/search", params={
 }).json()
 
 for card in cards["data"]:
-    meta = card.get("metadata", {})
-    price = card.get("prices", {})
-    print(f"{card['title']} | {meta.get('rarity')} | {meta.get('set', {}).get('name')} | ${price.get('market', 'N/A')}")
+    details = card.get("details", {})
+    prices = details.get("prices", {})
+    print(f"{card['title']} | {details.get('rarity')} | {details.get('set', {}).get('name')} | ${prices.get('market', 'N/A')}")
 ```
 
 ---
@@ -1433,6 +1437,1489 @@ Oui. L'API est accessible en production sur `https://tako.snowmanprod.fr` avec u
 | `GET /health` | Statut de l'API, version, uptime |
 | `GET /version` | Nom, version, environment |
 | `GET /docs` | Liste des specs OpenAPI disponibles |
+
+---
+
+## Annexe A — Référence exhaustive des champs `details` par provider
+
+Cette annexe documente **tous les champs** pouvant apparaître dans l'objet `details` de chaque type de contenu, organisés par domaine et provider.
+
+> **Rappel** : Tous les items partagent un noyau commun de 11 clés (`id`, `type`, `source`, `sourceId`, `title`, `titleOriginal`, `description`, `year`, `images`, `urls`, `details`). Seul le contenu de `details` varie.
+
+---
+
+### A.1 Media — TMDB
+
+#### Movie (recherche)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `mediaType` | `"movie"` | Type de média |
+| `releaseDate` | string? | Date de sortie (YYYY-MM-DD) |
+| `genreIds` | number[] | IDs de genres TMDB |
+| `rating` | `{average, voteCount}?` | Note et nombre de votes |
+| `popularity` | number? | Score de popularité |
+| `originalLanguage` | string? | Code langue (en, fr…) |
+| `adult` | boolean | Contenu adulte |
+
+#### Movie (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `mediaType` | `"movie"` | Type de média |
+| `tagline` | string? | Tagline |
+| `releaseDate` | string? | Date de sortie |
+| `runtime` | number? | Durée en minutes |
+| `status` | string? | Released, Planned… |
+| `adult` | boolean | Contenu adulte |
+| `genres` | string[] | Noms de genres |
+| `rating` | `{average, voteCount}` | Note et votes |
+| `popularity` | number? | Popularité |
+| `budget` | number? | Budget en USD |
+| `revenue` | number? | Recettes en USD |
+| `originalLanguage` | string? | Langue originale |
+| `spokenLanguages` | `[{code, name, englishName}]` | Langues parlées |
+| `productionCountries` | `[{code, name}]` | Pays de production |
+| `collection` | `{id, name, poster, backdrop}?` | Saga/collection |
+| `studios` | `[{id, name, logo, country}]` | Studios de production |
+| `cast` | `[{id, name, character, order, image}]` | Distribution |
+| `crew` | `[{id, name, job, department, image}]` | Équipe technique |
+| `directors` | `[{id, name, image}]` | Réalisateurs |
+| `videos` | `[{id, key, name, type, official, url}]` | Bandes-annonces |
+| `keywords` | string[] | Mots-clés |
+| `externalIds` | `{imdb, facebook, instagram, twitter, wikidata}` | IDs externes |
+| `contentRatings` | `[{country, rating, releaseDate}]` | Classifications par pays |
+| `recommendations` | `[{sourceId, title, year, poster, rating}]` | Recommandations |
+| `similar` | `[{sourceId, title, year, poster, rating}]` | Films similaires |
+
+#### Series (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `mediaType` | `"tv"` | Type de média |
+| `seriesType` | string? | Type de série (Scripted, Reality…) |
+| `tagline` | string? | Tagline |
+| `firstAirDate` | string? | Première diffusion |
+| `lastAirDate` | string? | Dernière diffusion |
+| `endYear` | number? | Année de fin |
+| `status` | string? | Returning Series, Ended… |
+| `inProduction` | boolean | En cours de production |
+| `adult` | boolean | Contenu adulte |
+| `seasonCount` | number? | Nombre de saisons |
+| `episodeCount` | number? | Nombre total d'épisodes |
+| `episodeRuntime` | number? | Durée moyenne d'un épisode |
+| `genres` | string[] | Genres |
+| `rating` | `{average, voteCount}` | Note |
+| `popularity` | number? | Popularité |
+| `originalLanguage` | string? | Langue originale |
+| `languages` | string[] | Langues |
+| `originalCountry` | string[] | Pays d'origine |
+| `spokenLanguages` | `[{code, name, englishName}]` | Langues parlées |
+| `productionCountries` | `[{code, name}]` | Pays de production |
+| `lastEpisodeToAir` | `{id, name, overview, airDate, seasonNumber, episodeNumber, runtime, still, episodeType, rating}?` | Dernier épisode |
+| `nextEpisodeToAir` | `{id, name, overview, airDate, seasonNumber, episodeNumber}?` | Prochain épisode |
+| `networks` | `[{id, name, logo, country}]` | Diffuseurs |
+| `studios` | `[{id, name, logo, country}]` | Studios |
+| `creators` | `[{id, name, image}]` | Créateurs |
+| `seasons` | `[{id, seasonNumber, name, overview, episodeCount, airDate, poster, rating}]` | Saisons |
+| `cast` | `[{id, name, character, order, image}]` | Distribution |
+| `crew` | `[{id, name, job, department, image}]` | Équipe |
+| `videos` | `[{id, key, name, type, official, url}]` | Vidéos |
+| `keywords` | string[] | Mots-clés |
+| `externalIds` | `{imdb, tvdb, facebook, instagram, twitter, wikidata}` | IDs externes |
+| `contentRatings` | `[{country, rating}]` | Classifications |
+| `recommendations` | `[{sourceId, title, year, poster, rating}]` | Recommandations |
+| `similar` | `[{sourceId, title, year, poster, rating}]` | Similaires |
+
+#### Season (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `seriesId` | string? | ID de la série |
+| `seasonNumber` | number | Numéro de saison |
+| `episodeCount` | number | Nombre d'épisodes |
+| `rating` | `{average, voteCount}?` | Note |
+| `episodes` | `[{id, episodeNumber, name, description, airDate, runtime, still, rating, crew, guestStars}]` | Épisodes |
+| `cast` | `[{id, name, character, image}]` | Distribution |
+| `videos` | array | Vidéos |
+
+#### Episode (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `seriesId` | string? | ID de la série |
+| `seasonNumber` | number | Numéro de saison |
+| `episodeNumber` | number | Numéro d'épisode |
+| `airDate` | string? | Date de diffusion |
+| `runtime` | number? | Durée en minutes |
+| `rating` | `{average, voteCount}?` | Note |
+| `crew` | `[{id, name, job, department, image}]` | Équipe |
+| `directors` | `[{id, name, image}]` | Réalisateurs |
+| `writers` | `[{id, name, image}]` | Scénaristes |
+| `guestStars` | `[{id, name, character, order, image}]` | Guests |
+| `videos` | array | Vidéos |
+
+#### Collection (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `movieCount` | number | Nombre de films |
+| `parts` | `[{sourceId, title, titleOriginal, description, releaseDate, year, poster, backdrop, rating, popularity, order}]` | Films de la saga |
+
+#### Person (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `alsoKnownAs` | string[] | Noms alternatifs |
+| `birthday` | string? | Date de naissance |
+| `deathday` | string? | Date de décès |
+| `placeOfBirth` | string? | Lieu de naissance |
+| `gender` | number | Genre (1=Femme, 2=Homme) |
+| `knownForDepartment` | string? | Département principal |
+| `popularity` | number? | Popularité |
+| `adult` | boolean | Contenu adulte |
+| `externalIds` | `{imdb, facebook, instagram, twitter, tiktok, youtube}` | IDs externes |
+| `movieCredits` | `{cast: [{sourceId,title,character,releaseDate,year,poster,rating,popularity}], crew: [...]}` | Filmographie cinéma |
+| `tvCredits` | `{cast: [{sourceId,title,character,firstAirDate,year,poster,rating,episodeCount}], crew: [...]}` | Filmographie TV |
+
+---
+
+### A.2 Media — TVDB
+
+#### Movie (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `mediaType` | `"movie"` | Type |
+| `slug` | string? | Slug TVDB |
+| `releaseDate` | string? | Date de sortie |
+| `runtime` | number? | Durée |
+| `status` | string? | Statut |
+| `genres` | string[] | Genres |
+| `popularityScore` | number? | Score populaire |
+| `budget` | number? | Budget |
+| `revenue` | number? | Recettes |
+| `originalLanguage` | string? | Langue originale |
+| `productionCountries` | `[{code}]` | Pays de production |
+| `releases` | `[{country, date, detail}]` | Dates de sortie |
+| `studios` | `[{id, name, country, type}]` | Studios |
+| `cast` | `[{id, name, character, order, image}]` | Distribution |
+| `directors` | `[{id, name, image}]` | Réalisateurs |
+| `crew` | `[{id, name, image, job}]` | Équipe |
+| `videos` | `[{id, name, url, type, runtime, language}]` | Bandes-annonces |
+| `collection` | `{id, name, overview}?` | Collection |
+| `contentRatings` | `[{country, rating, fullName}]` | Classifications |
+| `externalIds` | `{imdb, tmdb, facebook, twitter, instagram, wikidata}` | IDs externes |
+| `artworks` | `[{id, type, image, thumbnail, language, score}]` | Images artistiques |
+
+#### Series (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `mediaType` | `"tv"` | Type |
+| `slug` | string? | Slug TVDB |
+| `firstAirDate` | string? | Première diffusion |
+| `lastAirDate` | string? | Dernière diffusion |
+| `nextAirDate` | string? | Prochaine diffusion |
+| `endYear` | number? | Année de fin |
+| `status` | string? | Statut |
+| `defaultSeasonType` | number? | Type de saison par défaut |
+| `averageRuntime` | number? | Durée moyenne |
+| `episodeRuntime` | number? | Durée par épisode |
+| `seasonCount` | number | Nombre de saisons |
+| `episodeCount` | number? | Nombre d'épisodes |
+| `genres` | string[] | Genres |
+| `aliases` | array | Noms alternatifs |
+| `broadcast` | `{days, time, timeUTC}?` | Horaires de diffusion |
+| `popularityScore` | number? | Score populaire |
+| `originalLanguage` | string? | Langue originale |
+| `originalCountry` | string[] | Pays d'origine |
+| `seasons` | `[{id, seasonNumber, name, poster}]` | Saisons |
+| `networks` | `[{id, name, logo, country}]` | Diffuseurs |
+| `studios` | `[{id, name, country, type}]` | Studios |
+| `cast` | `[{id, name, character, order, image}]` | Distribution |
+| `creators` | `[{id, name, image}]` | Créateurs |
+| `directors` | `[{id, name, image}]` | Réalisateurs |
+| `crew` | `[{id, name, image, job}]` | Équipe |
+| `videos` | array | Vidéos |
+| `collection` | `{id, name, overview}?` | Collection |
+| `contentRatings` | `[{country, rating, fullName}]` | Classifications |
+| `externalIds` | `{imdb, tmdb, facebook, twitter, instagram, wikidata}` | IDs externes |
+| `artworks` | array | Images |
+
+#### Episode (détail TVDB)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `seriesId` | number? | ID de la série |
+| `seasonNumber` | number? | Numéro de saison |
+| `episodeNumber` | number? | Numéro d'épisode |
+| `absoluteNumber` | number? | Numéro absolu |
+| `airDate` | string? | Date de diffusion |
+| `runtime` | number? | Durée |
+| `productionCode` | string? | Code de production |
+| `isMovie` | boolean | Est un film |
+| `finaleType` | string? | Type de finale |
+| `rating` | `{average, voteCount}?` | Note |
+| `directors` | `[{id, name, image}]` | Réalisateurs |
+| `crew` | array | Équipe |
+| `guestStars` | `[{id, name, character, image}]` | Guests |
+
+#### Person (détail TVDB)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `birthday` | string? | Date de naissance |
+| `deathday` | string? | Date de décès |
+| `placeOfBirth` | string? | Lieu de naissance |
+| `gender` | string? | Genre |
+| `biographies` | array | Biographies multilingues |
+| `characters` | `[{id, name, type, peopleType, seriesId, movieId, image}]` | Personnages joués |
+| `externalIds` | `{imdb, tmdb, facebook, twitter, instagram, wikidata}` | IDs externes |
+
+---
+
+### A.3 Videogames — IGDB
+
+#### Game (recherche)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `slug` | string? | Slug IGDB |
+| `releaseDate` | string? | Date (YYYY-MM-DD) |
+| `rating` | number? | Note /100 |
+| `ratingCount` | number | Nombre de votes |
+| `platforms` | string[] | Noms des plateformes |
+| `genres` | string[] | Genres |
+| `themes` | string[] | Thèmes |
+| `gameModes` | string[] | Modes de jeu |
+| `developers` | string[] | Développeurs |
+| `publishers` | string[] | Éditeurs |
+| `screenshots` | string[] | URLs screenshots |
+| `category` | string | main_game, dlc_addon, expansion, bundle, remake, remaster… |
+
+#### Game (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `slug` | string? | Slug IGDB |
+| `storyline` | string? | Synopsis détaillé |
+| `releaseDate` | string? | Date de sortie |
+| `createdAt` | string? | Date de création sur IGDB |
+| `updatedAt` | string? | Dernière mise à jour IGDB |
+| `rating` | number? | Note globale /100 |
+| `ratingCount` | number | Nombre de votes |
+| `criticRating` | number? | Note critique /100 |
+| `criticRatingCount` | number | Nombre de critiques |
+| `userRating` | number? | Note utilisateurs /100 |
+| `userRatingCount` | number | Nombre d'avis utilisateurs |
+| `hypes` | number | Nombre de hypes |
+| `follows` | number | Nombre de follows |
+| `category` | string | Type de jeu (main_game, dlc_addon…) |
+| `status` | string | released, alpha, beta, early_access, offline, cancelled… |
+| `ageRatings` | `[{category, rating, synopsis, contentDescriptions}]` | Classifications ESRB/PEGI/CERO |
+| `screenshots` | `[{id, url, thumb}]` | Screenshots |
+| `artworks` | `[{id, url, thumb}]` | Artworks |
+| `videos` | `[{id, name, videoId, url, thumbnail}]` | Vidéos YouTube |
+| `genres` | string[] | Genres |
+| `themes` | string[] | Thèmes |
+| `keywords` | string[] | Mots-clés |
+| `gameModes` | string[] | Modes de jeu |
+| `playerPerspectives` | string[] | Perspectives joueur |
+| `platforms` | `[{id, name, abbreviation, slug}]` | Plateformes |
+| `involvedCompanies` | `[{id, name, developer, publisher, porting, supporting}]` | Compagnies impliquées |
+| `developers` | string[] | Développeurs |
+| `publishers` | string[] | Éditeurs |
+| `franchise` | `{id, name}?` | Franchise principale |
+| `franchises` | `[{id, name}]` | Franchises |
+| `collection` | `{id, name, games: [{id, name, cover}]}?` | Collection de jeux |
+| `parentGame` | `{id, name, cover}?` | Jeu parent (si DLC) |
+| `dlcs` | `[{id, name, cover}]` | DLCs |
+| `expansions` | `[{id, name, cover}]` | Extensions |
+| `remakes` | `[{id, name, cover}]` | Remakes |
+| `remasters` | `[{id, name, cover}]` | Remasters |
+| `similarGames` | `[{id, name, cover, rating}]` | Jeux similaires |
+| `websites` | `[{category, url, trusted}]` | Sites web (official, steam, gog…) |
+| `gameEngines` | `[{id, name}]` | Moteurs de jeu |
+| `alternativeNames` | `[{name, comment}]` | Noms alternatifs |
+| `releaseDates` | `[{platform, date, region, human}]` | Dates de sortie par plateforme |
+| `languageSupports` | `[{language, nativeName, type}]` | Langues supportées |
+
+---
+
+### A.4 Videogames — RAWG
+
+#### Game (recherche)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `slug` | string? | Slug RAWG |
+| `releaseDate` | string? | Date (YYYY-MM-DD) |
+| `rating` | number? | Note /10 (rawg_rating × 2) |
+| `ratingTop` | number | Note max (défaut 5) |
+| `ratingsCount` | number | Nombre de votes |
+| `metacritic` | number? | Score Metacritic |
+| `playtime` | number? | Temps de jeu moyen (heures) |
+| `platforms` | string[] | Plateformes |
+| `genres` | string[] | Genres |
+| `stores` | string[] | Magasins |
+| `tags` | string[] | Tags (max 10) |
+| `esrbRating` | string? | Classification ESRB |
+| `added` | number | Nombre d'ajouts |
+| `updated` | string? | Dernière mise à jour |
+
+#### Game (détail)
+
+Inclut tous les champs de recherche plus :
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `descriptionHtml` | string? | Description en HTML |
+| `tba` | boolean | Date à confirmer |
+| `ratingsBreakdown` | `[{id, title, count, percent}]` | Répartition des notes |
+| `metacriticUrl` | string? | URL Metacritic |
+| `metacriticPlatforms` | `[{platform, score, url}]` | Scores par plateforme |
+| `achievementsCount` | number | Nombre de succès |
+| `reviewsCount` | number | Nombre de reviews |
+| `suggestionsCount` | number | Suggestions |
+| `addedByStatus` | object | Répartition par statut |
+| `esrbRating` | `{id, name, slug}?` | Classification détaillée |
+| `backgroundAdditional` | string? | Image de fond secondaire |
+| `website` | string? | Site officiel |
+| `genres` | `[{id, name, slug}]` | Genres détaillés |
+| `tags` | `[{id, name, slug, language, gamesCount}]` | Tags détaillés |
+| `platforms` | `[{id, name, slug, released, requirements}]` | Plateformes détaillées |
+| `parentPlatforms` | `[{id, name, slug}]` | Plateformes parentes |
+| `developers` | `[{id, name, slug, gamesCount, image}]` | Développeurs |
+| `publishers` | `[{id, name, slug, gamesCount, image}]` | Éditeurs |
+| `stores` | `[{id, name, slug, domain, url}]` | Magasins |
+| `clip` | `{clip, preview, video}?` | Clip vidéo |
+| `redditUrl` | string? | URL Reddit |
+| `alternativeNames` | string[] | Noms alternatifs |
+
+---
+
+### A.5 Videogames — JVC
+
+#### Game (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `releaseDate` | string? | Date de sortie |
+| `platforms` | string[] | Plateformes |
+| `genres` | string[] | Genres |
+| `developers` | string[] | Développeurs |
+| `publishers` | string[] | Éditeurs |
+| `pegi` | string? | Classification PEGI |
+| `minAge` | number? | Âge minimum |
+| `players` | string? | Nombre de joueurs |
+| `isMultiplayer` | boolean | Mode multijoueur |
+| `media` | string[] | Types de média |
+| `rating` | `{critics, users}` | Notes JVC /5 |
+| `reviewUrl` | string? | URL du test |
+| `language` | `"fr"` | Toujours français |
+
+---
+
+### A.6 Videogames — ConsoleVariations
+
+#### Console/Controller/Accessory (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | string? | Marque (Sony, Nintendo…) |
+| `platform` | `{id, name}?` | Plateforme |
+| `releaseCountry` | string? | Pays de sortie |
+| `releaseYear` | number? | Année de sortie |
+| `releaseType` | string? | retail, promotional, bundle, prototype |
+| `regionCode` | string? | Code région |
+| `productionQuantity` | number? | Quantité produite |
+| `isLimitedEdition` | boolean | Édition limitée |
+| `isBundle` | boolean | Bundle |
+| `color` | string? | Couleur |
+| `barcode` | string? | Code-barres |
+| `rarity` | `{score, level}` | Score de rareté |
+| `community` | `{wantCount, ownCount}` | Statistiques communautaires |
+
+---
+
+### A.7 Anime-Manga — Jikan
+
+#### Anime (recherche et détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `position` | number? | Position dans les résultats |
+| `malId` | number | ID MyAnimeList |
+| `resourceType` | string | tv, movie, ova, special, ona, music |
+| `titleEnglish` | string? | Titre anglais |
+| `titleAlternatives` | `[{type, title}]` | Titres alternatifs |
+| `trailer` | `{url, embedUrl, youtubeId, images}?` | Bande-annonce YouTube |
+| `format` | string? | TV, Movie, OVA… |
+| `sourceMaterial` | string? | Manga, Light Novel, Original… |
+| `episodes` | number? | Nombre d'épisodes |
+| `status` | string? | Finished Airing, Currently Airing… |
+| `airing` | boolean | En cours de diffusion |
+| `aired` | `{from, to, string}` | Dates de diffusion |
+| `duration` | string? | Durée (ex: "24 min per ep") |
+| `rating` | `{code, label, minAge}?` | Classification (PG-13, R-17+…) |
+| `score` | number? | Score MAL /10 |
+| `scoredBy` | number? | Nombre de votants |
+| `rank` | number? | Classement |
+| `popularity` | number? | Rang de popularité |
+| `members` | number? | Nombre de membres |
+| `favorites` | number? | Nombre de favoris |
+| `season` | string? | winter, spring, summer, fall |
+| `studios` | `[{id, name, url}]` | Studios d'animation |
+| `producers` | `[{id, name, url}]` | Producteurs |
+| `licensors` | `[{id, name, url}]` | Distributeurs |
+| `genres` | `[{id, name, url}]` | Genres |
+| `explicitGenres` | `[{id, name, url}]` | Genres explicites |
+| `themes` | `[{id, name, url}]` | Thèmes |
+| `demographics` | `[{id, name, url}]` | Démographiques (Shounen, Seinen…) |
+| `titleSynonyms` | string[] | Synonymes |
+| `broadcast` | `{day, time, timezone, string}?` | Horaires de diffusion |
+
+*Champs supplémentaires en détail complet :*
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `background` | string? | Contexte/historique |
+| `relations` | `[{relation, entries: [{id, type, name, url}]}]` | Relations (sequels, prequels…) |
+| `openingThemes` | string[] | Génériques d'ouverture |
+| `endingThemes` | string[] | Génériques de fin |
+| `streaming` | `[{name, url}]` | Plateformes de streaming |
+| `externalLinks` | `[{name, url}]` | Liens externes |
+| `detailLevel` | `"full"` | Niveau de détail |
+
+#### Manga (recherche et détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `position` | number? | Position |
+| `malId` | number | ID MyAnimeList |
+| `resourceType` | string | manga, novel, lightnovel, oneshot… |
+| `titleEnglish` | string? | Titre anglais |
+| `titleAlternatives` | `[{type, title}]` | Titres alternatifs |
+| `format` | string? | Manga, Novel, Light Novel… |
+| `chapters` | number? | Nombre de chapitres |
+| `volumes` | number? | Nombre de volumes |
+| `status` | string? | Finished, Publishing… |
+| `publishing` | boolean | En cours de publication |
+| `published` | `{from, to, string}` | Dates de publication |
+| `score` | number? | Score MAL /10 |
+| `scoredBy` | number? | Nombre de votants |
+| `rank` | number? | Classement |
+| `popularity` | number? | Rang de popularité |
+| `members` | number? | Nombre de membres |
+| `favorites` | number? | Nombre de favoris |
+| `authors` | `[{id, name, url}]` | Auteurs |
+| `serializations` | `[{id, name, url}]` | Revues de publication |
+| `genres` | `[{id, name, url}]` | Genres |
+| `explicitGenres` | `[{id, name, url}]` | Genres explicites |
+| `themes` | `[{id, name, url}]` | Thèmes |
+| `demographics` | `[{id, name, url}]` | Démographiques |
+| `titleSynonyms` | string[] | Synonymes |
+
+*Champs supplémentaires en détail complet :*
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `background` | string? | Contexte |
+| `relations` | `[{relation, entries: [{id, type, name, url}]}]` | Relations |
+| `externalLinks` | `[{name, url}]` | Liens externes |
+| `detailLevel` | `"full"` | Niveau de détail |
+
+#### Character (détail Jikan)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `malId` | number | ID MAL |
+| `nicknames` | string[] | Surnoms |
+| `favorites` | number | Nombre de favoris |
+| `anime` | `[{id, title, image, url, role}]` | Apparitions anime |
+| `manga` | `[{id, title, image, url, role}]` | Apparitions manga |
+| `voiceActors` | `[{id, name, image, language}]` | Doubleurs |
+
+#### Person (détail Jikan)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `malId` | number | ID MAL |
+| `givenName` | string? | Prénom |
+| `familyName` | string? | Nom de famille |
+| `alternateNames` | string[] | Noms alternatifs |
+| `birthday` | string? | Date de naissance |
+| `favorites` | number | Nombre de favoris |
+| `websiteUrl` | string? | Site web |
+| `voiceActing` | `[{character: {id,name,image}, anime: {id,title,image}, role}]` | Rôles de doublage |
+| `animeStaff` | `[{id, title, image, position}]` | Positions staff anime |
+| `mangaStaff` | `[{id, title, image, position}]` | Positions staff manga |
+
+---
+
+### A.8 Anime-Manga — MangaUpdates
+
+#### Series (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `format` | string | Manga, Manhwa, Manhua, Novel… |
+| `status` | string | completed, ongoing, unknown |
+| `titleAlternatives` | string[] | Titres alternatifs |
+| `titleFrench` | string? | Titre français (Nautiljon) |
+| `statusDetails` | `{completed, licensed, licensedEnglish, animeAdaptation}` | Statut détaillé |
+| `genres` | `[{id, name}]` | Genres |
+| `categories` | `[{id, name, votes, votesPlus, votesMinus}]` | Catégories vote communauté |
+| `rating` | `{score, votes, distribution}` | Note communautaire |
+| `publications` | `[{name, publisherId, publisherName}]` | Publications |
+| `authors` | `[{id, name, type}]` | Auteurs (rôle: story, art…) |
+| `publishers` | `[{id, name, type, notes}]` | Éditeurs |
+| `relatedSeries` | `[{id, name, type, triggeredByRelation}]` | Séries liées |
+| `recommendations` | `[{id, name, weight}]` | Recommandations |
+| `anime` | `{startYear, endYear}?` | Adaptation anime |
+| `latestChapter` | number? | Dernier chapitre |
+| `stats` | `{rankPosition, rankOldPosition, forumId}` | Statistiques |
+| `lastUpdated` | string? | Dernière MAJ |
+
+#### Author (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"author"` | Type |
+| `nameAlternatives` | string[] | Noms alternatifs |
+| `actualName` | string? | Vrai nom |
+| `birthday` | string? | Date de naissance |
+| `birthplace` | string? | Lieu de naissance |
+| `bloodtype` | string? | Groupe sanguin |
+| `gender` | string? | Genre |
+| `social` | `{website, facebook, twitter}` | Réseaux sociaux |
+| `stats` | `{totalSeries, genres}` | Statistiques |
+
+---
+
+### A.9 Music — Deezer
+
+#### Album (recherche)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `artist` | string? | Nom de l'artiste |
+| `artistId` | string? | ID artiste (`deezer:123`) |
+| `recordType` | string? | album, single, ep |
+| `trackCount` | number? | Nombre de pistes |
+| `explicit` | boolean | Contenu explicite |
+| `position` | number? | Position dans les résultats |
+
+#### Album (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `upc` | string? | Code UPC |
+| `recordType` | string? | Type d'album |
+| `artist` | string? | Artiste |
+| `artistId` | string? | ID artiste |
+| `artistImage` | string? | Photo de l'artiste |
+| `releaseDate` | string? | Date de sortie |
+| `genres` | string[] | Genres |
+| `label` | string? | Label |
+| `duration` | number? | Durée totale en secondes |
+| `durationFormatted` | string? | Durée formatée |
+| `tracks` | `[{position, id, sourceId, title, artist, artistId, duration, durationFormatted, discNumber, preview, explicit, rank}]` | Pistes |
+| `trackCount` | number | Nombre de pistes |
+| `discCount` | number | Nombre de disques |
+| `contributors` | `[{id, sourceId, name, role, image}]` | Contributeurs |
+| `explicit` | boolean | Contenu explicite |
+| `fans` | number | Nombre de fans |
+
+#### Artist (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `nbAlbums` | number | Nombre d'albums |
+| `nbFans` | number | Nombre de fans |
+| `topTracks` | `[{position, id, sourceId, title, duration, durationFormatted, album, albumCover, preview, rank, explicit}]` | Top pistes |
+| `albums` | `[{position, id, sourceId, title, cover, releaseDate, year, type, trackCount, fans}]` | Albums |
+
+#### Track (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `titleShort` | string? | Titre court |
+| `titleVersion` | string? | Version du titre |
+| `artist` | string? | Artiste |
+| `artistId` | string? | ID artiste |
+| `album` | string? | Album |
+| `albumId` | string? | ID album |
+| `albumCover` | string? | Pochette |
+| `duration` | number? | Durée en secondes |
+| `durationFormatted` | string? | Format mm:ss |
+| `discNumber` | number | Numéro de disque |
+| `trackNumber` | number? | Numéro de piste |
+| `releaseDate` | string? | Date de sortie |
+| `bpm` | number? | Battements par minute |
+| `gain` | number? | Gain |
+| `rank` | number? | Classement |
+| `preview` | string? | URL preview 30s |
+| `explicit` | boolean | Explicite |
+| `isrc` | string? | Code ISRC |
+| `contributors` | `[{id, name, role}]` | Contributeurs |
+
+---
+
+### A.10 Music — Discogs
+
+#### Release (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"release"` | Type |
+| `masterId` | string? | ID master |
+| `artists` | `[{id, sourceId, name, role}]` | Artistes |
+| `artist` | string | Noms joints |
+| `releaseDate` | string? | Date de sortie |
+| `country` | string? | Pays |
+| `genres` | string[] | Genres |
+| `styles` | string[] | Styles |
+| `formats` | `[{name, qty, descriptions}]` | Formats physiques |
+| `labels` | `[{id, sourceId, name, catalogNumber}]` | Labels |
+| `tracks` | `[{position, title, duration, durationSeconds, artists}]` | Tracklist |
+| `trackCount` | number | Nombre de pistes |
+| `community` | `{have, want, rating, ratingCount}?` | Stats communautaires |
+| `identifiers` | `[{type, value}]` | Identifiants (barcode…) |
+| `numForSale` | number | Copies en vente |
+| `lowestPrice` | number? | Prix le plus bas |
+| `companies` | `[{id, sourceId, name, role, catalogNumber}]` | Compagnies |
+| `extraArtists` | `[{id, sourceId, name, role}]` | Artistes supplémentaires |
+| `videos` | `[{title, url, duration, description}]` | Vidéos |
+
+#### Master (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"master"` | Type |
+| `artists` | `[{id, sourceId, name, role}]` | Artistes |
+| `artist` | string | Noms joints |
+| `genres` | string[] | Genres |
+| `styles` | string[] | Styles |
+| `tracks` | `[{position, title, duration, durationSeconds, artists}]` | Tracklist |
+| `trackCount` | number | Nombre de pistes |
+| `versionsCount` | number | Nombre de versions |
+| `numForSale` | number | Copies en vente |
+| `lowestPrice` | number? | Prix le plus bas |
+| `mainReleaseId` | string? | ID release principale |
+| `videos` | array | Vidéos |
+
+#### Artist (détail Discogs)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `realName` | string? | Vrai nom |
+| `nameVariations` | string[] | Variations du nom |
+| `members` | `[{id, sourceId, name, active}]` | Membres (si groupe) |
+| `aliases` | `[{id, sourceId, name}]` | Alias |
+| `groups` | `[{id, sourceId, name, active}]` | Groupes |
+| `externalUrls` | string[] | Liens |
+
+#### Label (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `contactInfo` | string? | Coordonnées |
+| `sublabels` | `[{id, sourceId, name}]` | Sous-labels |
+| `parentLabel` | `{id, sourceId, name}?` | Label parent |
+| `externalUrls` | string[] | Liens |
+
+---
+
+### A.11 Music — iTunes
+
+#### Album (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `artist` | string? | Artiste |
+| `artistId` | string? | ID (`itunes:123`) |
+| `releaseDate` | string? | Date de sortie |
+| `genre` | string? | Genre |
+| `tracks` | `[{position, id, sourceId, title, artist, artistId, duration, durationFormatted, discNumber, preview, explicit, url, price}]` | Pistes |
+| `trackCount` | number | Nombre de pistes |
+| `discCount` | number | Nombre de disques |
+| `duration` | number? | Durée totale |
+| `durationFormatted` | string? | Durée formatée |
+| `explicit` | boolean | Explicite |
+| `price` | number? | Prix |
+| `currency` | string? | Devise |
+| `copyright` | string? | Copyright |
+
+#### Track (détail iTunes)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `artist` | string? | Artiste |
+| `artistId` | string? | ID artiste |
+| `album` | string? | Album |
+| `albumId` | string? | ID album |
+| `trackNumber` | number? | Numéro de piste |
+| `discNumber` | number | Disque |
+| `duration` | number? | Durée en secondes |
+| `durationFormatted` | string? | Format mm:ss |
+| `genre` | string? | Genre |
+| `releaseDate` | string? | Date de sortie |
+| `explicit` | boolean | Explicite |
+| `preview` | string? | URL preview |
+| `price` | number? | Prix |
+| `currency` | string? | Devise |
+| `isStreamable` | boolean | Streamable |
+
+---
+
+### A.12 Music — MusicBrainz
+
+#### Album (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `artist` | string? | Artiste principal |
+| `artists` | `[{id, sourceId, name, joinPhrase}]` | Artistes |
+| `disambiguation` | string? | Désambiguïsation |
+| `releaseDate` | string? | Date de sortie |
+| `primaryType` | string? | Album, EP, Single |
+| `secondaryTypes` | string[] | Compilation, Live… |
+| `tags` | `[{name, count}]` | Tags |
+| `rating` | `{value, votes}?` | Note communautaire |
+| `releases` | `[{id, sourceId, title, status, date, country, barcode, trackCount, packaging, label, catalogNumber}]` | Releases physiques |
+| `releasesCount` | number | Nombre de releases |
+| `tracks` | `[{position, disc, title, duration, durationFormatted}]` | Tracklist |
+| `trackCount` | number | Nombre de pistes |
+
+#### Artist (détail MusicBrainz)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `sortName` | string? | Nom de tri |
+| `disambiguation` | string? | Désambiguïsation |
+| `artistType` | string? | Person, Group, Orchestra… |
+| `gender` | string? | Genre |
+| `country` | string? | Code ISO |
+| `area` | string? | Zone |
+| `beginDate` | string? | Date de début |
+| `endDate` | string? | Date de fin |
+| `active` | boolean | En activité |
+| `beginArea` | string? | Zone de début |
+| `endArea` | string? | Zone de fin |
+| `aliases` | `[{name, sortName, type, locale, primary}]` | Alias |
+| `tags` | `[{name, count}]` | Tags |
+| `rating` | `{value, votes}?` | Note |
+| `albums` | `[{position, id, sourceId, title, primaryType, secondaryTypes, releaseDate, year, cover}]` | Albums |
+| `eps` | array | EPs (même structure) |
+| `singles` | array | Singles (même structure) |
+| `allReleases` | array | Toutes les releases |
+
+---
+
+### A.13 Books — Google Books
+
+#### Book (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string? | Sous-titre |
+| `fullTitle` | string | Titre + sous-titre |
+| `authors` | string[] | Auteurs |
+| `publisher` | string? | Éditeur |
+| `publishedDate` | string? | Date de publication |
+| `categories` | string[] | Catégories |
+| `language` | string? | Code langue |
+| `isbn` | string? | ISBN principal |
+| `isbn10` | string? | ISBN-10 |
+| `isbn13` | string? | ISBN-13 |
+| `identifiers` | object | Tous les identifiants |
+| `pageCount` | number? | Nombre de pages |
+| `synopsis` | string? | Synopsis complet |
+| `rating` | `{value, count}?` | Note |
+| `printType` | string? | Type d'impression |
+| `maturityRating` | string? | Classification |
+| `previewLink` | string? | Lien de prévisualisation |
+| `covers` | `{extraLarge, large, medium, small, thumbnail}?` | Toutes les couvertures |
+
+---
+
+### A.14 Books — OpenLibrary
+
+#### Book (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | null | — |
+| `authors` | string[] | Auteurs |
+| `publishers` | string[] | Éditeurs |
+| `publisher` | string? | Éditeur principal |
+| `publishedDate` | string? | Date de publication |
+| `categories` | string[] | Sujets (max 15) |
+| `language` | string? | Langue |
+| `identifiers` | `{openlibrary, isbn}` | Identifiants |
+| `covers` | `{large, medium, small}` | Couvertures |
+| `pageCount` | number? | Nombre de pages |
+| `places` | string[]? | Lieux mentionnés |
+| `times` | string[]? | Époques |
+| `people` | string[]? | Personnages |
+| `externalLinks` | `[{title, url}]`? | Liens externes |
+| `format` | string? | Format physique |
+| `workId` | string? | ID de l'œuvre |
+| `availableLanguages` | string[]? | Langues disponibles |
+
+---
+
+### A.15 Comics — ComicVine
+
+#### Volume (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"volume"` | Type |
+| `startYear` | string? | Année de début |
+| `publisher` | string? | Éditeur |
+| `publisherId` | number? | ID éditeur |
+| `issueCount` | number | Nombre de numéros |
+| `aliases` | string[] | Alias |
+| `firstIssue` | `{id, name, issueNumber}?` | Premier numéro |
+| `lastIssue` | `{id, name, issueNumber}?` | Dernier numéro |
+| `issues` | `[{id, name, issueNumber}]` | Liste des numéros |
+| `detailLevel` | `"full"` | Niveau |
+
+#### Issue (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"issue"` | Type |
+| `issueNumber` | string? | Numéro |
+| `coverDate` | string? | Date de couverture |
+| `storeDate` | string? | Date de vente |
+| `volume` | `{id, name}?` | Volume parent |
+| `characters` | `[{id, name}]` | Personnages |
+| `creators` | `[{id, name, role}]` | Créateurs (rôle: writer, artist…) |
+| `teams` | `[{id, name}]` | Équipes |
+| `storyArcs` | `[{id, name}]` | Arcs |
+| `detailLevel` | `"full"` | Niveau |
+
+#### Character (détail ComicVine)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `realName` | string? | Vrai nom |
+| `publisher` | string? | Éditeur |
+| `publisherId` | number? | ID éditeur |
+| `firstAppearance` | `{id, name, issueNumber}?` | Première apparition |
+| `aliases` | string[] | Alias |
+| `birth` | string? | Date de naissance |
+| `gender` | string? | male, female, other |
+| `origin` | string? | Origine |
+| `powers` | string[] | Pouvoirs |
+| `teams` | `[{id, name}]` | Équipes |
+| `enemies` | `[{id, name}]` | Ennemis |
+| `friends` | `[{id, name}]` | Alliés |
+| `detailLevel` | `"full"` | Niveau |
+
+#### Creator (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"person"` | Type |
+| `birth` | string? | Naissance |
+| `death` | string? | Décès |
+| `hometown` | string? | Ville natale |
+| `country` | string? | Pays |
+| `issueCount` | number | Issues contributés |
+| `aliases` | string[] | Alias |
+| `gender` | string? | Genre |
+| `website` | string? | Site web |
+| `volumeCount` | number | Volumes travaillés |
+| `characterCount` | number | Personnages créés |
+| `createdCharacters` | `[{id, name}]` | Personnages créés |
+| `detailLevel` | `"full"` | Niveau |
+
+---
+
+### A.16 Comics — Bedetheque
+
+#### Album (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"album"` | Type |
+| `serie` | string? | Nom de la série |
+| `tome` | string? | Numéro de tome |
+| `authors` | `[{name, role}]` | Auteurs (scénariste, dessinateur, coloriste) |
+| `publisher` | string? | Éditeur |
+| `releaseDate` | string? | Date de sortie |
+| `isbn` | string? | ISBN |
+| `pages` | number? | Nombre de pages |
+| `format` | string? | Format |
+| `detailLevel` | `"full"` | Niveau |
+| `language` | `"fr"` | Français |
+
+#### Serie (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `resourceType` | `"serie"` | Type |
+| `genre` | string? | Genre |
+| `status` | string? | Statut |
+| `numberOfAlbums` | number? | Nombre d'albums |
+| `origin` | string? | Origine |
+| `firstPublished` | string? | Date de première publication |
+| `publisher` | string? | Éditeur |
+| `authors` | array | Auteurs |
+| `recommendations` | array | Recommandations |
+| `detailLevel` | `"full"` | Niveau |
+
+---
+
+### A.17 TCG — Pokémon
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string | Supertype (Pokemon, Trainer, Energy) |
+| `flavorText` | string? | Texte d'ambiance |
+| `set` | `{id, name, series, printedTotal, releaseDate, logo, symbol}` | Set |
+| `number` | string? | Numéro dans le set |
+| `cardNumber` | string | Format "number/total" |
+| `supertype` | string | Pokemon, Trainer, Energy |
+| `subtypes` | string[] | EX, GX, VMAX… |
+| `types` | string[] | Fire, Water, Grass… |
+| `hp` | string? | Points de vie |
+| `rarity` | string? | Rareté |
+| `artist` | string? | Illustrateur |
+| `evolvesFrom` | string? | Évolue depuis |
+| `evolvesTo` | string[] | Évolue vers |
+| `attacks` | `[{name, cost, convertedEnergyCost, damage, text}]` | Attaques |
+| `abilities` | `[{name, text, type}]` | Capacités |
+| `weaknesses` | `[{type, value}]` | Faiblesses |
+| `resistances` | `[{type, value}]` | Résistances |
+| `retreatCost` | string[] | Coût de retraite |
+| `rules` | string[] | Règles spéciales |
+| `regulationMark` | string? | Marque de régulation |
+| `legalities` | `{standard, expanded, unlimited}` | Légalités |
+| `nationalPokedexNumbers` | number[] | Numéros Pokédex |
+| `prices` | `{currency, low, mid, high, market, source, updatedAt, variants, cardmarket}?` | Prix TCGPlayer + Cardmarket |
+| `externalLinks` | `{tcgplayer, cardmarket}` | Liens marchands |
+
+---
+
+### A.18 TCG — MTG (Scryfall)
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string | Type line |
+| `flavorText` | string? | Texte d'ambiance |
+| `set` | `{id, code, name, type, iconSvg}` | Set |
+| `scryfallId` | string | ID Scryfall |
+| `oracleId` | string? | ID Oracle |
+| `multiverseIds` | number[] | IDs Multiverse |
+| `collectorNumber` | string? | Numéro de collectionneur |
+| `manaCost` | string? | Coût de mana (ex: `{2}{U}{B}`) |
+| `cmc` | number | Coût converti |
+| `typeLine` | string? | Ligne de type |
+| `oracleText` | string? | Texte Oracle |
+| `power` | string? | Force |
+| `toughness` | string? | Endurance |
+| `loyalty` | string? | Loyauté (planeswalkers) |
+| `colors` | string[] | Couleurs (W, U, B, R, G) |
+| `colorIdentity` | string[] | Identité de couleur |
+| `rarity` | string? | common, uncommon, rare, mythic |
+| `artist` | string? | Illustrateur |
+| `cardFaces` | array? | Faces (cartes double-face) |
+| `layout` | string? | normal, transform, modal_dfc… |
+| `keywords` | string[] | Mots-clés (Flying, Trample…) |
+| `legalities` | object | Légalités par format (standard, modern, legacy…) |
+| `reserved` | boolean | Liste réservée |
+| `foil` | boolean | Disponible en foil |
+| `nonfoil` | boolean | Disponible en non-foil |
+| `promo` | boolean | Promo |
+| `reprint` | boolean | Réimpression |
+| `digital` | boolean | Digital only |
+| `lang` | string | Langue de l'impression |
+| `printedName` | string? | Nom imprimé |
+| `printedTypeLine` | string? | Type imprimé |
+| `printedText` | string? | Texte imprimé |
+| `prices` | `{usd, usdFoil, usdEtched, eur, eurFoil, eurEtched, tix, currency, source, updatedAt}` | Prix multi-devises |
+| `externalLinks` | `{scryfall, tcgplayer, cardmarket, cardhoarder}` | Liens marchands |
+| `rulings` | string? | URI des rulings |
+
+---
+
+### A.19 TCG — Yu-Gi-Oh!
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string | Type de carte |
+| `type` | string | Type complet |
+| `frameType` | string | normal, effect, ritual, fusion, synchro, xyz, link |
+| `race` | string | Dragon, Spellcaster, Warrior… |
+| `archetype` | string? | Archétype |
+| `atk` | number? | Points d'attaque (monstres) |
+| `def` | number? | Points de défense |
+| `level` | number? | Niveau |
+| `attribute` | string? | DARK, LIGHT, EARTH… |
+| `linkval` | number? | Link Value (Link monsters) |
+| `linkmarkers` | string[]? | Link Markers |
+| `scale` | number? | Échelle Pendulum |
+| `pendulumEffect` | string? | Effet Pendule |
+| `cardSets` | `[{name, code, rarity, rarityCode, price}]` | Sets contenant la carte |
+| `banlistInfo` | `{tcg, ocg, goat}?` | Statut banlist |
+| `prices` | `{cardmarket, tcgplayer, ebay, amazon, coolstuffinc, currency, source, updatedAt}` | Prix |
+| `externalLinks` | `{ygoprodeck, cardmarket, tcgplayer}` | Liens |
+
+---
+
+### A.20 TCG — Dragon Ball Super
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `collection` | string | "DBS Masters" ou "Fusion World" |
+| `subtitle` | string | "card_type · card_color" |
+| `internalId` | number | ID base locale |
+| `game` | string | masters ou fusion_world |
+| `cardNumber` | string | Numéro (BT1-001…) |
+| `cardType` | string | LEADER, BATTLE, EXTRA… |
+| `color` | string | Red, Blue, Green… |
+| `rarity` | string | Rareté |
+| `power` | string? | Puissance |
+| `setCode` | string | Code du set |
+| `traits` | string[] | Traits |
+| `character` | string[] | Personnages |
+| `era` | string[] | Ères |
+| `keywords` | string[] | Mots-clés |
+| `energyCost` | string? | Coût en énergie |
+| `comboCost` | string? | Coût combo |
+| `comboPower` | string? | Puissance combo |
+| `skillHtml` | string? | Texte compétence (HTML) |
+| `skillText` | string? | Texte compétence (texte brut) |
+| `back` | `{name, power, skillHtml, skillText, traits, character, era}?` | Face arrière |
+| `bans` | `{isBanned, isLimited, limitedTo}` | Statut ban |
+| `errata` | `{hasErrata, erratas}` | Erratas |
+| `variants` | array | Variantes |
+
+---
+
+### A.21 TCG — Digimon
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string | "Lv.X / Type / Attribute" |
+| `cardNumber` | string | Numéro |
+| `type` | string | Type de carte |
+| `color` | string | Couleur |
+| `stage` | string | Stage |
+| `level` | number? | Niveau |
+| `attribute` | string | Attribut |
+| `dp` | number? | Digimon Power |
+| `playCost` | number? | Coût de jeu |
+| `digivolveCost1` | number? | Coût de digivolution 1 |
+| `digivolveCost2` | number? | Coût de digivolution 2 |
+| `digiType` | string | Type Digimon |
+| `form` | string | Forme |
+| `mainEffect` | string | Effet principal |
+| `inheritedEffect` | string? | Effet hérité |
+| `securityEffect` | string? | Effet sécurité |
+| `rarity` | string | Rareté |
+| `series` | string | Série |
+| `set` | string | Set |
+| `illustrator` | string | Illustrateur |
+| `externalLinks` | `{digimoncard}` | Lien |
+
+---
+
+### A.22 TCG — Lorcana
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string | "version - type" |
+| `flavorText` | string? | Texte d'ambiance |
+| `name` | string | Nom |
+| `version` | string | Version |
+| `fullName` | string | Nom complet |
+| `type` | string | Type |
+| `classifications` | string\|array | Classifications |
+| `color` | string | Encre (Amber, Amethyst, Emerald…) |
+| `cost` | number | Coût en encre |
+| `inkwell` | boolean | Peut produire de l'encre |
+| `strength` | number? | Force (personnages) |
+| `willpower` | number? | Volonté |
+| `lore` | number? | Connaissance |
+| `moveCost` | number? | Coût de déplacement (lieux) |
+| `abilities` | `[{type, name, text, effect}]` | Capacités |
+| `setInfo` | `{code, name, number, collectorNumber, total}` | Info set |
+| `rarity` | string | Rareté |
+| `artist` | string | Illustrateur |
+| `code` | string | Code carte |
+| `franchise` | string | Franchise Disney |
+| `externalLinks` | `{lorcanajson, dreamborn}` | Liens |
+
+---
+
+### A.23 TCG — One Piece
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `subtitle` | string | "color / type / rarity" |
+| `cardId` | string | ID de carte |
+| `cardNumber` | string | Numéro |
+| `type` | string | Leader, Character, Event, Stage… |
+| `color` | string | Couleur |
+| `rarity` | string | Rareté |
+| `attribute` | string | Attribut |
+| `cost` | number? | Coût |
+| `power` | number? | Puissance |
+| `counter` | number? | Compteur |
+| `life` | number? | Vie (Leaders) |
+| `effect` | string | Texte d'effet |
+| `triggerEffect` | string? | Effet trigger |
+| `set` | `{id, name, releaseDate}?` | Set |
+| `tags` | string[] | Tags |
+| `externalLinks` | `{onePieceCardGame}` | Lien |
+
+---
+
+### A.24 Construction-Toys — Brickset
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"LEGO"` | Marque |
+| `theme` | string? | Thème (Star Wars, City…) |
+| `subtheme` | string? | Sous-thème |
+| `themeGroup` | string? | Groupe de thèmes |
+| `category` | string? | Catégorie |
+| `set_number` | string? | Numéro de set |
+| `pieces` | number? | Nombre de pièces |
+| `minifigs` | number? | Nombre de minifigs |
+| `ageRange` | `{min, max}?` | Tranche d'âge |
+| `dimensions` | `{height, width, depth}?` | Dimensions |
+| `price` | `{amount, currency}?` | Prix (priorité FR) |
+| `pricesByRegion` | `{FR, US, UK, DE, CA}` | Prix par région |
+| `availability` | string | available, coming_soon, retired… |
+| `releaseDate` | string? | Date de disponibilité |
+| `instructionsCount` | number | Nombre de notices |
+| `instructionsUrl` | string? | URL instructions |
+| `barcodes` | `{upc, ean}` | Codes-barres |
+| `rating` | `{average, count}?` | Note communautaire |
+
+---
+
+### A.25 Construction-Toys — LEGO
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"LEGO"` | Marque |
+| `theme` | string? | Thème |
+| `subtheme` | string? | Sous-thème |
+| `category` | string? | Catégorie |
+| `set_number` | string | Numéro de set |
+| `pieces` | number? | Nombre de pièces |
+| `minifigs` | number? | Nombre de minifigs |
+| `ageRange` | `{min, max}?` | Tranche d'âge |
+| `price` | `{amount, currency, formatted}?` | Prix courant |
+| `listPrice` | `{amount, currency, formatted}?` | Prix catalogue |
+| `onSale` | boolean | En promotion |
+| `salePercentage` | number? | % de réduction |
+| `availability` | string | available, out_of_stock, coming_soon, retired |
+| `availabilityText` | string? | Texte brut du statut |
+| `canAddToBag` | boolean? | Ajout au panier possible |
+| `isNew` | boolean | Nouveau produit |
+| `releaseDate` | string? | Date de sortie |
+| `instructions` | `{count, manuals: [{id, description, pdfUrl, sequence}], url}?` | Manuels d'instructions |
+| `instructionsUrl` | string? | URL instructions |
+| `sku` | string? | SKU interne |
+| `slug` | string? | Slug produit |
+| `rating` | `{average, count}?` | Note |
+| `videos` | array | Vidéos |
+
+---
+
+### A.26 Construction-Toys — Rebrickable
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"LEGO"` | Marque |
+| `theme` | string? | Thème |
+| `set_number` | string? | Numéro sans suffixe |
+| `pieces` | number? | Nombre de pièces |
+| `minifigs` | number? | Nombre de minifigs |
+| `availability` | `"unknown"` | Statut |
+| `releaseDate` | string? | Année de sortie |
+| `parts` | `{totalCount, uniqueCount, spareCount, items: [{partNum, name, category, color, colorRgb, quantity, isSpare, imageUrl, elementId}]}?` | Pièces détaillées |
+| `minifigsDetails` | `{count, items: [{figNum, name, quantity, numParts, imageUrl}]}?` | Minifigs détaillées |
+| `rebrickable` | `{setNum, themeId, lastModified}` | Métadonnées |
+
+---
+
+### A.27 Construction-Toys — Mega Construx
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"MEGA"` | Marque |
+| `category` | string? | pokemon, halo, hot-wheels… |
+| `set_number` | string? | SKU |
+| `pieces` | number? | Nombre de pièces |
+| `sku` | string? | SKU produit |
+| `franchise` | string? | Franchise détectée |
+| `availability` | `{status: "archived", inStock: false}` | Archivé |
+| `instructions` | `{count, manuals, url}?` | Instructions PDF |
+| `instructionsUrl` | string? | URL du PDF |
+| `metadata` | `{source, type, dataSource, archivedAt}` | Métadonnées |
+
+---
+
+### A.28 Construction-Toys — KRE-O
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"KRE-O"` | Marque |
+| `theme` | string? | Sous-ligne |
+| `category` | string? | Franchise |
+| `set_number` | string? | Numéro |
+| `pieces` | number? | Nombre de pièces |
+| `minifigs` | number? | Nombre de Kreons |
+| `franchise` | string? | Transformers, Battleship, G.I. Joe… |
+| `subLine` | string? | Sous-ligne |
+| `kreonsIncluded` | string[]? | Personnages inclus |
+| `kreonsCount` | number? | Nombre de Kreons |
+| `productType` | string | building_set, micro_changer, combiner… |
+| `price` | number? | Prix retail |
+| `availability` | `{status: "archived", inStock: false}` | Archivé |
+| `instructions` | `{count, manuals, url}?` | Instructions PDF |
+| `metadata` | `{source, type, dataSource, franchise, subLine, productType}` | Métadonnées |
+
+---
+
+### A.29 Construction-Toys — Klickypedia
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"Playmobil"` | Marque |
+| `theme` | string? | Thème |
+| `category` | string? | Format (Standard Box, Play Box…) |
+| `set_number` | string | Code produit |
+| `minifigs` | number? | Nombre de personnages |
+| `ageRange` | object? | Tranche d'âge |
+| `productCode` | string | Code produit |
+| `ean` | string? | Code EAN |
+| `translations` | `{fr, es, de, en}` | Noms traduits |
+| `localizedName` | string | Nom dans la langue courante |
+| `format` | string? | Format du set |
+| `tags` | string[] | Tags communautaires |
+| `released` | number? | Année de sortie |
+| `discontinued` | number? | Année d'arrêt |
+| `figureCount` | number? | Nombre de personnages |
+| `instructions` | `{count, manuals, url}?` | Instructions |
+| `metadata` | `{source, type, note}` | Métadonnées |
+
+---
+
+### A.30 Construction-Toys — Playmobil
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `brand` | `"Playmobil"` | Marque |
+| `category` | string? | Catégorie |
+| `category2` | string? | Catégorie secondaire |
+| `theme` | string? | Thème |
+| `set_number` | string? | Code produit |
+| `pieces` | number? | Nombre de pièces |
+| `minifigs` | number? | Nombre de personnages |
+| `productCode` | string? | Code produit |
+| `figureCount` | number? | Nombre de personnages |
+| `price` | `{amount, currency, formatted}?` | Prix courant |
+| `listPrice` | `{amount, currency, formatted}?` | Prix catalogue |
+| `discountPrice` | `{amount, currency, formatted}?` | Prix réduit |
+| `discount` | string? | Réduction |
+| `onSale` | boolean | En promotion |
+| `ageRange` | `{min, max}?` | Tranche d'âge |
+| `availability` | string | Statut |
+| `canAddToBag` | boolean | Ajout au panier |
+| `inStock` | boolean | En stock |
+| `instructions` | `{count, manuals, url}?` | Instructions |
+
+---
+
+### A.31 Boardgames — BGG
+
+#### Game (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `alternateNames` | string[] | Noms multilingues |
+| `players` | `{min, max}` | Nombre de joueurs |
+| `playTime` | `{min, max, average}` | Temps de jeu (minutes) |
+| `minAge` | number? | Âge minimum |
+| `stats` | `{rating, numRatings, rank, complexity}` | Statistiques BGG |
+| `categories` | string[] | Catégories |
+| `mechanics` | string[] | Mécaniques de jeu |
+| `designers` | string[] | Créateurs |
+| `artists` | string[] | Illustrateurs |
+| `publishers` | string[] | Éditeurs |
+
+---
+
+### A.32 Collectibles — Carddass
+
+#### Card (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `cardNumber` | string? | Numéro de carte |
+| `rarity` | string? | Rareté (Prism, Regular…) |
+| `rarityColor` | string? | Couleur de rareté |
+| `license` | string? | Licence (Dragon Ball…) |
+| `collection` | string? | Collection |
+| `series` | string? | Série |
+| `hierarchy` | object? | Hiérarchie licence→collection→série complète |
+| `extraImages` | `[{id, sourceId, label, thumbnail, hd}]` | Images supplémentaires |
+| `packagings` | `[{id, sourceId, label, image}]` | Emballages |
+| `dataSource` | `"database"` | Source |
+| `originalSite` | string | animecollection.fr ou dbzcollection.fr |
+
+---
+
+### A.33 Collectibles — Coleka
+
+#### Item (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `nameTranslated` | string? | Nom traduit |
+| `descriptionOriginal` | string? | Description originale |
+| `descriptionTranslated` | string? | Description traduite |
+| `brand` | string? | Marque |
+| `brands` | string[] | Toutes les marques |
+| `manufacturer` | string? | Fabricant |
+| `series` | string? | Série |
+| `subseries` | string? | Sous-série |
+| `category` | string? | Catégorie |
+| `reference` | string? | Référence |
+| `barcode` | string? | Code-barres |
+| `condition` | `"unknown"` | État |
+| `availability` | `"unknown"` | Disponibilité |
+| `attributes` | object | Attributs dynamiques |
+
+---
+
+### A.34 Collectibles — Lulu-Berlu
+
+#### Item (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `nameTranslated` | string? | Nom traduit |
+| `descriptionOriginal` | string? | Description originale |
+| `descriptionTranslated` | string? | Description traduite |
+| `brand` | string? | Marque |
+| `manufacturer` | string? | Fabricant |
+| `category` | string? | Type |
+| `reference` | string? | Référence |
+| `condition` | string | new, good, fair, poor, used, unknown |
+| `availability` | string | in_stock, preorder, out_of_stock, unknown |
+| `pricing` | `{price, currency}?` | Prix en EUR |
+| `attributes` | `{type, material, size, origin, condition_details}` | Attributs |
+
+---
+
+### A.35 Collectibles — Transformerland
+
+#### Item (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `price` | number? | Prix |
+| `currency` | string? | Devise |
+| `availability` | string? | Disponibilité |
+| `condition` | string? | État |
+| `series` | string? | Série |
+| `subgroup` | string? | Sous-groupe |
+| `faction` | string? | Faction (Autobot, Decepticon…) |
+| `size` | string? | Taille |
+| `manufacturer` | string? | Fabricant |
+| `attributes` | object | Attributs libres |
+
+---
+
+### A.36 E-commerce — Amazon
+
+#### Product (recherche)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `asin` | string | Identifiant Amazon |
+| `marketplace` | string | Code pays (fr, us…) |
+| `marketplaceName` | string | Amazon France, Amazon US… |
+| `price` | number? | Prix numérique |
+| `priceFormatted` | string? | Prix formaté (29,99 €) |
+| `currency` | string | EUR, USD, GBP, JPY, CAD |
+| `isPrime` | boolean | Éligible Prime |
+| `rating` | number? | Note /5 |
+| `reviewCount` | number? | Nombre d'avis |
+
+#### Product (détail)
+
+Mêmes champs que recherche + :
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `ratingMax` | number | Toujours 5 |
+| `brand` | string? | Marque |
+
+#### Compare (comparaison multi-pays)
+
+```json
+{
+  "asin": "B01N6CJ1QW",
+  "comparison": [{
+    "marketplace": { "code": "fr", "name": "Amazon France", "currency": "EUR" },
+    "available": true,
+    "price": { "value": 29.99, "currency": "EUR", "formatted": "29,99 €" },
+    "isPrime": true,
+    "url": "https://www.amazon.fr/dp/B01N6CJ1QW"
+  }],
+  "summary": {
+    "total": 4,
+    "available": 3,
+    "cheapest": { "marketplace": "us", "price": 24.99 }
+  }
+}
+```
+
+---
+
+### A.37 Sticker-Albums — Paninimania
+
+#### Album (détail)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `barcode` | string? | Code-barres |
+| `copyright` | string? | Copyright |
+| `releaseDate` | string? | Date de parution |
+| `editor` | string? | Éditeur |
+| `categories` | string[]? | Catégories |
+| `checklist` | `{raw, total, items, totalWithSpecials}?` | Checklist de vignettes |
+| `specialStickers` | `[{name, raw, total, list}]?` | Vignettes spéciales (dorées, brillantes…) |
+| `additionalImages` | `[{url, caption}]?` | Images avec légendes |
+| `articles` | string[]? | Articles liés |
 
 ---
 
