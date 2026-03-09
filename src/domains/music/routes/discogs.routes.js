@@ -10,7 +10,7 @@ import { Router } from 'express';
 import * as discogsProvider from '../providers/discogs.provider.js';
 import * as discogsNormalizer from '../normalizers/discogs.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
-import { translateFields, translateMusicGenres, extractLangCode } from '../../../shared/utils/translator.js';
+import { translateFields, translateText, translateMusicGenres, extractLangCode } from '../../../shared/utils/translator.js';
 
 const router = Router();
 const log = logger.create('DiscogsRoutes');
@@ -32,7 +32,16 @@ async function applyTranslation(data, req) {
   const result = { ...data, details: { ...data.details } };
   
   try {
-    // Champs texte à traduire pour les albums/releases
+    // Traduire la description top-level (notes pour releases, profile pour artistes/labels)
+    if (result.description) {
+      const { text, translated: wasTranslated } = await translateText(result.description, targetLang, { enabled: true, sourceLang: 'en' });
+      if (wasTranslated) {
+        result.details.descriptionOriginal = result.description;
+        result.description = text;
+      }
+    }
+
+    // Champs texte à traduire dans details (notes, profile dupliqués dans details)
     if (result.details) {
       const fieldsToTranslate = ['notes', 'profile'];
       const translated = await translateFields(result.details, fieldsToTranslate, lang);
