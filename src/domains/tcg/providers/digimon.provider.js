@@ -85,23 +85,23 @@ export async function searchDigimonCards(query, options = {}) {
     type,
     color,
     level,
-    series = 'Digimon Card Game', // Par défaut la série moderne
+    series,
     attribute,
     rarity,
     stage,
     max = 100
   } = options;
   
-  logger.info(`[Digimon] Searching: ${query} (series: ${series}, max ${max})`);
+  logger.info(`[Digimon] Searching: ${query} (series: ${series || 'all'}, max ${max})`);
   
   try {
     // Construire les paramètres de recherche
     const params = {
-      n: query, // n = name
-      series: series
+      n: query // n = name
     };
     
-    // Filtres additionnels
+    // Filtres additionnels (series inclus seulement si explicitement demandé)
+    if (series) params.series = series;
     if (type) params.type = type;
     if (color) params.color = color;
     if (level) params.level = level;
@@ -139,16 +139,13 @@ export async function getDigimonCardDetails(cardId, options = {}) {
   logger.info(`[Digimon] Getting card details: ${cardId}`);
   
   try {
-    // Rechercher par ID exact
-    const params = {
-      n: cardId,
-      series: 'Digimon Card Game'
-    };
+    // Rechercher par card ID exact (paramètre 'card')
+    const params = { card: cardId };
     
     const data = await digimonRequest('/search', params);
     
-    // Trouver la carte avec l'ID exact
-    const card = Array.isArray(data) ? data.find(c => c.id === cardId) : null;
+    // L'API retourne un tableau, prendre la première carte
+    const card = Array.isArray(data) && data.length > 0 ? data[0] : null;
     
     if (!card) {
       throw new Error(`Card not found: ${cardId}`);
@@ -168,7 +165,7 @@ export async function getDigimonCardDetails(cardId, options = {}) {
 export async function healthCheck() {
   try {
     // Tester avec une recherche simple
-    const response = await fetch(`${BASE_URL}/search?n=Agumon&series=Digimon Card Game`, {
+    const response = await fetch(`${BASE_URL}/search?n=Agumon`, {
       headers: { 'Accept': 'application/json' }
     });
     

@@ -41,7 +41,7 @@ async function normalizeCardSummary(rawCard, options = {}) {
   }
   
   // Description basique
-  let description = rawCard.effect || rawCard.maineffect || '';
+  let description = rawCard.main_effect || rawCard.effect || '';
   
   // Traduction si nécessaire
   if (autoTrad && lang !== 'en' && description) {
@@ -53,8 +53,9 @@ async function normalizeCardSummary(rawCard, options = {}) {
     }
   }
   
-  // Image
-  const imageUrl = rawCard.image_url || '';
+  // Image (l'API ne fournit plus image_url, on construit l'URL)
+  const cardId = rawCard.id || rawCard.cardnumber;
+  const imageUrl = rawCard.image_url || (cardId ? `https://images.digimoncard.io/images/cards/${cardId}.jpg` : '');
   
   return {
     id: `digimon:${rawCard.id || rawCard.cardnumber}`,
@@ -71,28 +72,29 @@ async function normalizeCardSummary(rawCard, options = {}) {
       gallery: []
     },
     urls: {
-      source: null,
+      source: rawCard.id ? `https://digimoncard.io/card/${rawCard.id}` : null,
       detail: `/api/tcg/digimon/card/${encodeURIComponent(rawCard.id || rawCard.cardnumber)}`
     },
     details: {
       collection: 'Digimon Card Game',
       subtitle,
-      cardNumber: rawCard.cardnumber || rawCard.id,
+      cardNumber: rawCard.id,
       type: rawCard.type,
       color: rawCard.color,
+      ...(rawCard.color2 && { color2: rawCard.color2 }),
       stage: rawCard.stage,
       level: rawCard.level,
       attribute: rawCard.attribute,
       rarity: rawCard.rarity,
       // Pour les Digimon
       ...(rawCard.dp !== undefined && { dp: rawCard.dp }),
-      ...(rawCard.playcost !== undefined && { playCost: rawCard.playcost }),
-      ...(rawCard.digivolvecost1 !== undefined && { digivolveCost: rawCard.digivolvecost1 }),
-      ...(rawCard.digitype && { digiType: rawCard.digitype }),
+      ...(rawCard.play_cost !== undefined && { playCost: rawCard.play_cost }),
+      ...(rawCard.evolution_cost !== undefined && { evolutionCost: rawCard.evolution_cost }),
+      ...(rawCard.digi_type && { digiType: rawCard.digi_type }),
       ...(rawCard.form && { form: rawCard.form }),
       set: {
-        name: rawCard.set || null,
-        code: (rawCard.cardnumber || rawCard.id || '').match(/^([A-Z]+-?\d*)/)?.[1] || null,
+        name: Array.isArray(rawCard.set_name) ? rawCard.set_name[0] : (rawCard.set_name || null),
+        code: (rawCard.id || '').match(/^([A-Z]+-?\d*)/)?.[1] || null,
         series: rawCard.series || null,
         releaseDate: null
       }
@@ -107,9 +109,9 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   const { lang = 'en', autoTrad = false } = options;
   
   // Traduction des effets
-  let mainEffect = rawCard.maineffect || rawCard.effect || '';
-  let inheritedEffect = rawCard.soureeffect || '';
-  let securityEffect = rawCard.securityeffect || '';
+  let mainEffect = rawCard.main_effect || rawCard.effect || '';
+  let inheritedEffect = rawCard.source_effect || '';
+  let securityEffect = rawCard.alt_effect || '';
   
   if (autoTrad && lang !== 'en') {
     try {
@@ -130,12 +132,14 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     }
   }
   
-  // Images
+  // Images (l'API ne fournit plus image_url, on construit l'URL)
+  const cardId = rawCard.id || rawCard.cardnumber;
+  const imageUrl = rawCard.image_url || (cardId ? `https://images.digimoncard.io/images/cards/${cardId}.jpg` : null);
   const images = [];
-  if (rawCard.image_url) {
+  if (imageUrl) {
     images.push({
-      url: rawCard.image_url,
-      thumbnail: rawCard.image_url,
+      url: imageUrl,
+      thumbnail: imageUrl,
       caption: 'Carte',
       isMain: true
     });
@@ -172,26 +176,27 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       subtitle: buildSubtitle(rawCard),
 
       // Identifiants
-      cardNumber: rawCard.cardnumber || rawCard.id,
+      cardNumber: rawCard.id,
       id: rawCard.id,
       
       // Type et attributs
       type: rawCard.type,
       color: rawCard.color,
+      ...(rawCard.color2 && { color2: rawCard.color2 }),
       stage: rawCard.stage,
       level: rawCard.level,
       attribute: rawCard.attribute,
       
       // Digimon spécifique
-      ...(rawCard.dp !== undefined && { dp: rawCard.dp }), // Digimon Power
-      ...(rawCard.playcost !== undefined && { playCost: rawCard.playcost }),
-      ...(rawCard.digivolvecost1 !== undefined && { digivolveCost1: rawCard.digivolvecost1 }),
-      ...(rawCard.digivolvecost2 !== undefined && { digivolveCost2: rawCard.digivolvecost2 }),
-      ...(rawCard.digivolvelevel1 && { digivolveLevel1: rawCard.digivolvelevel1 }),
-      ...(rawCard.digivolvelevel2 && { digivolveLevel2: rawCard.digivolvelevel2 }),
+      ...(rawCard.dp !== undefined && { dp: rawCard.dp }),
+      ...(rawCard.play_cost !== undefined && { playCost: rawCard.play_cost }),
+      ...(rawCard.evolution_cost !== undefined && { evolutionCost: rawCard.evolution_cost }),
+      ...(rawCard.evolution_level !== undefined && { evolutionLevel: rawCard.evolution_level }),
+      ...(rawCard.evolution_color && { evolutionColor: rawCard.evolution_color }),
+      ...(rawCard.xros_req && { xrosRequirement: rawCard.xros_req }),
       
       // Informations additionnelles
-      digiType: rawCard.digitype,
+      digiType: [rawCard.digi_type, rawCard.digi_type2, rawCard.digi_type3, rawCard.digi_type4].filter(Boolean).join(' / ') || null,
       form: rawCard.form,
       
       // Effets détaillés
@@ -202,17 +207,17 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       // Rareté et set
       rarity: rawCard.rarity,
       set: {
-        name: rawCard.set || null,
-        code: (rawCard.cardnumber || rawCard.id || '').match(/^([A-Z]+-?\d*)/)?.[1] || null,
+        name: Array.isArray(rawCard.set_name) ? rawCard.set_name[0] : (rawCard.set_name || null),
+        code: (rawCard.id || '').match(/^([A-Z]+-?\d*)/)?.[1] || null,
         series: rawCard.series || null,
         releaseDate: null
       },
       
       // Artiste
-      illustrator: rawCard.illustrator,
+      illustrator: rawCard.artist,
       
-      // Notes de carte
-      notes: rawCard.notes,
+      // TCGPlayer
+      ...(rawCard.tcgplayer_id && { tcgplayerId: rawCard.tcgplayer_id }),
 
       // Liens externes
       externalLinks: {
@@ -260,8 +265,8 @@ function extractYear(card) {
   };
   
   // Extraire le préfixe du card number
-  if (card.cardnumber || card.id) {
-    const cardId = card.cardnumber || card.id;
+  if (card.id) {
+    const cardId = card.id;
     const prefix = cardId.match(/^([A-Z]+)/)?.[1];
     
     if (prefix && setYears[prefix] !== undefined) {
