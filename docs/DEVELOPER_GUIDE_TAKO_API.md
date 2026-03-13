@@ -2,7 +2,7 @@
 
 > **Version** : 2.6.1  
 > **Base URL Production** : `https://tako.snowmanprod.fr`  
-> **Dernière mise à jour** : 7 mars 2026
+> **Dernière mise à jour** : 13 mars 2026
 
 ---
 
@@ -2384,7 +2384,10 @@ Inclut tous les champs de recherche plus :
 |-------|------|-------------|
 | `subtitle` | string | Supertype (Pokemon, Trainer, Energy) |
 | `flavorText` | string? | Texte d'ambiance |
-| `set` | `{id, name, series, printedTotal, releaseDate, logo, symbol}` | Set |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
+| `setLogo` | string? | URL logo du set (extra Pokemon) |
+| `setSymbol` | string? | URL symbole du set (extra Pokemon) |
+| `setTotal` | number? | Nombre total de cartes dans le set (extra Pokemon) |
 | `number` | string? | Numéro dans le set |
 | `cardNumber` | string | Format "number/total" |
 | `supertype` | string | Pokemon, Trainer, Energy |
@@ -2417,7 +2420,10 @@ Inclut tous les champs de recherche plus :
 |-------|------|-------------|
 | `subtitle` | string | Type line |
 | `flavorText` | string? | Texte d'ambiance |
-| `set` | `{id, code, name, type, iconSvg}` | Set |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
+| `setId` | string? | ID du set Scryfall (extra MTG) |
+| `setType` | string? | Type du set (extra MTG) |
+| `setIconSvg` | string? | URL icône SVG du set (extra MTG) |
 | `scryfallId` | string | ID Scryfall |
 | `oracleId` | string? | ID Oracle |
 | `multiverseIds` | number[] | IDs Multiverse |
@@ -2472,7 +2478,8 @@ Inclut tous les champs de recherche plus :
 | `linkmarkers` | string[]? | Link Markers |
 | `scale` | number? | Échelle Pendulum |
 | `pendulumEffect` | string? | Effet Pendule |
-| `cardSets` | `[{name, code, rarity, rarityCode, price}]` | Sets contenant la carte |
+| `set` | `{name, code, series, releaseDate}` | Set principal (format uniforme, dérivé du 1er cardSet) |
+| `cardSets` | `[{name, code, rarity, rarityCode, price}]` | Tous les sets contenant la carte |
 | `banlistInfo` | `{tcg, ocg, goat}?` | Statut banlist |
 | `prices` | `{cardmarket, tcgplayer, ebay, amazon, coolstuffinc, currency, source, updatedAt}` | Prix |
 | `externalLinks` | `{ygoprodeck, cardmarket, tcgplayer}` | Liens |
@@ -2494,7 +2501,7 @@ Inclut tous les champs de recherche plus :
 | `color` | string | Red, Blue, Green… |
 | `rarity` | string | Rareté |
 | `power` | string? | Puissance |
-| `setCode` | string | Code du set |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
 | `traits` | string[] | Traits |
 | `character` | string[] | Personnages |
 | `era` | string[] | Ères |
@@ -2534,8 +2541,7 @@ Inclut tous les champs de recherche plus :
 | `inheritedEffect` | string? | Effet hérité |
 | `securityEffect` | string? | Effet sécurité |
 | `rarity` | string | Rareté |
-| `series` | string | Série |
-| `set` | string | Set |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme, code extrait du cardnumber) |
 | `illustrator` | string | Illustrateur |
 | `externalLinks` | `{digimoncard}` | Lien |
 
@@ -2562,7 +2568,10 @@ Inclut tous les champs de recherche plus :
 | `lore` | number? | Connaissance |
 | `moveCost` | number? | Coût de déplacement (lieux) |
 | `abilities` | `[{type, name, text, effect}]` | Capacités |
-| `setInfo` | `{code, name, number, collectorNumber, total}` | Info set |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
+| `setNumber` | number? | Numéro dans le set (extra Lorcana) |
+| `collectorNumber` | string? | Numéro de collectionneur (extra Lorcana) |
+| `setTotal` | number? | Total de cartes dans le set (extra Lorcana) |
 | `rarity` | string | Rareté |
 | `artist` | string | Illustrateur |
 | `code` | string | Code carte |
@@ -2590,7 +2599,8 @@ Inclut tous les champs de recherche plus :
 | `life` | number? | Vie (Leaders) |
 | `effect` | string | Texte d'effet |
 | `triggerEffect` | string? | Effet trigger |
-| `set` | `{id, name, releaseDate}?` | Set |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
+| `setSourceId` | string? | ID source du set (extra One Piece) |
 | `tags` | string[] | Tags |
 | `externalLinks` | `{onePieceCardGame}` | Lien |
 

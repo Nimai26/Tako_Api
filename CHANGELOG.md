@@ -7,7 +7,23 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
-### � Amazon — Routes alias par domaine
+### 🃏 TCG — Uniformisation set Format B + correction traductions
+
+#### Fixed
+- **Traduction TCG** — Les 6 normalizers avec `translateText` (Pokemon, MTG, Yu-Gi-Oh, Digimon, Lorcana, One Piece) ne déclenchaient jamais la traduction : le 3e argument `{ enabled: true }` était absent ou mal passé. Corrigé dans tous les normalizers.
+- **Champ `set` uniforme** — Les 7 normalizers TCG utilisaient des formats de set incohérents (objet avec champs variables, tableau, string, absent). Tous produisent désormais un objet conforme au schéma Zod : `{ name, code, series, releaseDate }`.
+- **Données restaurées** — La standardisation du set avait supprimé des données spécifiques à certains providers. Restaurées comme champs plats dans `details` :
+  - Pokemon : `setLogo`, `setSymbol`, `setTotal`
+  - MTG : `setId`, `setType`, `setIconSvg`
+  - Lorcana : `setNumber`, `collectorNumber`, `setTotal`
+  - One Piece : `setSourceId`
+
+#### Changed
+- **7 normalizers TCG** réécrits pour le champ `set` : `pokemon.normalizer.js`, `mtg.normalizer.js`, `yugioh.normalizer.js`, `dbs.normalizer.js`, `digimon.normalizer.js`, `lorcana.normalizer.js`, `onepiece.normalizer.js`
+
+---
+
+### 🔧 Amazon — Routes alias par domaine
 
 #### Added
 - **`amazon-alias.factory.js`** — Factory générant des routers Express alias Amazon avec catégorie pré-configurée

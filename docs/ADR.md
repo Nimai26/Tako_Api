@@ -251,3 +251,39 @@ Résultat en v2.6.0 : **6 formats distincts coexistaient**, chaque domaine ayant
 - `coreItemSchema` + `createItemSchema(detailsSchema)` sont la source de vérité Zod
 - Voir [RESPONSE-FORMAT.md](./RESPONSE-FORMAT.md) pour la spécification complète
 - Voir l'Annexe A du [DEVELOPER_GUIDE](./DEVELOPER_GUIDE_TAKO_API.md) pour les champs `details` par provider
+
+---
+
+## ADR-007: Uniformisation du champ `set` dans les normalizers TCG
+
+**Date**: 2026-03-13  
+**Statut**: Accepté
+
+### Contexte
+
+Les 7 normalizers TCG (Pokemon, MTG, Yu-Gi-Oh, DBS, Digimon, Lorcana, One Piece) produisaient des formats de `set` incohérents :
+- Pokemon : `{id, name, series, printedTotal, releaseDate, logo, symbol}` (7 champs)
+- MTG : `{id, code, name, type, iconSvg}` (5 champs)
+- Yu-Gi-Oh : pas de `set`, seulement un tableau `cardSets`
+- DBS : un simple string `setCode`
+- Digimon : un simple string `set`
+- Lorcana : `setInfo: {code, name, number, collectorNumber, total}` (nom différent)
+- One Piece : `{id, name, releaseDate}` (3 champs)
+
+De plus, les 6 normalizers utilisant `translateText` ne déclenchaient jamais la traduction (argument `{ enabled: true }` manquant).
+
+### Décision
+
+1. **Champ `set` uniforme** conforme au schéma Zod `tcgCardDetailsSchema` :
+   ```json
+   { "name": "string", "code": "string|null", "series": "string|null", "releaseDate": "string|null" }
+   ```
+2. **Pas de perte de données** : les champs spécifiques aux providers (logo, symbol, printedTotal, setId, setType, iconSvg, collectorNumber, setSourceId) sont conservés comme champs plats dans `details` (préfixés `set*`).
+3. **`translateText` corrigé** : tous les appels passent `{ enabled: true, sourceLang: 'en' }` en 3e argument.
+
+### Conséquences
+
+- Les 7 normalizers TCG produisent désormais un `set` identique en structure
+- Les clients peuvent parser `details.set.name`, `.code`, `.series`, `.releaseDate` de manière uniforme quel que soit le provider
+- Les données extra sont accessibles via `details.setLogo`, `details.setId`, etc.
+- La traduction fonctionne effectivement sur les champs `description` / `flavorText` des cartes TCG

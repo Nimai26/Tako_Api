@@ -20,7 +20,7 @@ Les données spécifiques sont encapsulées dans un objet `details` qui varie se
 | books | Google Books, OpenLibrary | ✅ Oui | BaseNormalizer |
 | comics | ComicVine, Bedetheque | ✅ Oui | Audit v12 |
 | construction-toys | Brickset, Rebrickable, LEGO, Playmobil, Klickypedia, KRE-O, Mega | ✅ Oui | Audit v11-v12 |
-| tcg | Pokemon, MTG, Yu-Gi-Oh, DBS, Digimon, Lorcana, One Piece | ✅ Oui | Audit v12 |
+| tcg | Pokemon, MTG, Yu-Gi-Oh, DBS, Digimon, Lorcana, One Piece | ✅ Oui | Audit v12 + set Format B (mars 2026) |
 | collectibles | Carddass, Coleka, Luluberlu, Transformerland | ✅ Oui | Audit v12 |
 | boardgames | BGG | ✅ Oui | Audit v12 |
 | ecommerce | Amazon | ✅ Oui | Audit v11-v12 |
@@ -333,7 +333,7 @@ Les données spécifiques sont encapsulées dans un objet `details` qui varie se
 |-------|------|-------------|
 | `subtitle` | string | Supertype ou type de carte |
 | `flavorText` | string? | Texte d'ambiance |
-| `set` | `{id, name, code?, series?, releaseDate?}` | Set d'appartenance |
+| `set` | `{name, code, series, releaseDate}` | Set d'appartenance (uniforme, tous providers TCG) |
 | `cardNumber` | string? | Numéro dans le set |
 | `rarity` | string? | common, uncommon, rare, mythic… |
 | `artist` | string? | Illustrateur |

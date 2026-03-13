@@ -3,7 +3,7 @@
 > **Version 2.6.1** - Architecture modulaire par domaines
 > 
 > **Migration toys_api ✅ Terminée** - 30 janvier 2026  
-> **Dernière mise à jour** : 6 mars 2026 (Amazon VPN Gluetun + WAF auto-retry)
+> **Dernière mise à jour** : 13 mars 2026 (TCG : set Format B uniforme + traductions)
 
 API REST multi-sources pour rechercher et récupérer des informations produits depuis **36 providers** répartis en **11 domaines**.
 
@@ -313,7 +313,7 @@ Ce projet est une refonte complète de `toys_api` avec :
 - ✅ FlareSolverr correctement géré (sessions auto-nettoyées)
 
 **Statut de migration** : ✅ **TERMINÉE** (30 janvier 2026)  
-**Dernière version** : v2.6.0 (4 mars 2026) — Dragon Ball : 90 515 cartes dbzcollection + DBS TCG (7 902 cartes)
+**Dernière version** : v2.6.1 (13 mars 2026) — TCG : champ set uniforme + traductions corrigées
 
 ### Améliorations par rapport à toys_api
 
