@@ -287,3 +287,50 @@ De plus, les 6 normalizers utilisant `translateText` ne déclenchaient jamais la
 - Les clients peuvent parser `details.set.name`, `.code`, `.series`, `.releaseDate` de manière uniforme quel que soit le provider
 - Les données extra sont accessibles via `details.setLogo`, `details.setId`, etc.
 - La traduction fonctionne effectivement sur les champs `description` / `flavorText` des cartes TCG
+
+---
+
+## ADR-008: Migration Pokémon TCG de pokemontcg.io vers TCGdex
+
+**Date**: 2026-03-13  
+**Statut**: Accepté
+
+### Contexte
+
+L'API `pokemontcg.io` utilisée comme source du provider Pokémon TCG a été arrêtée et migrée vers **Scrydex**, un service payant ($29+/mois). L'API ne répond plus : la connexion TCP et le handshake TLS réussissent, mais le backend ne traite plus les requêtes HTTP (RST_STREAM).
+
+### Alternatives évaluées
+
+| Option | Coût | Multi-langue | Mêmes IDs | Verdict |
+|--------|------|-------------|-----------|---------|
+| Scrydex | $29+/mois | ❌ | ❓ | Rejeté (payant, pas de FR natif) |
+| TCGdex | Gratuit | ✅ (FR, EN, DE, ES, IT, PT) | ✅ (`base1-58` = même format) | **Retenu** |
+
+### Décision
+
+Migrer vers **TCGdex** (`api.tcgdex.net`) :
+- API REST gratuite, sans clé API, sans rate limit
+- Support multi-langues natif (6 langues, dont FR)
+- Mêmes IDs de cartes que pokemontcg.io → migration transparente pour les clients
+- Prix TCGPlayer + Cardmarket inclus
+- Pagination côté client (l'API renvoie tous les résultats, le provider pagine en mémoire)
+
+### Fichiers modifiés
+
+- `src/domains/tcg/providers/pokemon.provider.js` — Réécriture complète (pokemontcg.io → TCGdex)
+- `src/domains/tcg/normalizers/pokemon.normalizer.js` — Adapté aux champs TCGdex + ajout `normalizeSetDetails()`
+- `src/domains/tcg/routes/pokemon.routes.js` — Ajout route `/sets/:id`, passage `lang` au provider
+
+### Conséquences
+
+✅ **Avantages** :
+- Plus de dépendance à une clé API payante
+- Données nativement en français (pas besoin de `translateText` pour la plupart des usages)
+- Route `/sets/:id` ajoutée (liste complète des cartes d'un set)
+- Mêmes IDs de cartes → aucun breaking change côté client
+
+❌ **Inconvénients** :
+- Filtres localisés : `type=Fire` ne fonctionne qu'en `lang=en`, il faut `type=Feu` en `lang=fr`
+- `series` et `releaseDate` non disponibles dans le détail de carte (uniquement dans le détail de set)
+- Pas de liens directs vers TCGPlayer/Cardmarket (le champ `externalLinks` est null)
+- `evolvesTo` non fourni par TCGdex (toujours tableau vide)

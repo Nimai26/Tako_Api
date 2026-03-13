@@ -1,6 +1,6 @@
 /**
  * Routes Pokémon TCG
- * API: pokemontcg.io
+ * API: TCGdex (api.tcgdex.net)
  */
 
 import { Router } from 'express';
@@ -8,12 +8,14 @@ import {
   searchPokemonCards,
   getPokemonCardDetails,
   getPokemonSets,
+  getPokemonSetDetails,
   healthCheck
 } from '../providers/pokemon.provider.js';
 import {
   normalizeSearchResults,
   normalizeCardDetails,
-  normalizeSets
+  normalizeSets,
+  normalizeSetDetails
 } from '../normalizers/pokemon.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
 
@@ -124,7 +126,7 @@ router.get('/card/:id', async (req, res) => {
 
     logger.info(`[Pokemon TCG] Détails carte: ${id}`);
 
-    const rawCard = await getPokemonCardDetails(id);
+    const rawCard = await getPokemonCardDetails(id, { lang });
     const normalized = await normalizeCardDetails(rawCard, {
       lang,
       autoTrad: autoTrad === 'true' || autoTrad === '1' || autoTrad === true
@@ -158,25 +160,20 @@ router.get('/card/:id', async (req, res) => {
  * Liste des sets Pokémon TCG
  * 
  * Query params:
- * - series: Filtrer par série (Sword & Shield, Sun & Moon, etc.)
- * - year: Filtrer par année
- * - max: Résultats max (défaut: 100)
+ * - max: Résultats max (défaut: 250)
  * - lang: Langue (défaut: fr)
  */
 router.get('/sets', async (req, res) => {
   try {
     const {
-      series,
-      year,
-      max = 100,
+      max = 250,
       lang = 'fr'
     } = req.query;
 
     logger.info(`[Pokemon TCG] Liste sets`);
 
     const rawData = await getPokemonSets({
-      series,
-      year: year ? parseInt(year) : null,
+      lang,
       max: parseInt(max)
     });
 
@@ -186,7 +183,7 @@ router.get('/sets', async (req, res) => {
       success: true,
       provider: 'pokemon',
       domain: 'tcg',
-      query: series || year || null,
+      query: null,
       total: rawData.total || 0,
       count: normalized.length,
       data: normalized,
@@ -199,6 +196,48 @@ router.get('/sets', async (req, res) => {
 
   } catch (error) {
     logger.error(`[Pokemon TCG] Erreur sets: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      provider: 'pokemon'
+    });
+  }
+});
+
+/**
+ * GET /sets/:id
+ * Détails d'un set Pokémon TCG par ID
+ * 
+ * Params:
+ * - id: ID du set (ex: base1, swsh1)
+ * 
+ * Query params:
+ * - lang: Langue (défaut: fr)
+ */
+router.get('/sets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { lang = 'fr' } = req.query;
+
+    logger.info(`[Pokemon TCG] Détails set: ${id}`);
+
+    const rawSet = await getPokemonSetDetails(id, { lang });
+    const normalized = await normalizeSetDetails(rawSet, { lang });
+
+    res.json({
+      success: true,
+      provider: 'pokemon',
+      domain: 'tcg',
+      id: normalized.id,
+      data: normalized,
+      meta: {
+        fetchedAt: new Date().toISOString(),
+        lang
+      }
+    });
+
+  } catch (error) {
+    logger.error(`[Pokemon TCG] Erreur détails set: ${error.message}`);
     res.status(500).json({
       success: false,
       error: error.message,

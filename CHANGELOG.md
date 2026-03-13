@@ -7,7 +7,32 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
-### 🃏 TCG — Uniformisation set Format B + correction traductions
+### � TCG — Migration Pokémon TCG vers TCGdex
+
+#### Changed
+- **Provider Pokémon TCG** — Migration de `pokemontcg.io` (arrêté, migré vers Scrydex payant) vers **TCGdex** (`api.tcgdex.net`) :
+  - API gratuite, sans clé, multi-langues natif (FR, EN, DE, ES, IT, PT)
+  - Mêmes IDs de cartes (`base1-58`, `swsh1-25`, etc.) → migration transparente
+  - Suppression de la dépendance à `TCG_POKEMON_TOKEN`
+  - Pagination côté client (TCGdex renvoie tous les résultats)
+- **Normalizer** — Adapté à la structure de données TCGdex :
+  - `flavorText` → `description` (TCGdex), `supertype` → `category`, `subtypes` → `suffix`
+  - `retreatCost` tableau reconstitué depuis le nombre `retreat`
+  - Images haute/basse qualité via suffixe `/high.webp` et `/low.webp`
+  - Prix via `pricing.tcgplayer` et `pricing.cardmarket` (structure TCGdex)
+
+#### Added
+- **Route `/sets/:id`** — Détails d'un set avec liste complète des cartes, série, date de sortie, abréviations
+- **`getPokemonSetDetails()`** — Nouvelle fonction provider pour les détails de set
+- **`normalizeSetDetails()`** — Normalizer dédié pour les détails de set (Format B)
+
+#### Removed
+- Dépendance à `TCG_POKEMON_TOKEN` / `POKEMON_TCG_API_KEY` (TCGdex ne nécessite aucune clé)
+- Filtres `series` et `year` sur la route `/sets` (non supportés par TCGdex en listing)
+
+---
+
+### �🃏 TCG — Uniformisation set Format B + correction traductions
 
 #### Fixed
 - **Traduction TCG** — Les 6 normalizers avec `translateText` (Pokemon, MTG, Yu-Gi-Oh, Digimon, Lorcana, One Piece) ne déclenchaient jamais la traduction : le 3e argument `{ enabled: true }` était absent ou mal passé. Corrigé dans tous les normalizers.

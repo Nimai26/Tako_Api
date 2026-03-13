@@ -912,22 +912,28 @@ GET /api/collectibles/carddass/stats
 
 #### Pokémon TCG
 
-> Source : [pokemontcg.io](https://pokemontcg.io)
+> Source : [TCGdex](https://tcgdex.dev) (`api.tcgdex.net`) — Gratuit, sans clé, multi-langues natif
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/tcg/pokemon/search?q=` | Recherche de cartes |
 | `GET /api/tcg/pokemon/card/:id` | Détails (attaques, prix, légalité) |
 | `GET /api/tcg/pokemon/sets` | Liste des sets |
+| `GET /api/tcg/pokemon/sets/:id` | Détails d'un set avec cartes |
 
 **Paramètres recherche** : `q`, `set`, `type`, `rarity`, `supertype`, `subtype`, `max`, `page`, `lang`, `autoTrad`
 
-```bash
-# Pikachu rares Lightning
-GET /api/tcg/pokemon/search?q=pikachu&rarity=Rare&type=Lightning
+⚠️ Les filtres `type`, `rarity`, `supertype` sont localisés (ex: `type=Fire` en EN, `type=Feu` en FR).
 
-# Carte par ID
-GET /api/tcg/pokemon/card/base1-4
+```bash
+# Pikachu en français
+GET /api/tcg/pokemon/search?q=pikachu&lang=fr
+
+# Carte par ID (détails natifs FR)
+GET /api/tcg/pokemon/card/base1-58?lang=fr
+
+# Détails d'un set
+GET /api/tcg/pokemon/sets/base1?lang=fr
 ```
 
 #### Magic: The Gathering (MTG)
@@ -1417,7 +1423,7 @@ Tako API elle-même n'a pas de rate limit. Cependant, les providers en amont ont
 Vérifiez le header `X-Cache` (`HIT`/`MISS`) ou le champ `meta.cached` dans la réponse JSON.
 
 ### Les images sont-elles hébergées par Tako API ?
-Pour les archives locales (MEGA, KRE-O, Carddass, DBS), oui — les images sont servies directement depuis `https://tako.snowmanprod.fr/files/`. Pour les autres providers, les URLs pointent vers les sources originales (TMDB, pokemontcg.io, etc.).
+Pour les archives locales (MEGA, KRE-O, Carddass, DBS), oui — les images sont servies directement depuis `https://tako.snowmanprod.fr/files/`. Pour les autres providers, les URLs pointent vers les sources originales (TMDB, TCGdex, etc.).
 
 ### Comment obtenir des prix de cartes ?
 Les providers TCG incluent les prix dans les détails :
@@ -2376,39 +2382,40 @@ Inclut tous les champs de recherche plus :
 
 ---
 
-### A.17 TCG — Pokémon
+### A.17 TCG — Pokémon (TCGdex)
 
 #### Card (détail)
 
 | Champ | Type | Description |
 |-------|------|-------------|
-| `subtitle` | string | Supertype (Pokemon, Trainer, Energy) |
-| `flavorText` | string? | Texte d'ambiance |
+| `subtitle` | string | Catégorie (Pokémon, Dresseur, Énergie — localisé) |
+| `flavorText` | string? | Texte d'ambiance (natif dans la langue demandée) |
 | `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
-| `setLogo` | string? | URL logo du set (extra Pokemon) |
-| `setSymbol` | string? | URL symbole du set (extra Pokemon) |
-| `setTotal` | number? | Nombre total de cartes dans le set (extra Pokemon) |
-| `number` | string? | Numéro dans le set |
+| `setLogo` | string? | URL logo du set |
+| `setSymbol` | string? | URL symbole du set |
+| `setTotal` | number? | Nombre total de cartes dans le set |
+| `number` | string? | Numéro local dans le set |
 | `cardNumber` | string | Format "number/total" |
-| `supertype` | string | Pokemon, Trainer, Energy |
-| `subtypes` | string[] | EX, GX, VMAX… |
-| `types` | string[] | Fire, Water, Grass… |
+| `supertype` | string | Catégorie (Pokemon, Trainer, Energy — localisé) |
+| `subtypes` | string[] | Suffixe [V, EX, VMAX…] |
+| `types` | string[] | Types élémentaires (localisés : Fire/Feu, Water/Eau…) |
 | `hp` | string? | Points de vie |
-| `rarity` | string? | Rareté |
+| `rarity` | string? | Rareté (localisée) |
 | `artist` | string? | Illustrateur |
+| `stage` | string? | Stade d'évolution (Basic, Stage1, Stage2 — localisé) |
 | `evolvesFrom` | string? | Évolue depuis |
-| `evolvesTo` | string[] | Évolue vers |
-| `attacks` | `[{name, cost, convertedEnergyCost, damage, text}]` | Attaques |
-| `abilities` | `[{name, text, type}]` | Capacités |
+| `evolvesTo` | string[] | (toujours vide — non fourni par TCGdex) |
+| `attacks` | `[{name, cost, damage, effect}]` | Attaques |
+| `abilities` | `[{name, effect, type}]` | Capacités |
 | `weaknesses` | `[{type, value}]` | Faiblesses |
 | `resistances` | `[{type, value}]` | Résistances |
-| `retreatCost` | string[] | Coût de retraite |
+| `retreatCost` | string[] | Coût de retraite (reconstitué depuis nombre) |
 | `rules` | string[] | Règles spéciales |
 | `regulationMark` | string? | Marque de régulation |
-| `legalities` | `{standard, expanded, unlimited}` | Légalités |
+| `legalities` | `{standard, expanded}` | Légalités (booléens) |
 | `nationalPokedexNumbers` | number[] | Numéros Pokédex |
 | `prices` | `{currency, low, mid, high, market, source, updatedAt, variants, cardmarket}?` | Prix TCGPlayer + Cardmarket |
-| `externalLinks` | `{tcgplayer, cardmarket}` | Liens marchands |
+| `externalLinks` | `{tcgplayer, cardmarket}` | (null — TCGdex ne fournit pas de liens directs) |
 
 ---
 

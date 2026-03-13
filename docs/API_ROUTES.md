@@ -1627,154 +1627,143 @@ GET /api/collectibles/carddass/health
 ### Pokémon TCG
 
 > **Base URL** : `/api/tcg/pokemon`  
-> **Source** : [pokemontcg.io](https://pokemontcg.io)  
-> **API Key** : ⚠️ Optionnelle (`TCG_POKEMON_TOKEN`) - 1000/jour sans, 5000 avec  
-> **Rate Limit** : 1000-5000 requêtes / jour selon clé  
-> **Note** : Cartes Pokémon officielles avec prix, sets, traductions
+> **Source** : [TCGdex](https://tcgdex.dev) (`api.tcgdex.net`)  
+> **API Key** : Aucune requise  
+> **Rate Limit** : Aucun  
+> **Note** : Cartes Pokémon officielles avec prix, sets, multi-langues natif (FR, EN, DE, ES, IT, PT)
 
 | Endpoint | Description | Status |
 |----------|-------------|--------|
 | `GET /search?q=` | Recherche de cartes | ✅ Fonctionne |
 | `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
 | `GET /sets` | Liste des sets | ✅ Fonctionne |
+| `GET /sets/:id` | Détails d'un set avec cartes | ✅ Fonctionne |
 | `GET /health` | Health check API | ✅ Fonctionne |
 
 **Paramètres de recherche** :
-- `q` : Nom de carte (requis) - supporte wildcard `*`
-- `lang` : Langue (défaut: fr)
+- `q` : Nom de carte (requis)
+- `lang` : Langue (défaut: fr) — FR, EN, DE, ES, IT, PT supportées nativement
 - `max` : Résultats max (défaut: 20)
 - `page` : Page de résultats (défaut: 1)
 - `set` : Filtrer par set ID (ex: base1, swsh1)
-- `type` : Filtrer par type (Fire, Water, Grass, Lightning, etc.)
-- `rarity` : Filtrer par rareté (Common, Uncommon, Rare, Ultra Rare, etc.)
-- `supertype` : Filtrer par supertype (Pokemon, Trainer, Energy)
-- `subtype` : Filtrer par subtype (EX, GX, VMAX, V, VSTAR, etc.)
+- `type` : Filtrer par type (Fire/Feu, Water/Eau, Grass/Plante, etc. — selon langue)
+- `rarity` : Filtrer par rareté (Common/Commune, Rare, etc. — selon langue)
+- `supertype` : Filtrer par catégorie (Pokemon/Pokémon, Trainer/Dresseur, Energy/Énergie)
+- `subtype` : Filtrer par suffixe (V, EX, VMAX, VSTAR, etc.)
 - `autoTrad` : Traduction automatique (true/false)
 
 **Paramètres de sets** :
-- `series` : Filtrer par série (Sword & Shield, Sun & Moon, XY, etc.)
-- `year` : Filtrer par année de sortie
-- `max` : Résultats max (défaut: 100)
+- `max` : Résultats max (défaut: 250)
+- `lang` : Langue (défaut: fr)
+
+**⚠️ Filtres localisés** : Les filtres `type`, `rarity`, `supertype` doivent correspondre à la langue choisie. Ex: `type=Fire` en EN, `type=Feu` en FR.
 
 **Données retournées** :
 
 **Cartes (recherche)** :
-- `id` : ID unique carte (ex: base1-4, swsh1-25)
-- `title` : Nom de la carte
-- `subtitle` : Supertype (Pokemon, Trainer, Energy)
-- `image` / `thumbnail` : Images de la carte
-- `year` : Année de parution
-- `metadata` :
-  - `set` : Informations du set (id, name, series, logo)
-  - `cardNumber` : Numérotation (ex: 25/102)
-  - `rarity` : Rareté
-  - `types` : Types élémentaires (Fire, Water, etc.)
-  - `hp` : Points de vie (pour Pokémon)
-  - `artist` : Illustrateur
+- `id` : ID unique carte formaté `pokemon:{cardId}` (ex: pokemon:base1-58)
+- `title` : Nom de la carte (dans la langue demandée)
+- `images.primary` / `images.thumbnail` : Images haute/basse qualité (WebP)
+- `details.cardNumber` : Numéro local dans le set
 
 **Cartes (détails)** :
 - Tout de recherche +
 - `description` : Capacités et attaques formatées
-- `flavorText` : Texte d'ambiance (traduit si autoTrad)
-- `metadata` :
-  - `evolvesFrom` / `evolvesTo` : Chaîne d'évolution
-  - `attacks` : Liste des attaques avec coûts et dégâts
-  - `abilities` : Capacités spéciales
-  - `weaknesses` / `resistances` : Faiblesses et résistances
-  - `retreatCost` : Coût de retraite
-  - `rules` : Règles spéciales de la carte
-  - `legalities` : Légalité dans les formats (Standard, Expanded, Unlimited)
-  - `nationalPokedexNumbers` : Numéro Pokédex national
-- `prices` :
-  - `currency` : USD ou EUR
-  - `low` / `mid` / `high` / `market` : Prix du marché
-  - `source` : tcgplayer ou cardmarket
-  - `updatedAt` : Date de mise à jour
-- `externalLinks` : Liens TCGPlayer, Cardmarket
+- `details.flavorText` : Texte d'ambiance
+- `details.set` : `{name, code, series, releaseDate}` (format uniforme)
+- `details.setLogo` / `details.setSymbol` : Visuels du set
+- `details.setTotal` : Nombre total de cartes
+- `details.cardNumber` : Format "number/total"
+- `details.supertype` : Pokemon, Trainer, Energy
+- `details.subtypes` : [V, EX, VMAX…]
+- `details.types` : Types élémentaires
+- `details.hp` : Points de vie
+- `details.stage` : Basic, Stage1, Stage2
+- `details.artist` : Illustrateur
+- `details.evolvesFrom` : Évolue depuis
+- `details.attacks` : `[{name, cost, damage, effect}]`
+- `details.abilities` : `[{name, effect, type}]`
+- `details.weaknesses` / `details.resistances` : `[{type, value}]`
+- `details.retreatCost` : Coût de retraite (tableau reconstitué)
+- `details.legalities` : `{standard, expanded}` (booléens)
+- `details.nationalPokedexNumbers` : Numéros Pokédex
+- `details.prices` : Prix TCGPlayer + Cardmarket avec variants
 
-**Sets** :
-- `id` : ID du set (ex: base1, swsh1)
-- `title` : Nom du set
-- `subtitle` : Série (Sword & Shield, Sun & Moon, etc.)
-- `image` : Logo du set
-- `year` : Année de sortie
-- `metadata` :
-  - `total` / `printedTotal` : Nombre total de cartes
-  - `releaseDate` : Date de parution (YYYY-MM-DD)
-  - `legalities` : Formats légaux
-  - `ptcgoCode` : Code Pokemon TCG Online
-  - `series` : Nom de la série
+**Sets (liste)** :
+- `id` : ID formaté `pokemon:{setId}`
+- `title` : Nom du set (localisé)
+- `images.primary` : Logo du set
+- `details.total` / `details.printedTotal` : Nombre de cartes
+
+**Sets (détails `/sets/:id`)** :
+- Tout de liste +
+- `details.set` : `{name, code, series, releaseDate}`
+- `details.series` : Nom de la série
+- `details.releaseDate` : Date de parution
+- `details.abbreviation` : Code abrégé officiel
+- `details.legalities` : Formats légaux
+- `details.cards` : Liste complète des cartes `[{id, name, localId, image}]`
 
 **Exemples** :
 ```bash
-# Recherche Pikachu
-GET /api/tcg/pokemon/search?q=pikachu&max=10
+# Recherche Pikachu en français
+GET /api/tcg/pokemon/search?q=pikachu&lang=fr&max=10
 
-# Pikachu avec filtres
-GET /api/tcg/pokemon/search?q=pikachu&rarity=Rare&type=Lightning
+# Pikachu avec filtres (EN)
+GET /api/tcg/pokemon/search?q=pikachu&lang=en&rarity=Rare&type=Lightning
 
 # Chercher dans un set spécifique
 GET /api/tcg/pokemon/search?q=charizard&set=base1
 
-# Détails d'une carte spécifique
-GET /api/tcg/pokemon/card/base1-4
+# Détails d'une carte (FR natif)
+GET /api/tcg/pokemon/card/base1-58?lang=fr
 
-# Détails avec traduction française
-GET /api/tcg/pokemon/card/swsh1-25?lang=fr&autoTrad=true
+# Détails en anglais
+GET /api/tcg/pokemon/card/swsh1-25?lang=en
 
 # Liste tous les sets
-GET /api/tcg/pokemon/sets
+GET /api/tcg/pokemon/sets?lang=fr
 
-# Sets d'une série spécifique
-GET /api/tcg/pokemon/sets?series=Sword & Shield
-
-# Sets par année
-GET /api/tcg/pokemon/sets?year=2023
+# Détails d'un set avec ses cartes
+GET /api/tcg/pokemon/sets/base1?lang=fr
 
 # Health check
 GET /api/tcg/pokemon/health
 ```
 
-**Exemple de réponse (recherche)** :
+**Exemple de réponse (détail carte)** :
 ```json
 {
   "success": true,
   "provider": "pokemon",
-  "query": "pikachu",
-  "total": 237,
-  "count": 10,
-  "page": 1,
-  "data": [
-    {
-      "id": "base1-58",
-      "source": "pokemon",
-      "collection": "Pokémon TCG",
-      "title": "Pikachu",
-      "subtitle": "Pokemon",
-      "description": "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
-      "image": "https://images.pokemontcg.io/base1/58.png",
-      "thumbnail": "https://images.pokemontcg.io/base1/58_hires.png",
-      "year": 1999,
-      "metadata": {
-        "set": {
-          "id": "base1",
-          "name": "Base",
-          "series": "Base",
-          "logo": "https://images.pokemontcg.io/base1/logo.png"
-        },
-        "cardNumber": "58/102",
-        "rarity": "Common",
-        "types": ["Lightning"],
-        "hp": "40",
-        "artist": "Mitsuhiro Arita"
-      },
-      "detailUrl": "/api/tcg/pokemon/card/base1-58"
+  "domain": "tcg",
+  "id": "pokemon:base1-58",
+  "data": {
+    "id": "pokemon:base1-58",
+    "type": "tcg_card",
+    "source": "pokemon",
+    "sourceId": "base1-58",
+    "title": "Pikachu",
+    "description": "**Rogne** (Incolore): [10]\n\n**Secousse Tonnerre** (Électrique Incolore): ... [30]",
+    "images": {
+      "primary": "https://assets.tcgdex.net/fr/base/base1/58/high.webp",
+      "thumbnail": "https://assets.tcgdex.net/fr/base/base1/58/low.webp"
+    },
+    "details": {
+      "subtitle": "Pokémon",
+      "flavorText": "Quand plusieurs de ces Pokémon se réunissent...",
+      "set": { "name": "Set de Base", "code": "base1", "series": null, "releaseDate": null },
+      "cardNumber": "58/102",
+      "types": ["Électrique"],
+      "hp": "40",
+      "rarity": "Commune",
+      "artist": "Mitsuhiro Arita",
+      "prices": {
+        "currency": "USD",
+        "market": 5.12,
+        "cardmarket": { "currency": "EUR", "trendPrice": 9.03 }
+      }
     }
-  ],
-  "meta": {
-    "fetchedAt": "2026-01-30T08:15:00.000Z",
-    "lang": "fr",
-    "autoTrad": false
   }
 }
 ```

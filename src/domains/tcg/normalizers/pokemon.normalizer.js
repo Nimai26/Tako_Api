@@ -1,24 +1,15 @@
 /**
  * Normalizer Pokémon TCG
- * Normalise les données de l'API pokemontcg.io vers le format canonique Tako_Api (Format B)
+ * Normalise les données de l'API TCGdex vers le format canonique Tako_Api (Format B)
+ * Migration depuis pokemontcg.io → TCGdex (api.tcgdex.net)
  */
 
 import { translateText } from '../../../shared/utils/translator.js';
 import { logger } from '../../../shared/utils/logger.js';
 
 /**
- * Helper pour extraire du texte ou traduction
- */
-function extractText(value) {
-  if (!value) return null;
-  if (typeof value === 'object' && value.translated) {
-    return value.translated;
-  }
-  return typeof value === 'string' ? value : String(value);
-}
-
-/**
  * Normalise les résultats de recherche Pokemon TCG (Format B)
+ * Note: TCGdex search renvoie des résultats légers {id, localId, name, image}
  */
 export async function normalizeSearchResults(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -28,9 +19,6 @@ export async function normalizeSearchResults(rawData, options = {}) {
   }
 
   const results = rawData.results.map(card => {
-    const setTotal = card.set?.printedTotal || card.set?.total || '';
-    const year = card.set?.releaseDate ? parseInt(card.set.releaseDate.split('-')[0]) : null;
-
     return {
       id: `pokemon:${card.id}`,
       type: 'tcg_card',
@@ -38,11 +26,11 @@ export async function normalizeSearchResults(rawData, options = {}) {
       sourceId: String(card.id),
       title: card.name,
       titleOriginal: null,
-      description: card.flavorText || null,
-      year,
+      description: null,
+      year: null,
       images: {
-        primary: card.images?.small || null,
-        thumbnail: card.images?.small || card.images?.large || null,
+        primary: card.image ? `${card.image}/high.webp` : null,
+        thumbnail: card.image ? `${card.image}/low.webp` : null,
         gallery: []
       },
       urls: {
@@ -51,19 +39,18 @@ export async function normalizeSearchResults(rawData, options = {}) {
       },
       details: {
         collection: 'Pokémon TCG',
-        subtitle: card.supertype || null,
+        subtitle: null,
         set: {
-          name: card.set?.name || null,
-          code: card.set?.id || null,
-          series: card.set?.series || null,
-          releaseDate: card.set?.releaseDate || null
+          name: null,
+          code: null,
+          series: null,
+          releaseDate: null
         },
-        setLogo: card.set?.images?.logo || null,
-        cardNumber: card.number ? `${card.number}/${setTotal}` : null,
-        rarity: card.rarity || null,
-        types: card.types || [],
-        hp: card.hp || null,
-        artist: card.artist || null
+        cardNumber: card.localId || null,
+        rarity: null,
+        types: [],
+        hp: null,
+        artist: null
       }
     };
   });
@@ -73,6 +60,7 @@ export async function normalizeSearchResults(rawData, options = {}) {
 
 /**
  * Normalise les détails d'une carte Pokemon TCG (Format B)
+ * Mapping TCGdex → Format B
  */
 export async function normalizeCardDetails(rawCard, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -83,11 +71,11 @@ export async function normalizeCardDetails(rawCard, options = {}) {
 
   // Gallery images
   const gallery = [];
-  if (rawCard.images?.large) {
+  if (rawCard.image) {
     gallery.push({
-      url: rawCard.images.large,
-      thumbnail: rawCard.images.small || rawCard.images.large,
-      caption: 'Carte normale',
+      url: `${rawCard.image}/high.webp`,
+      thumbnail: `${rawCard.image}/low.webp`,
+      caption: 'Carte',
       isMain: true
     });
   }
@@ -98,7 +86,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   if (rawCard.abilities && rawCard.abilities.length > 0) {
     const abilitiesText = rawCard.abilities.map(a => {
       const abilityType = a.type || 'Capacité';
-      return `**${a.name}** (${abilityType}): ${a.text || 'Pas de description'}`;
+      return `**${a.name}** (${abilityType}): ${a.effect || 'Pas de description'}`;
     }).join('\n\n');
     description += abilitiesText;
   }
@@ -107,13 +95,14 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     if (description) description += '\n\n';
     const attacksText = rawCard.attacks.map(a => {
       const cost = a.cost ? a.cost.join(' ') : '';
-      const damage = a.damage || '';
-      return `**${a.name}** ${cost ? `(${cost})` : ''}: ${a.text || ''} ${damage ? `[${damage}]` : ''}`.trim();
+      const damage = a.damage != null ? String(a.damage) : '';
+      return `**${a.name}** ${cost ? `(${cost})` : ''}: ${a.effect || ''} ${damage ? `[${damage}]` : ''}`.trim();
     }).join('\n\n');
     description += attacksText;
   }
 
-  // Traduction automatique si demandée
+  // Traduction automatique si demandée et langue ≠ langue source
+  // TCGdex renvoie nativement dans la langue demandée, donc traduction rarement nécessaire
   if (autoTrad && description && lang !== 'en') {
     try {
       const translated = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
@@ -123,8 +112,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     }
   }
 
-  // Flavor text
-  let flavorText = rawCard.flavorText || null;
+  // Flavor text (= description dans TCGdex)
+  let flavorText = rawCard.description || null;
   if (autoTrad && flavorText && lang !== 'en') {
     try {
       const translated = await translateText(flavorText, lang, { enabled: true, sourceLang: 'en' });
@@ -135,36 +124,36 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
 
   // Set et année
-  const setTotal = rawCard.set?.printedTotal || rawCard.set?.total || null;
-  const year = rawCard.set?.releaseDate ? parseInt(rawCard.set.releaseDate.split('-')[0]) : null;
+  const setTotal = rawCard.set?.cardCount?.official || rawCard.set?.cardCount?.total || null;
+  const year = null; // TCGdex card detail ne contient pas releaseDate du set
 
-  // Prix
+  // Prix TCGdex
   let prices = null;
-  if (rawCard.tcgplayer?.prices) {
-    const tcgPrices = rawCard.tcgplayer.prices;
+  if (rawCard.pricing?.tcgplayer) {
+    const tcgPrices = rawCard.pricing.tcgplayer;
     
-    // Prioriser holofoil, puis normal pour les prix principaux
-    const priceVariant = tcgPrices.holofoil || tcgPrices.normal || 
-                         tcgPrices['1stEditionHolofoil'] || tcgPrices['1stEditionNormal'] ||
-                         tcgPrices.reverseHolofoil || tcgPrices.unlimitedHolofoil ||
-                         Object.values(tcgPrices)[0];
+    // Trouver le premier variant disponible pour les prix principaux
+    const variantKeys = Object.keys(tcgPrices).filter(k => !['updated', 'unit'].includes(k));
+    const priceVariant = tcgPrices['holofoil'] || tcgPrices['normal'] || 
+                         tcgPrices['reverse-holofoil'] ||
+                         (variantKeys.length > 0 ? tcgPrices[variantKeys[0]] : null);
     
     if (priceVariant) {
       prices = {
-        currency: 'USD',
-        low: priceVariant.low || null,
-        mid: priceVariant.mid || null,
-        high: priceVariant.high || null,
-        market: priceVariant.market || null,
+        currency: tcgPrices.unit || 'USD',
+        low: priceVariant.lowPrice || null,
+        mid: priceVariant.midPrice || null,
+        high: priceVariant.highPrice || null,
+        market: priceVariant.marketPrice || null,
         source: 'tcgplayer',
-        updatedAt: rawCard.tcgplayer.updatedAt || null,
+        updatedAt: tcgPrices.updated || null,
         variants: Object.fromEntries(
-          Object.entries(tcgPrices).map(([variant, p]) => [variant, {
-            low: p.low || null,
-            mid: p.mid || null,
-            high: p.high || null,
-            market: p.market || null,
-            directLow: p.directLow || null
+          variantKeys.map(variant => [variant, {
+            low: tcgPrices[variant].lowPrice || null,
+            mid: tcgPrices[variant].midPrice || null,
+            high: tcgPrices[variant].highPrice || null,
+            market: tcgPrices[variant].marketPrice || null,
+            directLow: tcgPrices[variant].directLowPrice || null
           }])
         )
       };
@@ -172,18 +161,23 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   }
 
   // Cardmarket prices (Europe)
-  if (rawCard.cardmarket?.prices) {
-    const cmPrices = rawCard.cardmarket.prices;
+  if (rawCard.pricing?.cardmarket) {
+    const cm = rawCard.pricing.cardmarket;
     if (!prices) prices = {};
     prices.cardmarket = {
-      currency: 'EUR',
-      averageSellPrice: cmPrices.averageSellPrice || null,
-      lowPrice: cmPrices.lowPrice || null,
-      trendPrice: cmPrices.trendPrice || null,
+      currency: cm.unit || 'EUR',
+      averageSellPrice: cm.avg || null,
+      lowPrice: cm.low || null,
+      trendPrice: cm.trend || null,
       source: 'cardmarket',
-      updatedAt: rawCard.cardmarket.updatedAt || null
+      updatedAt: cm.updated || null
     };
   }
+
+  // Retreat cost : TCGdex donne un nombre, on reconstitue le tableau
+  const retreatCost = rawCard.retreat != null 
+    ? Array(rawCard.retreat).fill('Colorless') 
+    : [];
 
   return {
     id: `pokemon:${rawCard.id}`,
@@ -195,69 +189,70 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     description,
     year,
     images: {
-      primary: rawCard.images?.large || rawCard.images?.small || null,
-      thumbnail: rawCard.images?.small || rawCard.images?.large || null,
+      primary: rawCard.image ? `${rawCard.image}/high.webp` : null,
+      thumbnail: rawCard.image ? `${rawCard.image}/low.webp` : null,
       gallery
     },
     urls: {
-      source: rawCard.tcgplayer?.url || rawCard.cardmarket?.url || null,
+      source: null,
       detail: `/api/tcg/pokemon/card/${rawCard.id}`
     },
     details: {
-      subtitle: rawCard.supertype || null,
+      subtitle: rawCard.category || null,
       flavorText,
 
       // Informations du set
       set: {
         name: rawCard.set?.name || null,
         code: rawCard.set?.id || null,
-        series: rawCard.set?.series || null,
-        releaseDate: rawCard.set?.releaseDate || null
+        series: null, // pas disponible dans le card detail TCGdex
+        releaseDate: null // pas disponible dans le card detail TCGdex
       },
-      setLogo: rawCard.set?.images?.logo || null,
-      setSymbol: rawCard.set?.images?.symbol || null,
-      setTotal: setTotal,
+      setLogo: rawCard.set?.logo || null,
+      setSymbol: rawCard.set?.symbol || null,
+      setTotal,
       
       // Numérotation
-      number: rawCard.number || null,
-      cardNumber: rawCard.number ? `${rawCard.number}/${setTotal}` : null,
+      number: rawCard.localId || null,
+      cardNumber: rawCard.localId ? `${rawCard.localId}/${setTotal || '?'}` : null,
       
       // Caractéristiques
-      supertype: rawCard.supertype || null, // Pokemon, Trainer, Energy
-      subtypes: rawCard.subtypes || [],
+      supertype: rawCard.category || null, // Pokemon, Trainer, Energy
+      subtypes: rawCard.suffix ? [rawCard.suffix] : [],
       types: rawCard.types || [],
-      hp: rawCard.hp || null,
+      hp: rawCard.hp != null ? String(rawCard.hp) : null,
       rarity: rawCard.rarity || null,
-      artist: rawCard.artist || null,
+      artist: rawCard.illustrator || null,
+      stage: rawCard.stage || null,
       
       // Évolution
-      evolvesFrom: rawCard.evolvesFrom || null,
-      evolvesTo: rawCard.evolvesTo || [],
+      evolvesFrom: rawCard.evolveFrom || null,
+      evolvesTo: [],
       
       // Combat
       attacks: rawCard.attacks || [],
       abilities: rawCard.abilities || [],
       weaknesses: rawCard.weaknesses || [],
       resistances: rawCard.resistances || [],
-      retreatCost: rawCard.retreatCost || [],
+      retreatCost,
       
       // Règles spéciales
       rules: rawCard.rules || [],
       regulationMark: rawCard.regulationMark || null,
       
       // Légalité
-      legalities: rawCard.legalities || {},
+      legalities: rawCard.legal || {},
       
       // Identifiants
-      nationalPokedexNumbers: rawCard.nationalPokedexNumbers || [],
+      nationalPokedexNumbers: rawCard.dexId || [],
 
       // Prix
       prices,
 
       // Liens externes
       externalLinks: {
-        tcgplayer: rawCard.tcgplayer?.url || null,
-        cardmarket: rawCard.cardmarket?.url || null
+        tcgplayer: null,
+        cardmarket: null
       }
     }
   };
@@ -265,6 +260,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
 
 /**
  * Normalise la liste des sets Pokemon TCG (Format B)
+ * TCGdex sets list: {id, name, logo, symbol?, cardCount: {total, official}}
  */
 export async function normalizeSets(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
@@ -274,8 +270,6 @@ export async function normalizeSets(rawData, options = {}) {
   }
 
   const results = rawData.results.map(set => {
-    const year = set.releaseDate ? parseInt(set.releaseDate.split('-')[0]) : null;
-
     return {
       id: `pokemon:${set.id}`,
       type: 'tcg_set',
@@ -284,10 +278,10 @@ export async function normalizeSets(rawData, options = {}) {
       title: set.name,
       titleOriginal: null,
       description: null,
-      year,
+      year: null,
       images: {
-        primary: set.images?.logo || set.images?.symbol || null,
-        thumbnail: set.images?.symbol || set.images?.logo || null,
+        primary: set.logo || null,
+        thumbnail: set.symbol || set.logo || null,
         gallery: []
       },
       urls: {
@@ -295,17 +289,70 @@ export async function normalizeSets(rawData, options = {}) {
         detail: `/api/tcg/pokemon/sets/${set.id}`
       },
       details: {
-        subtitle: set.series || null,
-        total: set.total || set.printedTotal || 0,
-        printedTotal: set.printedTotal || null,
-        releaseDate: set.releaseDate || null,
-        updatedAt: set.updatedAt || null,
-        legalities: set.legalities || {},
-        ptcgoCode: set.ptcgoCode || null,
-        series: set.series || null
+        subtitle: null,
+        total: set.cardCount?.official || set.cardCount?.total || 0,
+        printedTotal: set.cardCount?.official || null,
+        releaseDate: null,
+        legalities: {},
+        series: null
       }
     };
   });
 
   return results;
+}
+
+/**
+ * Normalise les détails d'un set Pokemon TCG (Format B)
+ * TCGdex set detail: {id, name, logo, symbol, releaseDate, serie, cardCount, cards, ...}
+ */
+export async function normalizeSetDetails(rawSet, options = {}) {
+  const { lang = 'fr' } = options;
+
+  if (!rawSet) {
+    throw new Error('Aucune donnée de set fournie');
+  }
+
+  const year = rawSet.releaseDate ? parseInt(rawSet.releaseDate.split('-')[0]) : null;
+
+  return {
+    id: `pokemon:${rawSet.id}`,
+    type: 'tcg_set',
+    source: 'pokemon',
+    sourceId: String(rawSet.id),
+    title: rawSet.name,
+    titleOriginal: null,
+    description: null,
+    year,
+    images: {
+      primary: rawSet.logo || null,
+      thumbnail: rawSet.symbol || rawSet.logo || null,
+      gallery: []
+    },
+    urls: {
+      source: null,
+      detail: `/api/tcg/pokemon/sets/${rawSet.id}`
+    },
+    details: {
+      subtitle: rawSet.serie?.name || null,
+      set: {
+        name: rawSet.name,
+        code: rawSet.id,
+        series: rawSet.serie?.name || null,
+        releaseDate: rawSet.releaseDate || null
+      },
+      total: rawSet.cardCount?.official || rawSet.cardCount?.total || 0,
+      printedTotal: rawSet.cardCount?.official || null,
+      releaseDate: rawSet.releaseDate || null,
+      legalities: rawSet.legal || {},
+      series: rawSet.serie?.name || null,
+      abbreviation: rawSet.abbreviation?.official || rawSet.tcgOnline || null,
+      cards: (rawSet.cards || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        localId: c.localId,
+        image: c.image ? `${c.image}/low.webp` : null
+      }))
+    }
+  };
 }

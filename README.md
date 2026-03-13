@@ -3,7 +3,7 @@
 > **Version 2.6.1** - Architecture modulaire par domaines
 > 
 > **Migration toys_api ✅ Terminée** - 30 janvier 2026  
-> **Dernière mise à jour** : 13 mars 2026 (TCG : set Format B uniforme + traductions)
+> **Dernière mise à jour** : 13 mars 2026 (TCG : migration Pokémon vers TCGdex)
 
 API REST multi-sources pour rechercher et récupérer des informations produits depuis **36 providers** répartis en **11 domaines**.
 

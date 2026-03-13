@@ -1,30 +1,37 @@
 /**
  * Provider Pokémon TCG
- * API: https://pokemontcg.io/
- * Documentation: https://docs.pokemontcg.io/
+ * API: https://tcgdex.dev/
+ * Documentation: https://tcgdex.dev/rest
  * 
- * API Key: TCG_POKEMON_TOKEN (optionnel, augmente rate limit)
- * Rate Limit: 1000/jour sans clé, 5000/jour avec clé
+ * Source: TCGdex (gratuit, sans clé API, multi-langues natif)
+ * Langues supportées: fr, en, de, es, it, pt
+ * Migration depuis pokemontcg.io (arrêté, migré vers Scrydex payant)
  */
 
 import { logger } from '../../../shared/utils/logger.js';
 
-const POKEMON_TCG_API = 'https://api.pokemontcg.io/v2';
-const API_KEY = process.env.TCG_POKEMON_TOKEN || null;
+const TCGDEX_API = 'https://api.tcgdex.net/v2';
+
+// Langues supportées par TCGdex
+const SUPPORTED_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt'];
+
+function getLang(lang) {
+  return SUPPORTED_LANGS.includes(lang) ? lang : 'en';
+}
 
 /**
- * Recherche de cartes Pokémon TCG
+ * Recherche de cartes Pokémon TCG via TCGdex
  * @param {string} query - Nom de la carte à rechercher
  * @param {object} options - Options de recherche
- * @param {string} options.lang - Code langue (fr, en, de, etc.)
+ * @param {string} options.lang - Code langue (fr, en, de, es, it, pt)
  * @param {number} options.max - Nombre max de résultats (défaut: 20)
  * @param {number} options.page - Page de résultats (défaut: 1)
- * @param {string} options.set - Filtrer par set ID (ex: base1, jungle)
+ * @param {string} options.set - Filtrer par set ID (ex: base1, swsh1)
  * @param {string} options.type - Filtrer par type (ex: Fire, Water, Grass)
- * @param {string} options.rarity - Filtrer par rareté (ex: Common, Rare, Ultra Rare)
- * @param {string} options.supertype - Filtrer par supertype (Pokemon, Trainer, Energy)
- * @param {string} options.subtype - Filtrer par subtype (ex: EX, GX, VMAX)
- * @returns {Promise<object>} - Résultats bruts de l'API
+ * @param {string} options.rarity - Filtrer par rareté (ex: Common, Rare)
+ * @param {string} options.supertype - Filtrer par catégorie (Pokemon, Trainer, Energy)
+ * @param {string} options.subtype - Filtrer par suffixe (ex: V, EX, VMAX)
+ * @returns {Promise<object>} - Résultats avec pagination côté client
  */
 export async function searchPokemonCards(query, options = {}) {
   const {
@@ -38,46 +45,43 @@ export async function searchPokemonCards(query, options = {}) {
     subtype = null
   } = options;
 
-  // Construire la query avec syntaxe Lucene
-  const queryParts = [`name:${query}*`];
-  if (set) queryParts.push(`set.id:${set}`);
-  if (type) queryParts.push(`types:${type}`);
-  if (rarity) queryParts.push(`rarity:"${rarity}"`);
-  if (supertype) queryParts.push(`supertype:${supertype}`);
-  if (subtype) queryParts.push(`subtypes:${subtype}`);
+  const apiLang = getLang(lang);
+  const params = new URLSearchParams();
+  params.set('name', query);
+  if (set) params.set('set', set);
+  if (type) params.set('types', type);
+  if (rarity) params.set('rarity', rarity);
+  if (supertype) params.set('category', supertype);
+  if (subtype) params.set('suffix', subtype);
 
-  const searchQuery = queryParts.join(' ');
-  const url = `${POKEMON_TCG_API}/cards?q=${encodeURIComponent(searchQuery)}&page=${page}&pageSize=${max}`;
-
-  // Headers avec API key si disponible
-  const headers = {
-    'Accept': 'application/json',
-    'User-Agent': 'Tako_Api/1.0'
-  };
-
-  if (API_KEY) {
-    headers['X-Api-Key'] = API_KEY;
-  }
+  const url = `${TCGDEX_API}/${apiLang}/cards?${params.toString()}`;
 
   try {
-    logger.info(`[Pokemon TCG] Recherche: ${query} (page ${page}, max ${max})`);
+    logger.info(`[Pokemon TCG] Recherche: ${query} (lang ${apiLang}, page ${page}, max ${max})`);
     
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
+    });
     
     if (!response.ok) {
-      throw new Error(`Pokemon TCG API error: ${response.status} ${response.statusText}`);
+      throw new Error(`TCGdex API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const allResults = await response.json();
     
-    logger.info(`[Pokemon TCG] Trouvé ${data.data?.length || 0} résultats pour: ${query}`);
+    // TCGdex renvoie tous les résultats — pagination côté client
+    const total = allResults.length;
+    const start = (page - 1) * max;
+    const paged = allResults.slice(start, start + max);
+    
+    logger.info(`[Pokemon TCG] Trouvé ${total} résultats pour: ${query} (page ${page}/${Math.ceil(total / max)})`);
     
     return {
-      results: data.data || [],
-      total: data.totalCount || 0,
-      page: data.page || page,
-      pageSize: data.pageSize || max,
-      count: data.count || (data.data?.length || 0)
+      results: paged,
+      total,
+      page,
+      pageSize: max,
+      count: paged.length
     };
   } catch (error) {
     logger.error(`[Pokemon TCG] Erreur recherche: ${error.message}`);
@@ -86,36 +90,33 @@ export async function searchPokemonCards(query, options = {}) {
 }
 
 /**
- * Détails d'une carte Pokémon TCG
- * @param {string} cardId - ID unique de la carte (ex: base1-4, swsh1-25)
+ * Détails d'une carte Pokémon TCG via TCGdex
+ * @param {string} cardId - ID unique de la carte (ex: base1-58, swsh1-25)
+ * @param {object} options - Options
+ * @param {string} options.lang - Code langue (défaut: en)
  * @returns {Promise<object>} - Données complètes de la carte
  */
-export async function getPokemonCardDetails(cardId) {
-  const url = `${POKEMON_TCG_API}/cards/${cardId}`;
-  
-  const headers = {
-    'Accept': 'application/json',
-    'User-Agent': 'Tako_Api/1.0'
-  };
-
-  if (API_KEY) {
-    headers['X-Api-Key'] = API_KEY;
-  }
+export async function getPokemonCardDetails(cardId, options = {}) {
+  const { lang = 'en' } = options;
+  const apiLang = getLang(lang);
+  const url = `${TCGDEX_API}/${apiLang}/cards/${encodeURIComponent(cardId)}`;
 
   try {
-    logger.info(`[Pokemon TCG] Récupération carte: ${cardId}`);
+    logger.info(`[Pokemon TCG] Récupération carte: ${cardId} (lang ${apiLang})`);
     
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
+    });
     
     if (!response.ok) {
-      throw new Error(`Pokemon TCG API error: ${response.status} ${response.statusText}`);
+      throw new Error(`TCGdex API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const card = await response.json();
     
-    logger.info(`[Pokemon TCG] Carte récupérée: ${data.data?.name || cardId}`);
+    logger.info(`[Pokemon TCG] Carte récupérée: ${card.name || cardId}`);
     
-    return data.data;
+    return card;
   } catch (error) {
     logger.error(`[Pokemon TCG] Erreur détails carte: ${error.message}`);
     throw error;
@@ -123,59 +124,37 @@ export async function getPokemonCardDetails(cardId) {
 }
 
 /**
- * Liste des sets Pokémon TCG
+ * Liste des sets Pokémon TCG via TCGdex
  * @param {object} options - Options de filtrage
- * @param {string} options.series - Filtrer par série (ex: Sword & Shield, Sun & Moon)
- * @param {number} options.year - Filtrer par année de sortie
- * @param {number} options.max - Nombre max de résultats
+ * @param {string} options.lang - Code langue (défaut: en)
+ * @param {number} options.max - Nombre max de résultats (défaut: 250)
  * @returns {Promise<object>} - Liste des sets
  */
 export async function getPokemonSets(options = {}) {
-  const { 
-    series = null, 
-    year = null,
-    max = 100
-  } = options;
-
-  let url = `${POKEMON_TCG_API}/sets`;
-  
-  // Filtres
-  const params = [];
-  if (series) params.push(`series:"${series}"`);
-  if (year) params.push(`releaseDate:${year}*`);
-  
-  if (params.length > 0) {
-    url += `?q=${encodeURIComponent(params.join(' '))}`;
-  }
-  
-  url += `${params.length > 0 ? '&' : '?'}pageSize=${max}`;
-
-  const headers = {
-    'Accept': 'application/json',
-    'User-Agent': 'Tako_Api/1.0'
-  };
-
-  if (API_KEY) {
-    headers['X-Api-Key'] = API_KEY;
-  }
+  const { lang = 'en', max = 250 } = options;
+  const apiLang = getLang(lang);
+  const url = `${TCGDEX_API}/${apiLang}/sets`;
 
   try {
-    logger.info(`[Pokemon TCG] Récupération sets (series: ${series || 'all'}, year: ${year || 'all'})`);
+    logger.info(`[Pokemon TCG] Récupération sets (lang ${apiLang})`);
     
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
+    });
     
     if (!response.ok) {
-      throw new Error(`Pokemon TCG API error: ${response.status} ${response.statusText}`);
+      throw new Error(`TCGdex API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const allSets = await response.json();
+    const limited = allSets.slice(0, max);
     
-    logger.info(`[Pokemon TCG] Trouvé ${data.data?.length || 0} sets`);
+    logger.info(`[Pokemon TCG] Trouvé ${allSets.length} sets`);
     
     return {
-      results: data.data || [],
-      total: data.totalCount || 0,
-      count: data.count || (data.data?.length || 0)
+      results: limited,
+      total: allSets.length,
+      count: limited.length
     };
   } catch (error) {
     logger.error(`[Pokemon TCG] Erreur récupération sets: ${error.message}`);
@@ -184,26 +163,60 @@ export async function getPokemonSets(options = {}) {
 }
 
 /**
- * Health check Pokemon TCG API
+ * Détails d'un set Pokémon TCG via TCGdex
+ * @param {string} setId - ID du set (ex: base1, swsh1)
+ * @param {object} options - Options
+ * @param {string} options.lang - Code langue (défaut: en)
+ * @returns {Promise<object>} - Données complètes du set
+ */
+export async function getPokemonSetDetails(setId, options = {}) {
+  const { lang = 'en' } = options;
+  const apiLang = getLang(lang);
+  const url = `${TCGDEX_API}/${apiLang}/sets/${encodeURIComponent(setId)}`;
+
+  try {
+    logger.info(`[Pokemon TCG] Récupération set: ${setId} (lang ${apiLang})`);
+    
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`TCGdex API error: ${response.status} ${response.statusText}`);
+    }
+
+    const set = await response.json();
+    
+    logger.info(`[Pokemon TCG] Set récupéré: ${set.name || setId}`);
+    
+    return set;
+  } catch (error) {
+    logger.error(`[Pokemon TCG] Erreur détails set: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Health check TCGdex API
  * @returns {Promise<object>} - Statut de l'API
  */
 export async function healthCheck() {
   try {
-    const response = await fetch(`${POKEMON_TCG_API}/cards?pageSize=1`, {
-      headers: API_KEY ? { 'X-Api-Key': API_KEY } : {}
+    const response = await fetch(`${TCGDEX_API}/en/cards?name=pikachu`, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
     });
     
     return {
       healthy: response.ok,
       status: response.status,
-      hasApiKey: !!API_KEY,
-      message: response.ok ? 'API Pokemon TCG disponible' : `Erreur ${response.status}`
+      source: 'tcgdex',
+      message: response.ok ? 'API TCGdex disponible' : `Erreur ${response.status}`
     };
   } catch (error) {
     logger.error(`[Pokemon TCG] Health check error: ${error.message}`);
     return {
       healthy: false,
-      hasApiKey: !!API_KEY,
+      source: 'tcgdex',
       message: error.message
     };
   }
