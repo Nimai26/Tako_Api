@@ -377,3 +377,37 @@ De plus, le provider ne croisait pas les cartes avec les métadonnées des sets 
 - `src/domains/tcg/normalizers/pokemon.normalizer.js` — Ajout `urls.source` (TCGdex API URL)
 - `src/domains/tcg/providers/lorcana.provider.js` — Enrichissement `_set`, conversion sets
 - `src/domains/tcg/normalizers/lorcana.normalizer.js` — Correction noms de champs, ajout données manquantes
+
+---
+
+## ADR-010: Correction images et données One Piece TCG
+
+**Date**: 2026-03-13  
+**Statut**: Accepté
+
+### Contexte
+
+Le normalizer One Piece TCG avait plusieurs bugs de mapping des données brutes de `onepiece-cardgame.dev/cards.json` :
+
+1. **Images cassées** — Le normalizer construisait `https://onepiece-cardgame.dev/images/cards/{cid}.png`, une URL fictive. Le site étant un SPA React, cette URL retourne le HTML de l'application (2 KB, `text/html`) au lieu d'une image. L'API source fournit la vraie URL dans le champ `iu` (ex: `ST01-001_85f00c_jp.jpg`, ~600 KB, `image/jpeg`).
+
+2. **Champs inexistants** — Le normalizer lisait :
+   - `rawCard.co` pour counter → le vrai champ est `cp`
+   - `rawCard.lf` pour life → le vrai champ est `l`
+   - `rawCard.set_info` (enrichi via `srcId`) → `srcId` n'existe pas dans les données brutes
+
+3. **Données disponibles ignorées** — Les champs `srcN` (nom du set) et `srcD` (date de sortie) sont directement présents sur chaque carte brute mais n'étaient pas utilisés.
+
+4. **Mauvaise sémantique** — Le champ `tr` contient les affiliations/traits du personnage (ex: "Supernovas/Straw Hat Crew"), pas un effet trigger. Il était nommé `triggerEffect` dans le détail.
+
+### Décision
+
+- Utiliser `rawCard.iu` pour les images (URL réelle avec hash)
+- Corriger les noms de champs : `cp` (counter), `l` (life)
+- Utiliser `srcN`/`srcD` directement pour set name/releaseDate
+- Renommer `trigger`/`triggerEffect` en `traits`
+- Ajouter `urls.source` en recherche (était `null`)
+
+### Fichiers modifiés
+
+- `src/domains/tcg/normalizers/onepiece.normalizer.js` — Toutes les corrections ci-dessus

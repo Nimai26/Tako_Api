@@ -7,6 +7,18 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### 🏴‍☠️ TCG — Correction images et données One Piece
+
+#### Fixed
+- **Images cassées** — Le normalizer construisait `{cid}.png` (URL fictive retournant le HTML du SPA React) ; utilise désormais le champ `iu` de l'API source (vraie URL JPG avec hash, ex: `ST01-001_85f00c_jp.jpg`)
+- **`urls.source`** — `null` en recherche → ajout lien `onepiece-cardgame.dev/cards/{cid}`
+- **`set.name`** — `null` → utilise `srcN` directement (le provider enrichissait via `set_info` mais le champ `srcId` n'existe pas dans les données brutes)
+- **`set.releaseDate`** — `null` → utilise `srcD` directement
+- **`counter`** — Lisait `rawCard.co` (inexistant) → corrigé en `rawCard.cp`
+- **`life`** — Lisait `rawCard.lf` (inexistant) → corrigé en `rawCard.l`
+- **`trigger` → `traits`** — Le champ `tr` contient les affiliations du personnage (ex: "Supernovas/Straw Hat Crew"), pas un effet trigger ; renommé en `traits`
+- **`extractYear`** — Utilisait `set_info.release_date` (null) → utilise `srcD`
+
 ### 🖼️ TCG — Fallback images EN pour Pokémon TCG
 
 #### Fixed

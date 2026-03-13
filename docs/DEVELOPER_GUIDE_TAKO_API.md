@@ -1005,7 +1005,7 @@ Les providers suivants sont également disponibles :
 |----------|----------|--------|-----------|
 | **Lorcana** | `/api/tcg/lorcana/` | LorcanaJSON (`lorcanajson.org`) | `search`, `card/:id`, `sets` |
 | **Digimon** | `/api/tcg/digimon/` | digimoncard.io | `search`, `card/:id` |
-| **One Piece** | `/api/tcg/onepiece/` | en.onepiece-cardgame.com | `search`, `card/:id` |
+| **One Piece** | `/api/tcg/onepiece/` | onepiece-cardgame.dev | `search`, `card/:id` |
 
 > **Note** : Digimon et One Piece ne disposent pas d'endpoint `/sets`. Seuls Lorcana, Pokémon, MTG, Yu-Gi-Oh! et DBS proposent la liste des sets.
 
@@ -2605,12 +2605,11 @@ Inclut tous les champs de recherche plus :
 | `attribute` | string | Attribut |
 | `cost` | number? | Coût |
 | `power` | number? | Puissance |
-| `counter` | number? | Compteur |
-| `life` | number? | Vie (Leaders) |
+| `counter` | number? | Compteur (champ source `cp`) |
+| `life` | number? | Vie — Leaders (champ source `l`) |
 | `effect` | string | Texte d'effet |
-| `triggerEffect` | string? | Effet trigger |
-| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
-| `setSourceId` | string? | ID source du set (extra One Piece) |
+| `traits` | string? | Affiliations du personnage (ex: "Supernovas/Straw Hat Crew") |
+| `set` | `{name, code, series, releaseDate}` | Set (format uniforme, depuis `srcN`/`srcD`) |
 | `tags` | string[] | Tags |
 | `externalLinks` | `{onePieceCardGame}` | Lien |
 
