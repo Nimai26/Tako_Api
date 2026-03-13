@@ -11,12 +11,16 @@ import { logger } from '../../../shared/utils/logger.js';
  * Normalise les résultats de recherche Pokemon TCG (Format B)
  * Note: TCGdex search renvoie des résultats légers {id, localId, name, image}
  */
+const TCGDEX_WEB = 'https://api.tcgdex.net/v2';
+
 export async function normalizeSearchResults(rawData, options = {}) {
   const { lang = 'fr', autoTrad = false } = options;
 
   if (!rawData || !rawData.results || rawData.results.length === 0) {
     return [];
   }
+
+  const apiLang = lang || 'fr';
 
   const results = rawData.results.map(card => {
     return {
@@ -34,7 +38,7 @@ export async function normalizeSearchResults(rawData, options = {}) {
         gallery: []
       },
       urls: {
-        source: null,
+        source: `${TCGDEX_WEB}/${apiLang}/cards/${card.id}`,
         detail: `/api/tcg/pokemon/card/${card.id}`
       },
       details: {
@@ -194,7 +198,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       gallery
     },
     urls: {
-      source: null,
+      source: `${TCGDEX_WEB}/${lang || 'fr'}/cards/${rawCard.id}`,
       detail: `/api/tcg/pokemon/card/${rawCard.id}`
     },
     details: {
@@ -269,6 +273,8 @@ export async function normalizeSets(rawData, options = {}) {
     return [];
   }
 
+  const apiLang = lang || 'fr';
+
   const results = rawData.results.map(set => {
     return {
       id: `pokemon:${set.id}`,
@@ -285,7 +291,7 @@ export async function normalizeSets(rawData, options = {}) {
         gallery: []
       },
       urls: {
-        source: null,
+        source: `${TCGDEX_WEB}/${apiLang}/sets/${set.id}`,
         detail: `/api/tcg/pokemon/sets/${set.id}`
       },
       details: {
@@ -330,7 +336,7 @@ export async function normalizeSetDetails(rawSet, options = {}) {
       gallery: []
     },
     urls: {
-      source: null,
+      source: `${TCGDEX_WEB}/${lang || 'fr'}/sets/${rawSet.id}`,
       detail: `/api/tcg/pokemon/sets/${rawSet.id}`
     },
     details: {
