@@ -59,15 +59,44 @@ export async function searchPokemonCards(query, options = {}) {
   try {
     logger.info(`[Pokemon TCG] Recherche: ${query} (lang ${apiLang}, page ${page}, max ${max})`);
     
-    const response = await fetch(url, {
+    // Fetch localized results (+ EN in parallel for image fallback if lang != en)
+    const fetches = [fetch(url, {
       headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
-    });
+    })];
     
-    if (!response.ok) {
-      throw new Error(`TCGdex API error: ${response.status} ${response.statusText}`);
+    const needsFallback = apiLang !== 'en';
+    if (needsFallback) {
+      const enUrl = `${TCGDEX_API}/en/cards?${params.toString()}`;
+      fetches.push(fetch(enUrl, {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
+      }));
+    }
+    
+    const responses = await Promise.all(fetches);
+    
+    if (!responses[0].ok) {
+      throw new Error(`TCGdex API error: ${responses[0].status} ${responses[0].statusText}`);
     }
 
-    const allResults = await response.json();
+    const allResults = await responses[0].json();
+    
+    // Inject EN images as fallback for cards missing localized images
+    if (needsFallback && responses[1]?.ok) {
+      try {
+        const enResults = await responses[1].json();
+        const enImageMap = new Map();
+        for (const card of enResults) {
+          if (card.image) enImageMap.set(card.id, card.image);
+        }
+        for (const card of allResults) {
+          if (!card.image && enImageMap.has(card.id)) {
+            card.image = enImageMap.get(card.id);
+          }
+        }
+      } catch (e) {
+        logger.warn(`[Pokemon TCG] Fallback EN images échoué: ${e.message}`);
+      }
+    }
     
     // TCGdex renvoie tous les résultats — pagination côté client
     const total = allResults.length;
@@ -113,6 +142,25 @@ export async function getPokemonCardDetails(cardId, options = {}) {
     }
 
     const card = await response.json();
+    
+    // Fallback EN si pas d'image dans la langue demandée
+    if (!card.image && apiLang !== 'en') {
+      try {
+        const enUrl = `${TCGDEX_API}/en/cards/${encodeURIComponent(cardId)}`;
+        const enResponse = await fetch(enUrl, {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'Tako_Api/1.0' }
+        });
+        if (enResponse.ok) {
+          const enCard = await enResponse.json();
+          if (enCard.image) {
+            card.image = enCard.image;
+            logger.info(`[Pokemon TCG] Image EN fallback pour: ${cardId}`);
+          }
+        }
+      } catch (e) {
+        logger.warn(`[Pokemon TCG] Fallback EN image échoué pour ${cardId}: ${e.message}`);
+      }
+    }
     
     logger.info(`[Pokemon TCG] Carte récupérée: ${card.name || cardId}`);
     

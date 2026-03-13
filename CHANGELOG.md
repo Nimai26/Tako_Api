@@ -6,7 +6,13 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
+### 🖼️ TCG — Fallback images EN pour Pokémon TCG
 
+#### Fixed
+- **Images manquantes** — TCGdex ne fournit d'images que pour les langues où la carte a été imprimée ; ajout d'un fallback automatique vers l'image EN quand l'image locale est absente
+  - **Recherche** : appel EN parallèle + injection des images EN par correspondance d'ID
+  - **Détail carte** : second appel EN si `image` manquant dans la langue demandée
+  - Résultat : recherche FR "pikachu" passe de 124/176 (70%) à 153/176 (87%) images
 ### � TCG — Migration Pokémon TCG vers TCGdex
 
 #### Changed
