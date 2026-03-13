@@ -7,6 +7,22 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### 🦎 TCG — Correction recherche et données Digimon
+
+#### Fixed
+- **Recherche cassée** — Le paramètre `series=Digimon Card Game` par défaut causait des erreurs 500 sur l'API upstream pour les recherches populaires (ex: Omnimon = 69 résultats) ; supprimé le défaut, rendu optionnel
+- **Détail carte** — `getDigimonCardDetails` recherchait par nom (`n=BT1-084`) au lieu de par ID ; utilise désormais le paramètre `card=BT1-084` pour une correspondance exacte
+- **Images manquantes** — L'API DigimonCard.io ne fournit plus le champ `image_url` ; les URLs sont construites depuis l'ID : `https://images.digimoncard.io/images/cards/{id}.jpg`
+- **Noms de champs incorrects** — Le normalizer utilisait les anciens noms de l'API :
+  - `maineffect` → `main_effect`, `soureeffect` → `source_effect`, `securityeffect` → `alt_effect`
+  - `playcost` → `play_cost`, `digitype` → `digi_type`, `digivolvecost1` → `evolution_cost`
+  - `set` → `set_name`, `illustrator` → `artist`, `cardnumber` → `id`
+- **`urls.source`** — `null` en recherche → ajout lien `https://digimoncard.io/card/{id}`
+- **`digiType`** — N'affichait qu'un seul type → combine `digi_type` + `digi_type2/3/4`
+- **`set.name`** — `null` → utilise `set_name` (tableau, prend le premier set)
+- **Nouveaux champs** — `color2`, `evolutionColor`, `evolutionLevel`, `xrosRequirement`, `tcgplayerId`
+- **Health check** — URL contenait des espaces non encodés
+
 ### 🏴‍☠️ TCG — Correction images et données One Piece
 
 #### Added

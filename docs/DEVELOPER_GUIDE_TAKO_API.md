@@ -2531,30 +2531,38 @@ Inclut tous les champs de recherche plus :
 
 ### A.21 TCG — Digimon
 
+> **Source** : `digimoncard.io/api-public`
+> **Images** : `https://images.digimoncard.io/images/cards/{id}.jpg` (construites côté normalizer, l'API ne fournit plus `image_url`)
+> **Recherche** : paramètre `card={id}` pour le détail, `n={name}` pour la recherche
+
 #### Card (détail)
 
 | Champ | Type | Description |
 |-------|------|-------------|
 | `subtitle` | string | "Lv.X / Type / Attribute" |
-| `cardNumber` | string | Numéro |
-| `type` | string | Type de carte |
-| `color` | string | Couleur |
-| `stage` | string | Stage |
+| `cardNumber` | string | ID de la carte (ex: BT1-084) |
+| `type` | string | Type de carte (Digimon, Tamer, Option, Digi-Egg) |
+| `color` | string | Couleur primaire |
+| `color2` | string? | Couleur secondaire |
+| `stage` | string? | Stage (Rookie, Champion, Ultimate, Mega) |
 | `level` | number? | Niveau |
-| `attribute` | string | Attribut |
+| `attribute` | string? | Attribut (Vaccine, Virus, Data, Free) |
 | `dp` | number? | Digimon Power |
 | `playCost` | number? | Coût de jeu |
-| `digivolveCost1` | number? | Coût de digivolution 1 |
-| `digivolveCost2` | number? | Coût de digivolution 2 |
-| `digiType` | string | Type Digimon |
-| `form` | string | Forme |
+| `evolutionCost` | number? | Coût de digivolution |
+| `evolutionLevel` | number? | Niveau requis pour digivolution |
+| `evolutionColor` | string? | Couleur requise pour digivolution |
+| `xrosRequirement` | string? | Prérequis DigiXros |
+| `digiType` | string? | Types Digimon combinés (ex: "Holy Warrior / Royal Knight") |
+| `form` | string? | Forme |
 | `mainEffect` | string | Effet principal |
-| `inheritedEffect` | string? | Effet hérité |
-| `securityEffect` | string? | Effet sécurité |
+| `inheritedEffect` | string? | Effet hérité (source_effect) |
+| `securityEffect` | string? | Effet sécurité (alt_effect) |
 | `rarity` | string | Rareté |
-| `set` | `{name, code, series, releaseDate}` | Set (format uniforme, code extrait du cardnumber) |
-| `illustrator` | string | Illustrateur |
-| `externalLinks` | `{digimoncard}` | Lien |
+| `set` | `{name, code, series, releaseDate}` | Set (name = premier set de `set_name[]`, code extrait de l'ID) |
+| `illustrator` | string? | Artiste (champ `artist` de l'API) |
+| `tcgplayerId` | number? | ID TCGPlayer |
+| `externalLinks` | `{digimoncard}` | Lien vers digimoncard.io |
 
 ---
 
