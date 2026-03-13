@@ -190,6 +190,86 @@ export async function getOnePieceCardDetails(cardId, options = {}) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Image proxy — Cloudflare bloque les requêtes directes aux images
+// On utilise les cookies CF obtenus par FlareSolverr pour les télécharger
+// ═══════════════════════════════════════════════════════════════════════════
+
+const IMAGE_CACHE_TTL = 3600000; // 1 heure
+const imageCache = new Map();
+
+/**
+ * Télécharger une image One Piece via les cookies FlareSolverr
+ * @param {string} imageUrl - URL de l'image (champ iu de la carte)
+ * @returns {Promise<{buffer: Buffer, contentType: string}>}
+ */
+export async function fetchOnePieceImage(imageUrl) {
+  // Vérifier le cache
+  const cached = imageCache.get(imageUrl);
+  if (cached && (Date.now() - cached.timestamp) < IMAGE_CACHE_TTL) {
+    logger.debug(`[One Piece] Image cache hit: ${imageUrl}`);
+    return { buffer: cached.buffer, contentType: cached.contentType };
+  }
+
+  logger.info(`[One Piece] Downloading image: ${imageUrl}`);
+
+  // S'assurer qu'on a une session FlareSolverr avec des cookies valides
+  const client = getFsrClient();
+  await client.ensureSession('https://onepiece-cardgame.dev');
+
+  // Construire le cookie header depuis les cookies FlareSolverr
+  const cookies = client.getCookies();
+  const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+
+  // Fetch l'image directement avec les cookies CF
+  const response = await fetch(imageUrl, {
+    headers: {
+      'Cookie': cookieHeader,
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+      'Referer': 'https://onepiece-cardgame.dev/',
+      'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Image download failed: ${response.status} ${response.statusText}`);
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/jpeg';
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // Valider que c'est bien une image (pas du HTML Cloudflare)
+  if (contentType.includes('text/html') || buffer.length < 1000) {
+    throw new Error('Cloudflare challenge — image non téléchargeable');
+  }
+
+  // Mettre en cache
+  imageCache.set(imageUrl, { buffer, contentType, timestamp: Date.now() });
+
+  // Nettoyage du cache si trop gros (> 200 images)
+  if (imageCache.size > 200) {
+    const oldest = [...imageCache.entries()]
+      .sort((a, b) => a[1].timestamp - b[1].timestamp)
+      .slice(0, 50);
+    for (const [key] of oldest) imageCache.delete(key);
+  }
+
+  logger.info(`[One Piece] Image downloaded: ${buffer.length} bytes (${contentType})`);
+  return { buffer, contentType };
+}
+
+/**
+ * Récupérer l'URL de l'image d'une carte par son ID
+ * @param {string} cardId - ID de la carte
+ * @returns {Promise<string|null>} URL de l'image
+ */
+export async function getCardImageUrl(cardId) {
+  const allCards = await fetchOnePieceCards();
+  const card = allCards.find(c => c.cid === cardId);
+  return card?.iu || null;
+}
+
 /**
  * Health check API One Piece
  */

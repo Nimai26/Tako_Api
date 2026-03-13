@@ -7,6 +7,8 @@ import express from 'express';
 import {
   searchOnePieceCards,
   getOnePieceCardDetails,
+  fetchOnePieceImage,
+  getCardImageUrl,
   healthCheck
 } from '../providers/onepiece.provider.js';
 import {
@@ -127,6 +129,47 @@ router.get('/card/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/tcg/onepiece/image/:cardId
+ * Proxy image — contourne la protection Cloudflare
+ * Retourne l'image binaire avec le bon Content-Type
+ */
+router.get('/image/:cardId', async (req, res) => {
+  try {
+    const { cardId } = req.params;
+    
+    // Récupérer l'URL de l'image depuis les données
+    const imageUrl = await getCardImageUrl(cardId);
+    
+    if (!imageUrl) {
+      return res.status(404).json({
+        success: false,
+        error: `Card not found: ${cardId}`
+      });
+    }
+    
+    // Télécharger l'image via les cookies FlareSolverr
+    const { buffer, contentType } = await fetchOnePieceImage(imageUrl);
+    
+    // Headers de cache (1h navigateur, 24h CDN)
+    res.set({
+      'Content-Type': contentType,
+      'Content-Length': buffer.length,
+      'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      'X-Image-Source': 'onepiece-cardgame.dev'
+    });
+    
+    res.send(buffer);
+    
+  } catch (error) {
+    logger.error(`[One Piece Routes] Image proxy error: ${error.message}`);
+    res.status(502).json({
+      success: false,
+      error: `Image proxy failed: ${error.message}`
     });
   }
 });

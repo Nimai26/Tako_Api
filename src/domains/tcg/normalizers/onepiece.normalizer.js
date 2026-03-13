@@ -51,8 +51,8 @@ async function normalizeCardSummary(rawCard, options = {}) {
     }
   }
   
-  // Image URL (champ iu = vraie URL avec hash)
-  const imageUrl = rawCard.iu || null;
+  // Image URL — proxy via Tako pour contourner Cloudflare
+  const proxyUrl = `/api/tcg/onepiece/image/${encodeURIComponent(rawCard.cid)}`;
   
   return {
     id: `onepiece:${rawCard.cid}`,
@@ -64,8 +64,8 @@ async function normalizeCardSummary(rawCard, options = {}) {
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
     year: extractYear(rawCard),
     images: {
-      primary: imageUrl,
-      thumbnail: imageUrl,
+      primary: proxyUrl,
+      thumbnail: proxyUrl,
       gallery: []
     },
     urls: {
@@ -117,14 +117,14 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     }
   }
   
-  // Image (champ iu = vraie URL avec hash)
-  const imageUrl = rawCard.iu || null;
-  const images = imageUrl ? [{
-    url: imageUrl,
-    thumbnail: imageUrl,
+  // Image — proxy via Tako pour contourner Cloudflare
+  const proxyUrl = `/api/tcg/onepiece/image/${encodeURIComponent(rawCard.cid)}`;
+  const images = [{
+    url: proxyUrl,
+    thumbnail: proxyUrl,
     caption: 'Carte',
     isMain: true
-  }] : [];
+  }];
   
   // Description complète
   let fullDescription = effect;
@@ -139,8 +139,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     description: fullDescription,
     year: extractYear(rawCard),
     images: {
-      primary: imageUrl,
-      thumbnail: imageUrl,
+      primary: proxyUrl,
+      thumbnail: proxyUrl,
       gallery: images
     },
     urls: {
