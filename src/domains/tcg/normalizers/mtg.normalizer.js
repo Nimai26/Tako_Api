@@ -45,8 +45,8 @@ export async function normalizeSearchResults(rawData, options = {}) {
     // Traduire si demandé
     if (autoTrad && lang !== 'en' && description) {
       try {
-        const translated = await translateText(description, { sourceLang: 'en', targetLang: lang });
-        description = extractText(translated);
+        const translated = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
+        if (translated.translated) description = translated.text;
       } catch (error) {
         logger.warn(`[MTG] Échec traduction pour ${name}`);
       }
@@ -140,8 +140,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   if (autoTrad && lang !== 'en') {
     if (description) {
       try {
-        const translated = await translateText(description, { sourceLang: 'en', targetLang: lang });
-        description = extractText(translated);
+        const translated = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
+        if (translated.translated) description = translated.text;
       } catch (error) {
         logger.warn(`[MTG] Échec traduction oracle text ${rawCard.id}`);
       }
@@ -149,8 +149,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     
     if (flavorText) {
       try {
-        const translated = await translateText(flavorText, { sourceLang: 'en', targetLang: lang });
-        flavorText = extractText(translated);
+        const translated = await translateText(flavorText, lang, { enabled: true, sourceLang: 'en' });
+        if (translated.translated) flavorText = translated.text;
       } catch (error) {
         // Garder la version originale
       }

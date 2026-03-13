@@ -47,7 +47,8 @@ async function normalizeCardSummary(rawCard, options = {}) {
   // Traduction si nécessaire
   if (autoTrad && lang !== 'en' && description) {
     try {
-      description = await translateText(description, lang);
+      const result = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
+      if (result.translated) description = result.text;
     } catch (error) {
       // Conserver la version originale
     }
@@ -109,14 +110,15 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   if (autoTrad && lang !== 'en') {
     try {
       if (flavorText) {
-        flavorText = await translateText(flavorText, lang);
+        const r = await translateText(flavorText, lang, { enabled: true, sourceLang: 'en' });
+        if (r.translated) flavorText = r.text;
       }
       if (abilities.length > 0) {
         abilities = await Promise.all(
-          abilities.map(async (ability) => ({
-            ...ability,
-            text: await translateText(ability.text, lang)
-          }))
+          abilities.map(async (ability) => {
+            const r = await translateText(ability.text, lang, { enabled: true, sourceLang: 'en' });
+            return { ...ability, text: r.translated ? r.text : ability.text };
+          })
         );
       }
     } catch (error) {

@@ -115,8 +115,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   // Traduction automatique si demandée
   if (autoTrad && description && lang !== 'en') {
     try {
-      const translated = await translateText(description, { sourceLang: 'en', targetLang: lang });
-      description = extractText(translated);
+      const translated = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
+      if (translated.translated) description = translated.text;
     } catch (error) {
       logger.warn(`[Pokemon TCG] Échec traduction carte ${rawCard.id}`);
     }
@@ -126,8 +126,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   let flavorText = rawCard.flavorText || null;
   if (autoTrad && flavorText && lang !== 'en') {
     try {
-      const translated = await translateText(flavorText, { sourceLang: 'en', targetLang: lang });
-      flavorText = extractText(translated);
+      const translated = await translateText(flavorText, lang, { enabled: true, sourceLang: 'en' });
+      if (translated.translated) flavorText = translated.text;
     } catch (error) {
       // Garder la version originale
     }

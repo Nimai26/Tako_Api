@@ -39,7 +39,8 @@ async function normalizeCardSummary(rawCard, options = {}) {
   let description = rawCard.desc || '';
   if (autoTrad && lang !== 'en' && description) {
     try {
-      description = await translateText(description, lang);
+      const result = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
+      if (result.translated) description = result.text;
     } catch (error) {
       // Conserver la version originale en cas d'erreur
     }
@@ -101,10 +102,12 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   if (autoTrad && lang !== 'en') {
     try {
       if (description) {
-        description = await translateText(description, lang);
+        const r = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
+        if (r.translated) description = r.text;
       }
       if (pendulumEffect) {
-        pendulumEffect = await translateText(pendulumEffect, lang);
+        const r = await translateText(pendulumEffect, lang, { enabled: true, sourceLang: 'en' });
+        if (r.translated) pendulumEffect = r.text;
       }
     } catch (error) {
       // Conserver les versions originales
