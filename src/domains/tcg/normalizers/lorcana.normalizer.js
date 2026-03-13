@@ -58,6 +58,8 @@ async function normalizeCardSummary(rawCard, options = {}) {
   const imageUrl = rawCard.images?.full || rawCard.images?.thumbnail || '';
   const thumbnailUrl = rawCard.images?.thumbnail || imageUrl;
   
+  const setInfo = rawCard._set || {};
+  
   return {
     id: `lorcana:${rawCard.fullIdentifier || String(rawCard.id)}`,
     type: 'tcg_card',
@@ -66,14 +68,14 @@ async function normalizeCardSummary(rawCard, options = {}) {
     title: rawCard.fullName || rawCard.name,
     titleOriginal: null,
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
-    year: extractYear(rawCard),
+    year: extractYearFromDate(setInfo.releaseDate),
     images: {
       primary: imageUrl || null,
       thumbnail: thumbnailUrl || null,
       gallery: []
     },
     urls: {
-      source: null,
+      source: rawCard.fullIdentifier ? `https://lorcanajson.org/cards/${rawCard.fullIdentifier}` : null,
       detail: `/api/tcg/lorcana/card/${rawCard.fullIdentifier || rawCard.id}`
     },
     details: {
@@ -82,17 +84,20 @@ async function normalizeCardSummary(rawCard, options = {}) {
       name: rawCard.name,
       version: rawCard.version,
       type: rawCard.type,
+      subtypes: rawCard.subtypes || [],
       color: rawCard.color,
       cost: rawCard.cost,
       inkwell: rawCard.inkwell,
       rarity: rawCard.rarity,
+      artist: rawCard.artistsText || null,
+      cardNumber: rawCard.number || null,
+      story: rawCard.story || null,
       set: {
-        name: rawCard.setName || null,
+        name: setInfo.name || null,
         code: rawCard.setCode || null,
         series: null,
-        releaseDate: null
+        releaseDate: setInfo.releaseDate || null
       },
-      collectorNumber: rawCard.collectorNumber,
       // Stats spécifiques aux personnages
       ...(rawCard.strength !== undefined && { strength: rawCard.strength }),
       ...(rawCard.willpower !== undefined && { willpower: rawCard.willpower }),
@@ -141,15 +146,17 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         isMain: true
       });
     }
-    if (rawCard.images.foil && rawCard.images.foil !== rawCard.images.full) {
+    if (rawCard.images.foilMask && rawCard.images.foilMask !== rawCard.images.full) {
       images.push({
-        url: rawCard.images.foil,
+        url: rawCard.images.foilMask,
         thumbnail: rawCard.images.thumbnail,
         caption: 'Version foil',
         isMain: false
       });
     }
   }
+  
+  const setInfo = rawCard._set || {};
   
   return {
     id: `lorcana:${rawCard.fullIdentifier || String(rawCard.id)}`,
@@ -159,7 +166,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     title: rawCard.fullName || rawCard.name,
     titleOriginal: null,
     description: abilities.map(a => a.text).join('\n\n'),
-    year: extractYear(rawCard),
+    year: extractYearFromDate(setInfo.releaseDate),
     images: {
       primary: images[0]?.url || null,
       thumbnail: images[0]?.thumbnail || images[0]?.url || null,
@@ -178,7 +185,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       version: rawCard.version,
       fullName: rawCard.fullName,
       type: rawCard.type,
-      classifications: rawCard.classifications,
+      subtypes: rawCard.subtypes || [],
       
       // Attributs de jeu
       color: rawCard.color,
@@ -203,34 +210,36 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       
       // Set info
       set: {
-        name: rawCard.setName || null,
+        name: setInfo.name || null,
         code: rawCard.setCode || null,
         series: null,
-        releaseDate: null
+        releaseDate: setInfo.releaseDate || null
       },
-      setNumber: rawCard.setNumber || null,
-      collectorNumber: rawCard.collectorNumber || null,
-      setTotal: rawCard.setTotal || null,
+      cardNumber: rawCard.number || null,
       
       // Rareté et édition
       rarity: rawCard.rarity,
+      foilTypes: rawCard.foilTypes || [],
       
       // Artiste
-      artist: rawCard.artist,
+      artist: rawCard.artistsText || null,
       
       // Identifiants
       code: rawCard.code,
       fullIdentifier: rawCard.fullIdentifier,
       
-      // Franchise d'origine
-      franchise: rawCard.franchise,
-      franchiseIcon: rawCard.franchiseIcon,
+      // Franchise / Story
+      story: rawCard.story || null,
+      
+      // Légalité
+      legalities: rawCard.allowedInFormats || {},
 
       // Liens externes
       externalLinks: {
         lorcanajson: `https://lorcanajson.org/cards/${rawCard.fullIdentifier}`,
-        dreamborn: rawCard.fullName ? 
-          `https://dreamborn.ink/cards/${rawCard.fullName.toLowerCase().replace(/\s+/g, '-')}` : null
+        ...(rawCard.externalLinks?.tcgPlayerUrl && { tcgplayer: rawCard.externalLinks.tcgPlayerUrl }),
+        ...(rawCard.externalLinks?.cardmarketUrl && { cardmarket: rawCard.externalLinks.cardmarketUrl }),
+        ...(rawCard.externalLinks?.cardTraderUrl && { cardTrader: rawCard.externalLinks.cardTraderUrl })
       }
     }
   };

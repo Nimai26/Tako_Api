@@ -154,12 +154,19 @@ export async function searchLorcanaCards(query, options = {}) {
     const end = start + max;
     const paginated = filtered.slice(start, end);
     
+    // Enrichir avec les données du set
+    const sets = data.sets || {};
+    const enriched = paginated.map(card => {
+      const setInfo = sets[card.setCode];
+      return setInfo ? { ...card, _set: setInfo } : card;
+    });
+    
     const result = {
       total_cards: filtered.length,
       page,
       page_size: max,
       total_pages: Math.ceil(filtered.length / max),
-      data: paginated,
+      data: enriched,
       metadata: data.metadata
     };
     
@@ -197,9 +204,14 @@ export async function getLorcanaCardDetails(cardId, options = {}) {
       throw new Error(`Card not found: ${cardId}`);
     }
     
+    // Enrichir avec les données du set
+    const sets = data.sets || {};
+    const setInfo = sets[card.setCode];
+    const enriched = setInfo ? { ...card, _set: setInfo } : card;
+    
     logger.info(`[Lorcana] Card fetched: ${card.fullName}`);
     
-    return card;
+    return enriched;
     
   } catch (error) {
     logger.error(`[Lorcana] Card fetch error: ${error.message}`);
@@ -219,9 +231,16 @@ export async function getLorcanaSets(options = {}) {
   try {
     const data = await fetchLorcanaData(lang);
     
-    logger.info(`[Lorcana] Sets fetched: ${data.sets?.length || 0}`);
+    // data.sets est un objet {code: setData}, le convertir en tableau
+    const setsObj = data.sets || {};
+    const setsArray = Object.entries(setsObj).map(([code, set]) => ({
+      ...set,
+      code
+    }));
     
-    return data.sets || [];
+    logger.info(`[Lorcana] Sets fetched: ${setsArray.length}`);
+    
+    return setsArray;
     
   } catch (error) {
     logger.error(`[Lorcana] Sets fetch error: ${error.message}`);
