@@ -9,8 +9,15 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### 🏴‍☠️ TCG — Correction images et données One Piece
 
+#### Added
+- **Proxy image** — Nouvel endpoint `GET /api/tcg/onepiece/image/:cardId` qui télécharge les images via les cookies FlareSolverr pour contourner Cloudflare (les URLs directes vers `onepiece-cardgame.dev` retournent 403)
+  - Cache mémoire (1h TTL, max 200 images)
+  - Headers `Cache-Control` pour navigateur/CDN
+  - Les champs `images.primary`/`thumbnail` pointent désormais vers `/api/tcg/onepiece/image/{cardId}`
+
 #### Fixed
 - **Images cassées** — Le normalizer construisait `{cid}.png` (URL fictive retournant le HTML du SPA React) ; utilise désormais le champ `iu` de l'API source (vraie URL JPG avec hash, ex: `ST01-001_85f00c_jp.jpg`)
+- **Cloudflare 403** — Les images sont protégées par Cloudflare JS Challenge ; le proxy image utilise les cookies CF pour y accéder
 - **`urls.source`** — `null` en recherche → ajout lien `onepiece-cardgame.dev/cards/{cid}`
 - **`set.name`** — `null` → utilise `srcN` directement (le provider enrichissait via `set_info` mais le champ `srcId` n'existe pas dans les données brutes)
 - **`set.releaseDate`** — `null` → utilise `srcD` directement

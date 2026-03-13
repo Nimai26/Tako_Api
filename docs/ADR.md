@@ -411,3 +411,40 @@ Le normalizer One Piece TCG avait plusieurs bugs de mapping des données brutes 
 ### Fichiers modifiés
 
 - `src/domains/tcg/normalizers/onepiece.normalizer.js` — Toutes les corrections ci-dessus
+
+---
+
+## ADR-011: Proxy image One Piece via FlareSolverr
+
+**Date**: 2026-03-13  
+**Statut**: Accepté
+
+### Contexte
+
+Les images des cartes One Piece (`onepiece-cardgame.dev/images/cards/*.jpg`) sont protégées par Cloudflare JS Challenge. Les requêtes directes (fetch backend ou navigateur) reçoivent une réponse 403.
+
+Tako utilise déjà FlareSolverr pour accéder à `cards.json` (données des cartes). La session FlareSolverr obtient des cookies Cloudflare valides après résolution du challenge.
+
+### Décision
+
+Ajouter un endpoint proxy image `GET /api/tcg/onepiece/image/:cardId` qui :
+1. Récupère l'URL réelle de l'image (`iu`) depuis les données de la carte
+2. Utilise `ensureSession()` pour obtenir des cookies CF valides
+3. Fetch l'image directement avec les cookies (pas via FlareSolverr, qui retourne du HTML)
+4. Valide que la réponse est une vraie image (pas une page challenge)
+5. Cache en mémoire (1h TTL, max 200 entrées, LRU eviction)
+6. Retourne le binaire avec le bon `Content-Type`
+
+Le normalizer pointe désormais `images.primary`/`thumbnail` vers `/api/tcg/onepiece/image/{cardId}` (chemin relatif) au lieu de l'URL directe Cloudflare.
+
+### Conséquences
+
+- Les applications tierces accèdent aux images sans blocage Cloudflare
+- La bande passante Tako augmente (proxy des images) mais est atténuée par le cache mémoire + `Cache-Control: public, max-age=3600`
+- Pas de dépendance externe supplémentaire (réutilise FlareSolverr déjà présent)
+
+### Fichiers modifiés
+
+- `src/domains/tcg/providers/onepiece.provider.js` — `fetchOnePieceImage()`, `getCardImageUrl()`
+- `src/domains/tcg/routes/onepiece.routes.js` — Route `GET /image/:cardId`
+- `src/domains/tcg/normalizers/onepiece.normalizer.js` — URLs images → proxy

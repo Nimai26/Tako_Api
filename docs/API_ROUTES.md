@@ -2501,6 +2501,7 @@ L'API pokemontcg.io peut parfois être lente ou indisponible. En cas d'erreur 50
 | `GET /health` | Health check | ✅ Fonctionne |
 | `GET /search` | Recherche de cartes One Piece | ✅ Fonctionne |
 | `GET /card/:id` | Détails d'une carte | ✅ Fonctionne |
+| `GET /image/:cardId` | Proxy image (bypass Cloudflare) | ✅ Fonctionne |
 
 **Paramètres de recherche** :
 - `q` : Terme de recherche (**optionnel**, une chaîne vide est acceptée)

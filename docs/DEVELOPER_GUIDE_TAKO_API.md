@@ -1005,9 +1005,11 @@ Les providers suivants sont également disponibles :
 |----------|----------|--------|-----------|
 | **Lorcana** | `/api/tcg/lorcana/` | LorcanaJSON (`lorcanajson.org`) | `search`, `card/:id`, `sets` |
 | **Digimon** | `/api/tcg/digimon/` | digimoncard.io | `search`, `card/:id` |
-| **One Piece** | `/api/tcg/onepiece/` | onepiece-cardgame.dev | `search`, `card/:id` |
+| **One Piece** | `/api/tcg/onepiece/` | onepiece-cardgame.dev | `search`, `card/:id`, `image/:cardId` |
 
 > **Note** : Digimon et One Piece ne disposent pas d'endpoint `/sets`. Seuls Lorcana, Pokémon, MTG, Yu-Gi-Oh! et DBS proposent la liste des sets.
+> 
+> **Note One Piece** : Les images sont protégées par Cloudflare JS Challenge. L'endpoint `image/:cardId` sert de proxy — il télécharge l'image via les cookies FlareSolverr et la retourne en binaire. Les champs `images.primary`/`thumbnail` pointent vers ce proxy.
 
 ---
 
