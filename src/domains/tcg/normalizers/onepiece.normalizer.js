@@ -86,7 +86,13 @@ async function normalizeCardSummary(rawCard, options = {}) {
       // Attribut
       ...(rawCard.attribute_name && rawCard.attribute_name !== 'N/A' && { attribute: rawCard.attribute_name }),
       // Trigger
-      ...(rawCard.tr && { trigger: rawCard.tr }) // tr = trigger
+      ...(rawCard.tr && { trigger: rawCard.tr }), // tr = trigger
+      set: {
+        name: null,
+        code: rawCard.cid?.match(/^([A-Z]+\d+)/)?.[1] || null,
+        series: null,
+        releaseDate: null
+      }
     }
   };
 }
@@ -174,10 +180,16 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       
       // Set info
       set: rawCard.set_info ? {
-        id: rawCard.set_info.src_id,
-        name: rawCard.set_info.name,
-        releaseDate: rawCard.set_info.release_date
-      } : null,
+        name: rawCard.set_info.name || null,
+        code: rawCard.cid?.match(/^([A-Z]+\d+)/)?.[1] || null,
+        series: null,
+        releaseDate: rawCard.set_info.release_date || null
+      } : {
+        name: null,
+        code: rawCard.cid?.match(/^([A-Z]+\d+)/)?.[1] || null,
+        series: null,
+        releaseDate: null
+      },
       
       // Tags/Catégories
       tags: parseCardTags(rawCard),

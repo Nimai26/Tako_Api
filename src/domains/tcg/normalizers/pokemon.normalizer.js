@@ -53,10 +53,10 @@ export async function normalizeSearchResults(rawData, options = {}) {
         collection: 'Pokémon TCG',
         subtitle: card.supertype || null,
         set: {
-          id: card.set?.id || null,
           name: card.set?.name || null,
+          code: card.set?.id || null,
           series: card.set?.series || null,
-          logo: card.set?.images?.logo || null
+          releaseDate: card.set?.releaseDate || null
         },
         cardNumber: card.number ? `${card.number}/${setTotal}` : null,
         rarity: card.rarity || null,
@@ -208,13 +208,10 @@ export async function normalizeCardDetails(rawCard, options = {}) {
 
       // Informations du set
       set: {
-        id: rawCard.set?.id || null,
         name: rawCard.set?.name || null,
+        code: rawCard.set?.id || null,
         series: rawCard.set?.series || null,
-        printedTotal: setTotal,
-        releaseDate: rawCard.set?.releaseDate || null,
-        logo: rawCard.set?.images?.logo || null,
-        symbol: rawCard.set?.images?.symbol || null
+        releaseDate: rawCard.set?.releaseDate || null
       },
       
       // Numérotation

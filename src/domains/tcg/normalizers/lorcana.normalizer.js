@@ -86,8 +86,12 @@ async function normalizeCardSummary(rawCard, options = {}) {
       cost: rawCard.cost,
       inkwell: rawCard.inkwell,
       rarity: rawCard.rarity,
-      setCode: rawCard.setCode,
-      setName: rawCard.setName,
+      set: {
+        name: rawCard.setName || null,
+        code: rawCard.setCode || null,
+        series: null,
+        releaseDate: null
+      },
       collectorNumber: rawCard.collectorNumber,
       // Stats spécifiques aux personnages
       ...(rawCard.strength !== undefined && { strength: rawCard.strength }),
@@ -198,12 +202,11 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       })),
       
       // Set info
-      setInfo: {
-        code: rawCard.setCode,
-        name: rawCard.setName,
-        number: rawCard.setNumber,
-        collectorNumber: rawCard.collectorNumber,
-        total: rawCard.setTotal
+      set: {
+        name: rawCard.setName || null,
+        code: rawCard.setCode || null,
+        series: null,
+        releaseDate: null
       },
       
       // Rareté et édition

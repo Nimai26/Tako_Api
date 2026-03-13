@@ -89,7 +89,13 @@ async function normalizeCardSummary(rawCard, options = {}) {
       ...(rawCard.playcost !== undefined && { playCost: rawCard.playcost }),
       ...(rawCard.digivolvecost1 !== undefined && { digivolveCost: rawCard.digivolvecost1 }),
       ...(rawCard.digitype && { digiType: rawCard.digitype }),
-      ...(rawCard.form && { form: rawCard.form })
+      ...(rawCard.form && { form: rawCard.form }),
+      set: {
+        name: rawCard.set || null,
+        code: (rawCard.cardnumber || rawCard.id || '').match(/^([A-Z]+-?\d*)/)?.[1] || null,
+        series: rawCard.series || null,
+        releaseDate: null
+      }
     }
   };
 }
@@ -195,8 +201,12 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       
       // Rareté et set
       rarity: rawCard.rarity,
-      series: rawCard.series,
-      set: rawCard.set,
+      set: {
+        name: rawCard.set || null,
+        code: (rawCard.cardnumber || rawCard.id || '').match(/^([A-Z]+-?\d*)/)?.[1] || null,
+        series: rawCard.series || null,
+        releaseDate: null
+      },
       
       // Artiste
       illustrator: rawCard.illustrator,

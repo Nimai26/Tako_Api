@@ -75,7 +75,9 @@ export async function normalizeSearchResults(rawData, options = {}) {
         subtitle: card.type_line || null,
         set: {
           name: card.set_name || null,
-          code: card.set || null
+          code: card.set || null,
+          series: null,
+          releaseDate: card.released_at || null
         },
         rarity: card.rarity || null,
         colors: card.colors || [],
@@ -188,11 +190,10 @@ export async function normalizeCardDetails(rawCard, options = {}) {
 
       // Set
       set: {
-        id: rawCard.set_id || null,
-        code: rawCard.set || null,
         name: rawCard.set_name || null,
-        type: rawCard.set_type || null,
-        iconSvg: rawCard.set_uri || null
+        code: rawCard.set || null,
+        series: null,
+        releaseDate: rawCard.released_at || null
       },
       
       // Identification

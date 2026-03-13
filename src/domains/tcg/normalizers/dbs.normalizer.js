@@ -210,7 +210,12 @@ function normalizeCard(card) {
       color: card.card_color,
       rarity: card.card_rarity,
       power: card.card_power,
-      setCode: card.set_code,
+      set: {
+        name: null,
+        code: card.set_code || null,
+        series: card.game === 'masters' ? 'DBS Masters' : card.game === 'fusion_world' ? 'Fusion World' : null,
+        releaseDate: null
+      },
     },
   };
 }

@@ -72,6 +72,12 @@ async function normalizeCardSummary(rawCard, options = {}) {
     details: {
       collection: 'Yu-Gi-Oh! Trading Card Game',
       subtitle,
+      set: {
+        name: rawCard.card_sets?.[0]?.set_name || null,
+        code: rawCard.card_sets?.[0]?.set_code || null,
+        series: null,
+        releaseDate: null
+      },
       type: rawCard.type,
       race: rawCard.race, // Dragon, Spellcaster, etc.
       archetype: rawCard.archetype,
@@ -146,6 +152,14 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     },
     details: {
       subtitle: rawCard.type,
+
+      // Set canonique (Format B)
+      set: {
+        name: rawCard.card_sets?.[0]?.set_name || null,
+        code: rawCard.card_sets?.[0]?.set_code || null,
+        series: null,
+        releaseDate: null
+      },
 
       // Informations de base
       type: rawCard.type,
