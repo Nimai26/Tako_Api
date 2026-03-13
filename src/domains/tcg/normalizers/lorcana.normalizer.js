@@ -208,6 +208,9 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         series: null,
         releaseDate: null
       },
+      setNumber: rawCard.setNumber || null,
+      collectorNumber: rawCard.collectorNumber || null,
+      setTotal: rawCard.setTotal || null,
       
       // Rareté et édition
       rarity: rawCard.rarity,

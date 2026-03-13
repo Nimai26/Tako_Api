@@ -190,6 +190,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         series: null,
         releaseDate: null
       },
+      setSourceId: rawCard.set_info?.src_id || null,
       
       // Tags/Catégories
       tags: parseCardTags(rawCard),

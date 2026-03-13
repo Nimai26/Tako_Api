@@ -58,6 +58,7 @@ export async function normalizeSearchResults(rawData, options = {}) {
           series: card.set?.series || null,
           releaseDate: card.set?.releaseDate || null
         },
+        setLogo: card.set?.images?.logo || null,
         cardNumber: card.number ? `${card.number}/${setTotal}` : null,
         rarity: card.rarity || null,
         types: card.types || [],
@@ -213,6 +214,9 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         series: rawCard.set?.series || null,
         releaseDate: rawCard.set?.releaseDate || null
       },
+      setLogo: rawCard.set?.images?.logo || null,
+      setSymbol: rawCard.set?.images?.symbol || null,
+      setTotal: setTotal,
       
       // Numérotation
       number: rawCard.number || null,

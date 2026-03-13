@@ -195,6 +195,9 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         series: null,
         releaseDate: rawCard.released_at || null
       },
+      setId: rawCard.set_id || null,
+      setType: rawCard.set_type || null,
+      setIconSvg: rawCard.set_uri || null,
       
       // Identification
       scryfallId: rawCard.id,
