@@ -51,8 +51,8 @@ async function normalizeCardSummary(rawCard, options = {}) {
     }
   }
   
-  // Image URL (format: https://onepiece-cardgame.dev/images/cards/{cid}.png)
-  const imageUrl = `https://onepiece-cardgame.dev/images/cards/${rawCard.cid}.png`;
+  // Image URL (champ iu = vraie URL avec hash)
+  const imageUrl = rawCard.iu || null;
   
   return {
     id: `onepiece:${rawCard.cid}`,
@@ -69,7 +69,7 @@ async function normalizeCardSummary(rawCard, options = {}) {
       gallery: []
     },
     urls: {
-      source: null,
+      source: `https://onepiece-cardgame.dev/cards/${rawCard.cid}`,
       detail: `/api/tcg/onepiece/card/${encodeURIComponent(rawCard.cid)}`
     },
     details: {
@@ -82,16 +82,16 @@ async function normalizeCardSummary(rawCard, options = {}) {
       cost: rawCard.cs, // cs = cost
       // Stats pour Leader/Character
       ...(rawCard.p !== undefined && rawCard.p !== null && { power: rawCard.p }), // p = power
-      ...(rawCard.co !== undefined && rawCard.co !== null && { counter: rawCard.co }), // co = counter
+      ...(rawCard.cp !== undefined && rawCard.cp !== null && { counter: rawCard.cp }), // cp = counter power
       // Attribut
       ...(rawCard.attribute_name && rawCard.attribute_name !== 'N/A' && { attribute: rawCard.attribute_name }),
-      // Trigger
-      ...(rawCard.tr && { trigger: rawCard.tr }), // tr = trigger
+      // Traits (affiliations du personnage)
+      ...(rawCard.tr && { traits: rawCard.tr }), // tr = traits (ex: Supernovas/Straw Hat Crew)
       set: {
-        name: null,
+        name: rawCard.srcN || null,
         code: rawCard.cid?.match(/^([A-Z]+\d+)/)?.[1] || null,
         series: null,
-        releaseDate: null
+        releaseDate: rawCard.srcD || null
       }
     }
   };
@@ -105,7 +105,6 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   
   // Traduction de l'effet
   let effect = rawCard.e || '';
-  let triggerEffect = rawCard.tr || null;
   
   if (autoTrad && lang !== 'en') {
     try {
@@ -113,29 +112,22 @@ export async function normalizeCardDetails(rawCard, options = {}) {
         const r = await translateText(effect, lang, { enabled: true, sourceLang: 'en' });
         if (r.translated) effect = r.text;
       }
-      if (triggerEffect) {
-        const r = await translateText(triggerEffect, lang, { enabled: true, sourceLang: 'en' });
-        if (r.translated) triggerEffect = r.text;
-      }
     } catch (error) {
-      // Conserver les versions originales
+      // Conserver la version originale
     }
   }
   
-  // Image
-  const imageUrl = `https://onepiece-cardgame.dev/images/cards/${rawCard.cid}.png`;
-  const images = [{
+  // Image (champ iu = vraie URL avec hash)
+  const imageUrl = rawCard.iu || null;
+  const images = imageUrl ? [{
     url: imageUrl,
     thumbnail: imageUrl,
     caption: 'Carte',
     isMain: true
-  }];
+  }] : [];
   
   // Description complète
   let fullDescription = effect;
-  if (triggerEffect) {
-    fullDescription += `\n\n[Trigger] ${triggerEffect}`;
-  }
   
   return {
     id: `onepiece:${rawCard.cid}`,
@@ -171,26 +163,22 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       // Coûts et stats
       cost: rawCard.cs,
       power: rawCard.p,
-      counter: rawCard.co,
-      life: rawCard.lf, // lf = life (pour Leader)
+      counter: rawCard.cp, // cp = counter power
+      life: rawCard.l, // l = life (pour Leader)
       
       // Effets
       effect,
-      ...(triggerEffect && { triggerEffect }),
       
-      // Set info
-      set: rawCard.set_info ? {
-        name: rawCard.set_info.name || null,
+      // Traits (affiliations)
+      ...(rawCard.tr && { traits: rawCard.tr }),
+      
+      // Set info (srcN / srcD directement sur la carte)
+      set: {
+        name: rawCard.srcN || null,
         code: rawCard.cid?.match(/^([A-Z]+\d+)/)?.[1] || null,
         series: null,
-        releaseDate: rawCard.set_info.release_date || null
-      } : {
-        name: null,
-        code: rawCard.cid?.match(/^([A-Z]+\d+)/)?.[1] || null,
-        series: null,
-        releaseDate: null
+        releaseDate: rawCard.srcD || null
       },
-      setSourceId: rawCard.set_info?.src_id || null,
       
       // Tags/Catégories
       tags: parseCardTags(rawCard),
@@ -255,9 +243,9 @@ function parseCardTags(card) {
  * Extraire l'année de sortie d'une carte
  */
 function extractYear(card) {
-  // Utiliser les infos du set si disponibles
-  if (card.set_info?.release_date) {
-    const match = card.set_info.release_date.match(/\b(20\d{2})\b/);
+  // Utiliser srcD (date de sortie directement sur la carte)
+  if (card.srcD) {
+    const match = card.srcD.match(/\b(20\d{2})\b/);
     if (match) return parseInt(match[1]);
   }
   
