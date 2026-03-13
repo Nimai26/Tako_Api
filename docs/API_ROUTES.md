@@ -1631,6 +1631,7 @@ GET /api/collectibles/carddass/health
 > **API Key** : Aucune requise  
 > **Rate Limit** : Aucun  
 > **Note** : Cartes Pokémon officielles avec prix, sets, multi-langues natif (FR, EN, DE, ES, IT, PT)
+> **Note images** : TCGdex ne fournit d'images que pour les langues d'impression physique. Un fallback automatique vers l'image EN est effectué quand l'image locale est absente.
 
 | Endpoint | Description | Status |
 |----------|-------------|--------|
@@ -2462,9 +2463,9 @@ L'API pokemontcg.io peut parfois être lente ou indisponible. En cas d'erreur 50
 ### Lorcana TCG
 
 > **Base URL** : `/api/tcg/lorcana`  
-> **Source** : API Lorcana  
+> **Source** : [LorcanaJSON](https://lorcanajson.org) (`lorcanajson.org/files/current/{lang}/allCards.json`)  
 > **API Key** : ❌ Non requise  
-> **Note** : Langues supportées pour `/card/:id` et `/sets` : en, fr, de, it (validation stricte, 400 sinon)
+> **Note** : Langues supportées : en, fr, de, it. Données enrichies avec métadonnées des sets (nom, date de sortie). Liens externes vers TCGPlayer, Cardmarket, CardTrader.
 
 | Endpoint | Description | Status |
 |----------|-------------|--------|

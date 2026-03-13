@@ -334,3 +334,46 @@ Migrer vers **TCGdex** (`api.tcgdex.net`) :
 - `series` et `releaseDate` non disponibles dans le détail de carte (uniquement dans le détail de set)
 - Pas de liens directs vers TCGPlayer/Cardmarket (le champ `externalLinks` est null)
 - `evolvesTo` non fourni par TCGdex (toujours tableau vide)
+- Images absentes pour certaines langues (cartes non imprimées physiquement) → résolu par fallback EN (ADR-009)
+
+---
+
+## ADR-009: Fallback images EN pour TCGdex + Correction données Lorcana
+
+**Date**: 2026-03-13  
+**Statut**: Accepté
+
+### Contexte — Pokémon TCG (images)
+
+TCGdex ne fournit le champ `image` que pour les langues où la carte a été physiquement imprimée. En recherche FR "pikachu", seulement 124/176 cartes (70%) avaient une image. Beaucoup de promos et cartes anciennes n'existent qu'en anglais.
+
+### Décision
+
+Fallback automatique vers les images EN quand l'image locale est absente :
+- **Recherche** : appel EN en parallèle + injection par correspondance d'ID de carte
+- **Détail** : second appel EN si le champ `image` est absent dans la réponse localisée
+- Résultat : 153/176 (87%) images en FR, les 23 restants n'ont d'image dans aucune langue
+
+### Contexte — Lorcana (données manquantes)
+
+Le normalizer Lorcana utilisait des noms de champs incorrects par rapport à la structure LorcanaJSON :
+- `artist` au lieu de `artistsText` → artiste toujours `null`
+- `classifications` au lieu de `subtypes` → sous-types perdus
+- `collectorNumber` au lieu de `number` → numéro de carte `null`
+- `setName`/`setReleaseDate` non enrichis → les cartes n'avaient pas le nom de leur set
+
+De plus, le provider ne croisait pas les cartes avec les métadonnées des sets disponibles dans `data.sets`.
+
+### Décision
+
+- Provider enrichit chaque carte avec `_set` depuis `data.sets` avant normalisation
+- Normalizer corrigé pour utiliser les vrais noms de champs LorcanaJSON
+- Ajout des champs manquants : `story`, `foilTypes`, `legalities`, vrais `externalLinks` (tcgplayer, cardmarket, cardTrader)
+- Conversion des sets de l'objet `{code: setData}` vers un tableau pour `normalizeSets()`
+
+### Fichiers modifiés
+
+- `src/domains/tcg/providers/pokemon.provider.js` — Fallback EN images (search + detail)
+- `src/domains/tcg/normalizers/pokemon.normalizer.js` — Ajout `urls.source` (TCGdex API URL)
+- `src/domains/tcg/providers/lorcana.provider.js` — Enrichissement `_set`, conversion sets
+- `src/domains/tcg/normalizers/lorcana.normalizer.js` — Correction noms de champs, ajout données manquantes

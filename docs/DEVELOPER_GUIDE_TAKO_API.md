@@ -1003,7 +1003,7 @@ Les providers suivants sont également disponibles :
 
 | Provider | Base URL | Source | Endpoints |
 |----------|----------|--------|-----------|
-| **Lorcana** | `/api/tcg/lorcana/` | lorcanaplayer.com | `search`, `card/:id`, `sets` |
+| **Lorcana** | `/api/tcg/lorcana/` | LorcanaJSON (`lorcanajson.org`) | `search`, `card/:id`, `sets` |
 | **Digimon** | `/api/tcg/digimon/` | digimoncard.io | `search`, `card/:id` |
 | **One Piece** | `/api/tcg/onepiece/` | en.onepiece-cardgame.com | `search`, `card/:id` |
 
@@ -2417,6 +2417,8 @@ Inclut tous les champs de recherche plus :
 | `prices` | `{currency, low, mid, high, market, source, updatedAt, variants, cardmarket}?` | Prix TCGPlayer + Cardmarket |
 | `externalLinks` | `{tcgplayer, cardmarket}` | (null — TCGdex ne fournit pas de liens directs) |
 
+> **Note images** : TCGdex ne fournit d'images que pour les langues d'impression physique. Un fallback automatique vers l'image EN est effectué quand l'image locale est absente (recherche : appel EN parallèle ; détail : second appel EN si `image` manquant). Résultat : ~87% d'images en FR contre ~70% sans fallback.
+
 ---
 
 ### A.18 TCG — MTG (Scryfall)
@@ -2565,9 +2567,9 @@ Inclut tous les champs de recherche plus :
 | `name` | string | Nom |
 | `version` | string | Version |
 | `fullName` | string | Nom complet |
-| `type` | string | Type |
-| `classifications` | string\|array | Classifications |
-| `color` | string | Encre (Amber, Amethyst, Emerald…) |
+| `type` | string | Type (Personnage, Action, Objet, Lieu) |
+| `subtypes` | string[] | Sous-types (Storyborn, Héros, Reine, Mage…) |
+| `color` | string | Encre (Ambre, Améthyste, Émeraude, Rubis, Saphir, Acier) |
 | `cost` | number | Coût en encre |
 | `inkwell` | boolean | Peut produire de l'encre |
 | `strength` | number? | Force (personnages) |
@@ -2575,15 +2577,16 @@ Inclut tous les champs de recherche plus :
 | `lore` | number? | Connaissance |
 | `moveCost` | number? | Coût de déplacement (lieux) |
 | `abilities` | `[{type, name, text, effect}]` | Capacités |
-| `set` | `{name, code, series, releaseDate}` | Set (format uniforme) |
-| `setNumber` | number? | Numéro dans le set (extra Lorcana) |
-| `collectorNumber` | string? | Numéro de collectionneur (extra Lorcana) |
-| `setTotal` | number? | Total de cartes dans le set (extra Lorcana) |
+| `set` | `{name, code, series, releaseDate}` | Set (enrichi depuis métadonnées sets) |
+| `cardNumber` | number | Numéro dans le set |
 | `rarity` | string | Rareté |
-| `artist` | string | Illustrateur |
+| `foilTypes` | string[] | Types de foil disponibles (None, Silver…) |
+| `artist` | string | Illustrateur(s) |
 | `code` | string | Code carte |
-| `franchise` | string | Franchise Disney |
-| `externalLinks` | `{lorcanajson, dreamborn}` | Liens |
+| `fullIdentifier` | string | Identifiant complet ("40/204 • FR • 1") |
+| `story` | string? | Franchise d'origine (La Reine des neiges, Raiponce…) |
+| `legalities` | `{Core, Infinity}` | Légalité par format |
+| `externalLinks` | `{lorcanajson, tcgplayer?, cardmarket?, cardTrader?}` | Liens externes (depuis LorcanaJSON) |
 
 ---
 

@@ -6,6 +6,7 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
+
 ### 🖼️ TCG — Fallback images EN pour Pokémon TCG
 
 #### Fixed
@@ -13,6 +14,26 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   - **Recherche** : appel EN parallèle + injection des images EN par correspondance d'ID
   - **Détail carte** : second appel EN si `image` manquant dans la langue demandée
   - Résultat : recherche FR "pikachu" passe de 124/176 (70%) à 153/176 (87%) images
+- **`urls.source` Pokémon** — Le champ était `null` ; ajouté l'URL TCGdex API (`https://api.tcgdex.net/v2/{lang}/cards/{id}`) pour search, detail, sets et set detail
+
+### 🎴 TCG — Correction données manquantes Lorcana
+
+#### Fixed
+- **`artist`** — `null` → artiste affiché (champ source = `artistsText`, pas `artist`)
+- **`subtypes`** — `undefined` → sous-types corrects (champ source = `subtypes`, pas `classifications`)
+- **`cardNumber`** — `null` → numéro de carte (champ source = `number`, pas `collectorNumber`)
+- **`set.name`/`set.releaseDate`** — `null` → enrichi depuis les métadonnées des sets (le provider ne croisait pas cartes ↔ sets)
+- **`year`** — `null` → extrait de `set.releaseDate`
+- **`story`** — absent → franchise d'origine (ex: "La Reine des neiges")
+- **`foilTypes`** — absent → types de foil disponibles
+- **`legalities`** — absent → légalité Core/Infinity depuis `allowedInFormats`
+- **`externalLinks`** — seulement lorcanajson+dreamborn → ajout tcgplayer, cardmarket, cardTrader (vrais liens depuis LorcanaJSON)
+- **`urls.source`** — `null` → URL LorcanaJSON
+- **Galerie foil** — image foil manquante (champ source = `foilMask`, pas `foil`)
+
+#### Changed
+- **Provider Lorcana** — Enrichit chaque carte avec `_set` depuis `data.sets` ; conversion sets objet → tableau pour `normalizeSets()`
+
 ### � TCG — Migration Pokémon TCG vers TCGdex
 
 #### Changed

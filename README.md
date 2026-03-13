@@ -3,7 +3,7 @@
 > **Version 2.6.1** - Architecture modulaire par domaines
 > 
 > **Migration toys_api ✅ Terminée** - 30 janvier 2026  
-> **Dernière mise à jour** : 13 mars 2026 (TCG : migration Pokémon vers TCGdex)
+> **Dernière mise à jour** : 13 mars 2026 (TCG : fallback images Pokémon + fix Lorcana)
 
 API REST multi-sources pour rechercher et récupérer des informations produits depuis **36 providers** répartis en **11 domaines**.
 
@@ -258,7 +258,6 @@ IGDB_CLIENT_SECRET=
 COMICVINE_API_KEY=
 DISCOGS_TOKEN=
 RAWG_API_KEY=
-POKEMON_TCG_API_KEY=
 
 # Traduction (intégrée, activée par défaut)
 AUTO_TRAD_ENABLED=true
