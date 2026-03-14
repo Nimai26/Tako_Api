@@ -2,7 +2,7 @@
 
 > **Version** : 2.6.1  
 > **Base URL Production** : `https://tako.snowmanprod.fr`  
-> **Dernière mise à jour** : 13 mars 2026
+> **Dernière mise à jour** : 14 mars 2026
 
 ---
 
@@ -42,7 +42,7 @@
 
 ## 1. Introduction
 
-**Tako API** est une API REST unifiée qui agrège **37 providers** répartis en **12 domaines** (comics, livres, jeux vidéo, anime, films, musique, TCG, collectibles, sticker-albums…). Elle fournit un **format de réponse normalisé** quel que soit le provider, ce qui simplifie considérablement l'intégration côté client.
+**Tako API** est une API REST unifiée qui agrège **38 providers** répartis en **12 domaines** (comics, livres, jeux vidéo, anime, films, musique, TCG, collectibles, sticker-albums…). Elle fournit un **format de réponse normalisé** quel que soit le provider, ce qui simplifie considérablement l'intégration côté client.
 
 ### Ce que Tako API offre
 
@@ -188,6 +188,7 @@ Chaque élément retourné par l'API suit **le même schéma de base**, quel que
 | `series` | media | Série TV |
 | `anime` | anime-manga | Anime |
 | `manga` | anime-manga | Manga |
+| `manga_volume` | anime-manga | Volume manga (Nautiljon) |
 | `tcg_card` | tcg | Carte à collectionner |
 | `collectible` | collectibles | Objet de collection |
 | `album` | music | Album musical |
@@ -651,6 +652,42 @@ GET /api/anime-manga/jikan/schedule?day=monday&limit=15
 | `GET /api/anime-manga/mangaupdates/releases` | Dernières sorties |
 
 **Paramètres** : `q`, `maxResults`, `page`, `type`, `year`, `genre`, `frenchTitle` (`1` pour titre français via Nautiljon), `lang`, `autoTrad`
+
+#### Nautiljon (Volumes Manga)
+
+> Source : [nautiljon.com](https://www.nautiljon.com) — Rate limit : 1 req/sec — Scraping HTML
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/anime-manga/nautiljon/health` | Health check avec latence |
+| `GET /api/anime-manga/nautiljon/search?q=` | Recherche de séries manga |
+| `GET /api/anime-manga/nautiljon/series/:slug` | Détails série (genres, thèmes, auteurs, éditeurs, volumes) |
+| `GET /api/anime-manga/nautiljon/series/:slug/volumes` | Liste des volumes avec couvertures |
+| `GET /api/anime-manga/nautiljon/series/:slug/volume/:volumeId?name=` | Détail volume (ISBN, pages, prix, dates, chapitres) |
+
+**Paramètres** :
+- `:slug` : Slug Nautiljon (ex: `one+piece`, `naruto`)
+- `:volumeId` : ID numérique du volume
+- `name` : Numéro/nom du volume (requis pour le détail volume)
+- `q` : Terme de recherche (pour /search)
+
+**Données série** : titre FR/JP, synopsis, genres, thèmes, auteurs, éditeurs VF/VO, nombre de volumes, liste complète des volumes
+
+**Données volume** : ISBN/EAN, nombre de pages, prix (€/¥), dates de parution VF/VO, éditeurs VF/VO, couvertures FR/JP, chapitres avec titres français, édition
+
+```bash
+# Recherche
+GET /api/anime-manga/nautiljon/search?q=one+piece
+
+# Détails série (451 volumes pour One Piece)
+GET /api/anime-manga/nautiljon/series/one+piece
+
+# Liste des volumes
+GET /api/anime-manga/nautiljon/series/one+piece/volumes
+
+# Détail volume 1 : ISBN 9782723433358, 192 pages, 7.20€
+GET /api/anime-manga/nautiljon/series/one+piece/volume/98?name=1
+```
 
 ---
 
@@ -2977,5 +3014,5 @@ Mêmes champs que recherche + :
 
 ---
 
-> **Tako API v2.6.1** — 37 providers, 12 domaines, 130 102 cartes archivées  
+> **Tako API v2.6.1** — 38 providers, 12 domaines, 130 102 cartes archivées  
 > Pour toute question, consultez le repo [Nimai26/Tako_Api](https://github.com/Nimai26/Tako_Api)
