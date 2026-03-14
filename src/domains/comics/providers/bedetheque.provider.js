@@ -447,46 +447,88 @@ export class BedethequeProvider extends BaseProvider {
 
   /**
    * Recherche d'albums par titre
-   * Nécessite FlareSolverr car la page utilise CSRF
+   * Stratégie : chercher les séries correspondantes via AJAX, puis récupérer
+   * les albums de chaque série via FlareSolverr (en parallèle).
+   * La recherche avancée Bedetheque nécessite un token CSRF et ne fonctionne
+   * pas en scraping direct.
    */
   async searchAlbums(query, options = {}) {
-    const { maxResults = DEFAULT_MAX_RESULTS } = options;
+    const { maxResults = DEFAULT_MAX_RESULTS, maxSeries = 3 } = options;
 
     try {
-      // Construire l'URL de recherche
-      const searchParams = new URLSearchParams({
-        RechIdSerie: '',
-        RechIdAuteur: '',
-        RechSerie: '',
-        RechTitre: query,
-        RechEditeur: '',
-        RechCollection: '',
-        RechStyle: '',
-        RechAuteur: '',
-        RechISBN: '',
-        RechParution: '',
-        RechOrigine: '',
-        RechLangue: '',
-        RechMotCle: '',
-        RechDLDeb: '',
-        RechDLFin: '',
-        RechCoteMin: '',
-        RechCoteMax: '',
-        RechEO: '0'
+      this.log.debug(`Recherche albums Bedetheque: "${query}"`);
+
+      // Étape 1 : Chercher les séries correspondantes via AJAX (rapide, pas de FlareSolverr)
+      const seriesData = await this.ajaxRequest('/ajax/series', { term: query });
+
+      if (!Array.isArray(seriesData) || seriesData.length === 0) {
+        return this.normalizer.normalizeSearchResponse([], {
+          query,
+          searchType: 'albums',
+          total: 0
+        });
+      }
+
+      // Étape 2 : Pour chaque série (max maxSeries), récupérer les albums via FlareSolverr
+      const seriesToFetch = seriesData.slice(0, maxSeries);
+      this.log.debug(`Récupération albums de ${seriesToFetch.length} séries`);
+
+      const albumPromises = seriesToFetch.map(async (serie) => {
+        try {
+          const serieId = serie.id;
+          const serieName = this.decodeUnicode(serie.label || serie.value || '');
+          const url = `${BEDETHEQUE_BASE_URL}/serie/index/s/${serieId}`;
+          const html = await this.flaresolverrRequest(url);
+          const albums = this.parseSerieAlbums(html, maxResults);
+
+          // Ajouter le nom de la série et le serieId à chaque album
+          return albums.map(album => ({
+            ...album,
+            serie: serieName,
+            serieId
+          }));
+        } catch (err) {
+          this.log.warn(`Erreur récupération albums série ${serie.id}: ${err.message}`);
+          return [];
+        }
       });
 
-      const url = `${BEDETHEQUE_BASE_URL}/search/albums?${searchParams.toString()}`;
+      const albumArrays = await Promise.allSettled(albumPromises);
 
-      // Requête via FlareSolverr
-      const html = await this.flaresolverrRequest(url);
+      // Combiner les albums de toutes les séries
+      let allAlbums = [];
+      for (const result of albumArrays) {
+        if (result.status === 'fulfilled') {
+          allAlbums.push(...result.value);
+        }
+      }
 
-      // Parser les résultats
-      const albums = this.parseAlbumSearchResults(html, maxResults);
+      // Filtrer par le terme de recherche si les albums viennent de plusieurs séries
+      if (seriesToFetch.length > 1) {
+        const queryLower = query.toLowerCase();
+        const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
 
-      return this.normalizer.normalizeSearchResponse(albums, {
+        // Garder les albums dont le titre ou la série match le query
+        const filtered = allAlbums.filter(album => {
+          const titleLower = (album.title || '').toLowerCase();
+          const serieLower = (album.serie || '').toLowerCase();
+          const combined = `${serieLower} ${titleLower}`;
+          return queryWords.some(word => combined.includes(word));
+        });
+
+        // Utiliser les filtés si on en a trouvé, sinon garder tout
+        if (filtered.length > 0) {
+          allAlbums = filtered;
+        }
+      }
+
+      // Limiter au maxResults
+      allAlbums = allAlbums.slice(0, maxResults);
+
+      return this.normalizer.normalizeSearchResponse(allAlbums, {
         query,
         searchType: 'albums',
-        total: albums.length,
+        total: allAlbums.length,
         pagination: {
           page: 1,
           limit: maxResults,
