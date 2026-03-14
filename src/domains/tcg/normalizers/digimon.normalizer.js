@@ -4,6 +4,7 @@
  */
 
 import { translateText } from '../../../shared/utils/translator.js';
+import { translateDigimonName } from '../utils/digimon-names.js';
 
 /**
  * Normaliser les résultats de recherche Digimon
@@ -56,14 +57,18 @@ async function normalizeCardSummary(rawCard, options = {}) {
   // Image (l'API ne fournit plus image_url, on construit l'URL)
   const cardId = rawCard.id || rawCard.cardnumber;
   const imageUrl = rawCard.image_url || (cardId ? `https://images.digimoncard.io/images/cards/${cardId}.jpg` : '');
-  
+
+  // Traduction du nom via dictionnaire (instantané, pas d'appel API)
+  const displayName = (lang !== 'en') ? translateDigimonName(rawCard.name, lang) : rawCard.name;
+  const titleOriginal = displayName !== rawCard.name ? rawCard.name : null;
+
   return {
     id: `digimon:${rawCard.id || rawCard.cardnumber}`,
     type: 'tcg_card',
     source: 'digimon',
     sourceId: String(rawCard.id || rawCard.cardnumber),
-    title: rawCard.name,
-    titleOriginal: null,
+    title: displayName,
+    titleOriginal,
     description: `${subtitle} - ${description.substring(0, 150)}${description.length > 150 ? '...' : ''}`,
     year: extractYear(rawCard),
     images: {
@@ -154,13 +159,17 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     fullDescription += `\n\n[Security]\n${securityEffect}`;
   }
   
+  // Traduction du nom via dictionnaire (instantané, pas d'appel API)
+  const displayName = (lang !== 'en') ? translateDigimonName(rawCard.name, lang) : rawCard.name;
+  const titleOriginal = displayName !== rawCard.name ? rawCard.name : null;
+
   return {
     id: `digimon:${rawCard.id || rawCard.cardnumber}`,
     type: 'tcg_card',
     source: 'digimon',
     sourceId: String(rawCard.id || rawCard.cardnumber),
-    title: rawCard.name,
-    titleOriginal: null,
+    title: displayName,
+    titleOriginal,
     description: fullDescription,
     year: extractYear(rawCard),
     images: {

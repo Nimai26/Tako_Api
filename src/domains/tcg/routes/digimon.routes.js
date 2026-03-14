@@ -14,6 +14,7 @@ import {
   normalizeCardDetails
 } from '../normalizers/digimon.normalizer.js';
 import { logger } from '../../../shared/utils/logger.js';
+import { translateDigimonName } from '../utils/digimon-names.js';
 
 const router = express.Router();
 
@@ -48,8 +49,14 @@ router.get('/search', async (req, res) => {
     const maxResults = Math.min(parseInt(max) || 100, 250);
     const enableAutoTrad = autoTrad === 'true' || autoTrad === '1';
     
+    // Si lang != en, tenter de traduire le nom de recherche JP/FR → EN
+    const searchQuery = (lang !== 'en') ? translateDigimonName(q, 'en') : q;
+    if (searchQuery !== q) {
+      logger.info(`[Digimon Routes] Translated search: "${q}" → "${searchQuery}" (${lang}→en)`);
+    }
+    
     // Recherche via provider
-    const rawData = await searchDigimonCards(q, {
+    const rawData = await searchDigimonCards(searchQuery, {
       type,
       color,
       level,
