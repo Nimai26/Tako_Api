@@ -1087,6 +1087,11 @@ export class BedethequeProvider extends BaseProvider {
 
       const serie = this.parseSerieDetails(html, serieId);
 
+      // Vérifier que le parsing a bien trouvé un titre (page vide = pas une vraie série)
+      if (!serie.title) {
+        throw new NotFoundError(`Série ${serieId} non trouvé`);
+      }
+
       return this.normalizer.normalizeSerieDetail(serie);
     } catch (error) {
       if (error.name === 'NotFoundError') throw error;
