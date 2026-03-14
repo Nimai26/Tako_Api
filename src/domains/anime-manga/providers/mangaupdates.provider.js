@@ -165,12 +165,14 @@ export class MangaUpdatesProvider extends BaseProvider {
     } = options;
 
     const perpage = Math.min(maxResults, MAX_RESULTS_LIMIT);
+    // MangaUpdates API ignore perpage < 5 (retourne 25 par défaut)
+    const apiPerpage = Math.max(perpage, 5);
     
     // Construire le body de la requête
     const body = {
       search: query,
       page,
-      perpage
+      perpage: apiPerpage
     };
 
     // Filtres optionnels
@@ -193,6 +195,11 @@ export class MangaUpdatesProvider extends BaseProvider {
         method: 'POST',
         body: JSON.stringify(body)
       });
+
+      // Tronquer si on a demandé moins que le minimum API
+      if (perpage < apiPerpage && data?.results) {
+        data.results = data.results.slice(0, perpage);
+      }
 
       return this.normalizer.normalizeSearchResponse(data, {
         query,

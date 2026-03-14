@@ -176,6 +176,25 @@ router.get('/search', asyncHandler(async (req, res) => {
     results = await translateSearchResults(results, targetLang, {
       fields: ['description']
     });
+
+    // Traduction des genres pour chaque résultat
+    for (const item of results.data) {
+      const genreObjects = item.details?.genres;
+      if (Array.isArray(genreObjects) && genreObjects.length > 0) {
+        const genreNames = genreObjects.map(g => typeof g === 'object' ? (g.name || g) : g);
+        const genreTranslations = await Promise.all(
+          genreNames.map(name => translateGenre(name, targetLang))
+        );
+        const wasTranslated = genreTranslations.some((g, i) => g !== genreNames[i]);
+        if (wasTranslated) {
+          item.details.genresOriginal = genreObjects;
+          item.details.genres = genreObjects.map((obj, i) =>
+            typeof obj === 'object' ? { ...obj, name: genreTranslations[i] } : genreTranslations[i]
+          );
+          item.details.genresTranslated = true;
+        }
+      }
+    }
   }
 
   res.json(results);

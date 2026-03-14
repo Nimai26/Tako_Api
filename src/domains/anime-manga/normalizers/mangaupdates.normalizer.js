@@ -96,7 +96,7 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       provider: 'mangaupdates',
       domain: 'anime-manga',
       query,
-      searchType: 'series',
+      searchType: 'manga',
       total: totalHits,
       count: items.length,
       data: items,
@@ -133,8 +133,11 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
       },
       details: {
         position,
+        resourceType: 'manga',
         format: series.type || 'Manga',
         status: this.extractStatus(series),
+        volumes: this.parseVolumeCount(series.status),
+        chapters: series.latest_chapter || null,
         titleAlternatives: this.extractAlternativeTitles(series),
         genres: this.extractGenres(series),
         rating: {
@@ -172,8 +175,12 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
         detail: `/api/anime-manga/mangaupdates/series/${sourceId}`
       },
       details: {
+        resourceType: 'manga',
         format: series.type || 'Manga',
         status: this.extractStatus(series),
+        statusText: series.status || null,
+        volumes: this.parseVolumeCount(series.status),
+        chapters: series.latest_chapter || null,
         titleAlternatives: this.extractAlternativeTitles(series),
         titleFrench: null, // Sera enrichi par le service français
 
@@ -268,7 +275,19 @@ export class MangaUpdatesNormalizer extends BaseNormalizer {
   extractStatus(series) {
     if (series.completed === true) return 'completed';
     if (series.completed === false) return 'ongoing';
-    return series.status || 'unknown';
+    if (series.status) return series.status;
+    return null;
+  }
+
+  /**
+   * Parse le nombre de volumes depuis le champ status MangaUpdates
+   * Ex: "72 Volumes (Complete)" → 72, "114 Volumes (Ongoing)" → 114
+   */
+  parseVolumeCount(status) {
+    if (!status) return null;
+    const firstLine = status.split('\n')[0];
+    const match = firstLine.match(/(\d+)\+?\s+Volumes?/i);
+    return match ? parseInt(match[1]) : null;
   }
 
   extractGenres(series) {
