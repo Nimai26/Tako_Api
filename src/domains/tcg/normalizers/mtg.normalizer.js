@@ -35,15 +35,16 @@ export async function normalizeSearchResults(rawData, options = {}) {
     // Nom (localisé si disponible)
     const name = card.printed_name || card.name;
     
-    // Description courte
-    let description = card.type_line || '';
-    if (card.oracle_text) {
-      const shortText = card.oracle_text.substring(0, 150);
-      description += ` - ${shortText}${card.oracle_text.length > 150 ? '...' : ''}`;
+    // Description courte — utiliser printed_text (localisation native Scryfall) si disponible
+    let description = card.printed_type_line || card.type_line || '';
+    const oracleText = card.printed_text || card.oracle_text;
+    if (oracleText) {
+      const shortText = oracleText.substring(0, 150);
+      description += ` - ${shortText}${oracleText.length > 150 ? '...' : ''}`;
     }
     
-    // Traduire si demandé
-    if (autoTrad && lang !== 'en' && description) {
+    // Traduire via Google Translate si pas de texte localisé natif
+    if (autoTrad && lang !== 'en' && description && !card.printed_text) {
       try {
         const translated = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
         if (translated.translated) description = translated.text;
@@ -134,13 +135,13 @@ export async function normalizeCardDetails(rawCard, options = {}) {
     });
   }
   
-  // Description (oracle text)
-  let description = rawCard.oracle_text || '';
+  // Description (oracle text) — utiliser printed_text (localisation native Scryfall) si disponible
+  let description = rawCard.printed_text || rawCard.oracle_text || '';
   let flavorText = rawCard.flavor_text || null;
   
-  // Traduction si demandée
+  // Traduction Google Translate si pas de texte localisé natif
   if (autoTrad && lang !== 'en') {
-    if (description) {
+    if (description && !rawCard.printed_text) {
       try {
         const translated = await translateText(description, lang, { enabled: true, sourceLang: 'en' });
         if (translated.translated) description = translated.text;
@@ -210,8 +211,8 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       // Caractéristiques
       manaCost: rawCard.mana_cost || null,
       cmc: rawCard.cmc || 0,
-      typeLine: rawCard.type_line || null,
-      oracleText: rawCard.oracle_text || null,
+      typeLine: rawCard.printed_type_line || rawCard.type_line || null,
+      oracleText: description || null,
       power: rawCard.power || null,
       toughness: rawCard.toughness || null,
       loyalty: rawCard.loyalty || null,
