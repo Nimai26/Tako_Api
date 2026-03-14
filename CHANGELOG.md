@@ -7,6 +7,19 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### 📚 Anime-Manga — Nouveau provider Nautiljon (volumes manga)
+
+#### Added
+- **Provider Nautiljon** (`nautiljon.provider.js`) — Scraping de Nautiljon.com pour les données manga par volume (ISBN, pages, prix, dates, éditeurs, couvertures, chapitres)
+  - `GET /health` — Health check avec latence
+  - `GET /search?q=` — Recherche manga (titre, slug, URL)
+  - `GET /series/:slug` — Détails série (titre FR/JP, synopsis, genres, thèmes, auteurs, éditeurs VF/VO, nb volumes, liste complète des volumes avec couvertures)
+  - `GET /series/:slug/volumes` — Liste paginée des volumes avec couvertures
+  - `GET /series/:slug/volume/:volumeId?name=` — Détail volume (ISBN/EAN, pages, prix €/¥, dates VF/VO, éditeurs VF/VO, couvertures, chapitres avec titres FR)
+- **Normalizer Nautiljon** (`nautiljon.normalizer.js`) — Normalisation au format canonique Tako (types `manga` / `manga_volume`)
+- **Routes Nautiljon** (`nautiljon.routes.js`) — 5 endpoints sous `/api/anime-manga/nautiljon/`
+- Rate limiting 1 req/s, parsing HTML basé sur Schema.org microdata (itemprop)
+
 ### 🦇 Comics — Réécriture recherche albums Bedetheque
 
 #### Changed

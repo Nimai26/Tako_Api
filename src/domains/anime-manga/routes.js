@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import mangaUpdatesRoutes from './routes/mangaupdates.routes.js';
 import jikanRoutes from './routes/jikan.routes.js';
+import nautiljonRoutes from './routes/nautiljon.routes.js';
 import { createAmazonAliasRouter } from '../ecommerce/routes/amazon-alias.factory.js';
 
 const router = Router();
@@ -53,6 +54,24 @@ const domainInfo = {
       ],
       types: ['TV', 'Movie', 'OVA', 'Special', 'ONA', 'Music', 'Manga', 'Novel', 'Light Novel', 'Oneshot', 'Doujin', 'Manhwa', 'Manhua'],
       note: 'Contenu adulte/hentai NON filtré (sfw=false)'
+    },
+    {
+      name: 'nautiljon',
+      path: '/nautiljon',
+      description: 'Nautiljon - Base de données manga française avec détails par volume',
+      requiresKey: false,
+      rateLimit: '1 requête/seconde',
+      features: [
+        'Recherche de mangas',
+        'Détails séries avec liste de volumes',
+        'Détails par volume (ISBN, pages, prix, chapitres)',
+        'Couvertures FR et JP',
+        'Dates de sortie FR et VO',
+        'Éditeurs FR et VO',
+        'Synopsis en français'
+      ],
+      types: ['Manga'],
+      note: 'Données en français (source Nautiljon.com), scraping HTML'
     }
   ]
 };
@@ -108,9 +127,18 @@ router.get('/', (req, res) => {
     { method: 'GET', path: '/producers/:id', description: 'Détails d\'un studio' }
   ];
 
+  const nautiljonRoutesInfo = [
+    { method: 'GET', path: '/health', description: 'Health check' },
+    { method: 'GET', path: '/search', description: 'Recherche de mangas' },
+    { method: 'GET', path: '/series/:slug', description: 'Détails d\'une série' },
+    { method: 'GET', path: '/series/:slug/volumes', description: 'Liste des volumes' },
+    { method: 'GET', path: '/series/:slug/volume/:volumeId', description: 'Détails d\'un volume' }
+  ];
+
   const routesByProvider = {
     mangaupdates: mangaUpdatesRoutes,
-    jikan: jikanRoutesInfo
+    jikan: jikanRoutesInfo,
+    nautiljon: nautiljonRoutesInfo
   };
 
   res.json({
@@ -140,6 +168,7 @@ router.get('/', (req, res) => {
 // Montage des routes par provider
 router.use('/mangaupdates', mangaUpdatesRoutes);
 router.use('/jikan', jikanRoutes);
+router.use('/nautiljon', nautiljonRoutes);
 router.use('/amazon', createAmazonAliasRouter({ domain: 'anime-manga', category: 'books', categoryLabel: 'Livres' }));
 
 export default router;

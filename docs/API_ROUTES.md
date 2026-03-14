@@ -555,6 +555,53 @@ GET /api/anime-manga/jikan/schedule?day=unknown&limit=25
 
 ---
 
+### Nautiljon (Volumes Manga)
+
+> **Base URL** : `/api/anime-manga/nautiljon`  
+> **Source** : [nautiljon.com](https://www.nautiljon.com)  
+> **API Key** : ❌ Non requise (scraping HTML)  
+> **Rate Limit** : 1 req/sec  
+> **Note** : Données par volume manga (ISBN, pages, prix, chapitres, couvertures FR/JP)
+
+| Endpoint | Description | Status |
+|----------|-------------|--------|
+| `GET /health` | Health check avec latence | ✅ Fonctionne |
+| `GET /search?q=` | Recherche de séries manga | ✅ Fonctionne |
+| `GET /series/:slug` | Détails d'une série (genres, thèmes, auteurs, éditeurs, liste volumes) | ✅ Fonctionne |
+| `GET /series/:slug/volumes` | Liste paginée des volumes avec couvertures | ✅ Fonctionne |
+| `GET /series/:slug/volume/:volumeId?name=` | Détail volume (ISBN, pages, prix, dates, chapitres) | ✅ Fonctionne |
+
+**Paramètres** :
+- `q` : Terme de recherche (requis pour /search)
+- `:slug` : Slug Nautiljon de la série (ex: `one+piece`, `naruto`)
+- `:volumeId` : ID numérique du volume sur Nautiljon
+- `name` : Numéro/nom du volume (requis pour /volume/:volumeId)
+
+**Données volume** :
+- ISBN/EAN, nombre de pages, prix (€ et ¥)
+- Dates de parution VF et VO
+- Éditeurs VF (ex: Glénat, Kana) et VO (ex: Shueisha)
+- Couvertures FR et JP
+- Liste des chapitres avec titres français
+- Édition (standard, collector, etc.)
+
+**Exemples** :
+```bash
+# Recherche manga
+GET /api/anime-manga/nautiljon/search?q=one+piece
+
+# Détails série
+GET /api/anime-manga/nautiljon/series/one+piece
+
+# Liste des volumes
+GET /api/anime-manga/nautiljon/series/one+piece/volumes
+
+# Détail du volume 1
+GET /api/anime-manga/nautiljon/series/one+piece/volume/98?name=1
+```
+
+---
+
 ## 🎬 Media / Films & Séries
 
 ### TMDB
