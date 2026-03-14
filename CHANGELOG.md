@@ -6,6 +6,12 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
+### 🦇 Comics — Correction urls.detail ComicVine
+
+#### Fixed
+- **URLs detail cassées** — `urls.detail` généraient `/api/comics/comicvine/{id}` (route inexistante → 404) au lieu d'inclure le type de ressource (`/volume/`, `/issue/`, `/character/`, `/creator/`). Corrigé pour les 6 méthodes du normalizer
+- **Publisher detail** — Mis à `null` car aucune route `/publisher/:id` n'existe
+
 ### 🐉 TCG — Traduction descriptions DBS Card Game
 
 #### Fixed
