@@ -6,6 +6,15 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
+
+### 🦇 Comics — Correction parsing Bedetheque
+
+#### Fixed
+- **Titre série vide** — `parseSerieInfo` capturait du whitespace au lieu du titre quand `<h1>` contient un `<a>`. Nouveau : extraction depuis `<h1><a>Titre</a></h1>` avec fallback `og:title`
+- **Albums cassés (noms composés)** — `parseSerieAlbums` ne capturait que le premier mot du slug BD (ex: "Wonder" au lieu de "Wonder-Woman-Déesse-de-la-guerre"). Le regex capture maintenant le slug complet + ID numérique final
+- **sourceId albums vide** — Conséquence du regex cassé ; désormais correctement extrait depuis la fin de l'URL (`-{id}.html`)
+- **Couvertures albums** — Recherche contextuelle d'images à proximité du lien BD dans le HTML
+
 ### 🦇 Comics — Correction urls.detail ComicVine
 
 #### Fixed
