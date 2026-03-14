@@ -6,7 +6,8 @@
  * 
  * Routes disponibles :
  * - GET /health                           - Health check
- * - GET /search                           - Recherche de mangas
+ * - GET /search                           - Recherche de mangas (séries)
+ * - GET /search/volumes                   - Recherche → liste de volumes directe
  * - GET /series/:slug                     - Détails d'une série
  * - GET /series/:slug/volumes             - Liste des volumes d'une série
  * - GET /series/:slug/volume/:volumeId    - Détails d'un volume
@@ -64,6 +65,34 @@ router.get('/search', asyncHandler(async (req, res) => {
 
   const results = await provider.search(q.trim(), {
     maxResults: Math.min(parseInt(maxResults) || 20, 50)
+  });
+
+  res.json(results);
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RECHERCHE DE VOLUMES
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /anime-manga/nautiljon/search/volumes
+ * Recherche un manga et retourne directement la liste de ses volumes
+ * 
+ * Query params :
+ * - q (required) : Terme de recherche (ex: "naruto", "one piece")
+ * - volume : Filtrer par numéro de volume (ex: "5")
+ * - maxResults : Nombre max de volumes (défaut 50)
+ */
+router.get('/search/volumes', asyncHandler(async (req, res) => {
+  const { q, volume = null, maxResults = '50' } = req.query;
+
+  if (!q || typeof q !== 'string' || q.trim().length === 0) {
+    throw new ValidationError('Le paramètre "q" est requis pour la recherche');
+  }
+
+  const results = await provider.searchVolumes(q.trim(), {
+    volume: volume ? String(volume) : null,
+    maxResults: Math.min(parseInt(maxResults) || 50, 200)
   });
 
   res.json(results);

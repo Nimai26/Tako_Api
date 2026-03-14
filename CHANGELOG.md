@@ -13,6 +13,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Provider Nautiljon** (`nautiljon.provider.js`) — Scraping de Nautiljon.com pour les données manga par volume (ISBN, pages, prix, dates, éditeurs, couvertures, chapitres)
   - `GET /health` — Health check avec latence
   - `GET /search?q=` — Recherche manga (titre, slug, URL)
+  - `GET /search/volumes?q=&volume=` — Recherche et retourne directement la liste des volumes (combine search + série en un appel)
   - `GET /series/:slug` — Détails série (titre FR/JP, synopsis, genres, thèmes, auteurs, éditeurs VF/VO, nb volumes, liste complète des volumes avec couvertures)
   - `GET /series/:slug/volumes` — Liste paginée des volumes avec couvertures
   - `GET /series/:slug/volume/:volumeId?name=` — Détail volume (ISBN/EAN, pages, prix €/¥, dates VF/VO, éditeurs VF/VO, couvertures, chapitres avec titres FR)

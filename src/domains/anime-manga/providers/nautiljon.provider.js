@@ -582,6 +582,57 @@ export class NautiljonProvider extends BaseProvider {
     return this.normalizer.normalizeVolumesListResponse(seriesData);
   }
 
+  /**
+   * Recherche un manga et retourne directement ses volumes
+   * Combine search + getVolumes en un seul appel
+   * @param {string} query - Terme de recherche
+   * @param {Object} options - { volume, maxResults }
+   * @returns {Promise<Object>} Liste de volumes normalisée
+   */
+  async searchVolumes(query, options = {}) {
+    const { volume = null, maxResults = 50 } = options;
+
+    if (!query || typeof query !== 'string') {
+      throw new Error('Query requise pour la recherche');
+    }
+
+    // 1. Rechercher la série
+    const searchUrl = `${SEARCH_URL}?q=${encodeURIComponent(query.trim())}`;
+    const searchHtml = await this.fetchPage(searchUrl);
+    const results = this.parseSearchResults(searchHtml, query);
+
+    if (results.length === 0) {
+      throw new NotFoundError(`Aucun manga trouvé pour "${query}"`);
+    }
+
+    // 2. Prendre le meilleur résultat
+    const bestMatch = results[0];
+    this.log.info(`searchVolumes: "${query}" → série "${bestMatch.title}" (${bestMatch.slug})`);
+
+    // 3. Récupérer la page série pour avoir la liste des volumes
+    await this.respectRateLimit();
+    const seriesUrl = `${NAUTILJON_BASE_URL}/mangas/${encodeURIComponent(bestMatch.slug)}.html`;
+    const seriesHtml = await this.fetchPage(seriesUrl);
+    const seriesData = this.parseSeriesPage(seriesHtml, bestMatch.slug);
+
+    // 4. Filtrer par numéro de volume si demandé
+    if (volume !== null) {
+      const volumeStr = String(volume).toLowerCase();
+      seriesData.volumesList = seriesData.volumesList.filter(v => {
+        const num = String(v.number).toLowerCase();
+        return num === volumeStr || num.startsWith(volumeStr + ' ');
+      });
+    }
+
+    // 5. Limiter les résultats
+    seriesData.volumesList = seriesData.volumesList.slice(0, maxResults);
+
+    return this.normalizer.normalizeVolumesSearchResponse(seriesData, {
+      query: query.trim(),
+      volumeFilter: volume
+    });
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // HEALTH CHECK
   // ═══════════════════════════════════════════════════════════════════════════

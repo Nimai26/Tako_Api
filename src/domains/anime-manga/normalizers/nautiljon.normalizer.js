@@ -197,6 +197,17 @@ export class NautiljonNormalizer extends BaseNormalizer {
     };
   }
 
+  /**
+   * Normalise la réponse de recherche de volumes (searchVolumes)
+   */
+  normalizeVolumesSearchResponse(series, metadata = {}) {
+    const response = this.normalizeVolumesListResponse(series);
+    response.query = metadata.query || null;
+    response.volumeFilter = metadata.volumeFilter || null;
+    response.searchType = 'volumes';
+    return response;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // NORMALISATION DÉTAILS VOLUME
   // ═══════════════════════════════════════════════════════════════════════════

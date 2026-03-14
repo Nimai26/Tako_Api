@@ -576,6 +576,8 @@ GET /api/anime-manga/jikan/schedule?day=unknown&limit=25
 - `:slug` : Slug Nautiljon de la série (ex: `one+piece`, `naruto`)
 - `:volumeId` : ID numérique du volume sur Nautiljon
 - `name` : Numéro/nom du volume (requis pour /volume/:volumeId)
+- `volume` : Filtrer par numéro de volume (pour /search/volumes)
+- `maxResults` : Nombre max de résultats (défaut 50)
 
 **Données volume** :
 - ISBN/EAN, nombre de pages, prix (€ et ¥)
@@ -589,6 +591,12 @@ GET /api/anime-manga/jikan/schedule?day=unknown&limit=25
 ```bash
 # Recherche manga
 GET /api/anime-manga/nautiljon/search?q=one+piece
+
+# Recherche → volumes directement (l'app reçoit des volumes, pas des séries)
+GET /api/anime-manga/nautiljon/search/volumes?q=naruto
+
+# Filtrer un volume spécifique
+GET /api/anime-manga/nautiljon/search/volumes?q=naruto&volume=5
 
 # Détails série
 GET /api/anime-manga/nautiljon/series/one+piece

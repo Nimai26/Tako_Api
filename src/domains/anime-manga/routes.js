@@ -129,7 +129,8 @@ router.get('/', (req, res) => {
 
   const nautiljonRoutesInfo = [
     { method: 'GET', path: '/health', description: 'Health check' },
-    { method: 'GET', path: '/search', description: 'Recherche de mangas' },
+    { method: 'GET', path: '/search', description: 'Recherche de mangas (séries)' },
+    { method: 'GET', path: '/search/volumes', description: 'Recherche → liste de volumes directe' },
     { method: 'GET', path: '/series/:slug', description: 'Détails d\'une série' },
     { method: 'GET', path: '/series/:slug/volumes', description: 'Liste des volumes' },
     { method: 'GET', path: '/series/:slug/volume/:volumeId', description: 'Détails d\'un volume' }

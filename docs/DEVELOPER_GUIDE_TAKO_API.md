@@ -661,6 +661,7 @@ GET /api/anime-manga/jikan/schedule?day=monday&limit=15
 |----------|-------------|
 | `GET /api/anime-manga/nautiljon/health` | Health check avec latence |
 | `GET /api/anime-manga/nautiljon/search?q=` | Recherche de séries manga |
+| `GET /api/anime-manga/nautiljon/search/volumes?q=&volume=` | Recherche → liste de volumes directe |
 | `GET /api/anime-manga/nautiljon/series/:slug` | Détails série (genres, thèmes, auteurs, éditeurs, volumes) |
 | `GET /api/anime-manga/nautiljon/series/:slug/volumes` | Liste des volumes avec couvertures |
 | `GET /api/anime-manga/nautiljon/series/:slug/volume/:volumeId?name=` | Détail volume (ISBN, pages, prix, dates, chapitres) |
@@ -670,6 +671,8 @@ GET /api/anime-manga/jikan/schedule?day=monday&limit=15
 - `:volumeId` : ID numérique du volume
 - `name` : Numéro/nom du volume (requis pour le détail volume)
 - `q` : Terme de recherche (pour /search)
+- `volume` : Filtre par numéro de volume (pour /search/volumes)
+- `maxResults` : Nombre max de volumes (défaut 50)
 
 **Données série** : titre FR/JP, synopsis, genres, thèmes, auteurs, éditeurs VF/VO, nombre de volumes, liste complète des volumes
 
@@ -678,6 +681,12 @@ GET /api/anime-manga/jikan/schedule?day=monday&limit=15
 ```bash
 # Recherche
 GET /api/anime-manga/nautiljon/search?q=one+piece
+
+# Recherche → volumes directement (retourne des volumes, pas des séries)
+GET /api/anime-manga/nautiljon/search/volumes?q=naruto
+
+# Filtrer un volume spécifique
+GET /api/anime-manga/nautiljon/search/volumes?q=naruto&volume=5
 
 # Détails série (451 volumes pour One Piece)
 GET /api/anime-manga/nautiljon/series/one+piece
