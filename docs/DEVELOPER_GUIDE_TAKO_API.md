@@ -2535,6 +2535,22 @@ Inclut tous les champs de recherche plus :
 > **Images** : `https://images.digimoncard.io/images/cards/{id}.jpg` (construites côté normalizer, l'API ne fournit plus `image_url`)
 > **Recherche** : paramètre `card={id}` pour le détail, `n={name}` pour la recherche
 
+#### Traduction des noms JP/FR ↔ EN
+
+L'API digimoncard.io utilise les noms anglais localisés (Omnimon, Gallantmon…) alors que les fans francophones utilisent les noms japonais originaux (Omegamon, Dukemon…). Un **dictionnaire bidirectionnel** (~150 entrées) assure la traduction automatique :
+
+- **Recherche** (`lang≠en`) : le nom FR/JP est traduit en EN avant l'appel API
+- **Affichage** (`lang≠en`) : le nom EN des résultats est traduit en FR/JP, avec `titleOriginal` indiquant le nom EN du jeu de cartes
+- **3 stratégies de matching** : exact → préfixe (`Omegamon Zwart` → `Omnimon Zwart`) → suffixe (`BlackGatomon` → `BlackTailmon`)
+- **Toujours actif** quand `lang≠en` (lookup dictionnaire instantané, pas de Google Translate)
+- **Fichier** : `src/domains/tcg/utils/digimon-names.js`
+
+```
+GET /api/tcg/digimon/search?q=Omegamon&lang=fr  →  API: n=Omnimon  →  title: "Omegamon", titleOriginal: "Omnimon"
+GET /api/tcg/digimon/card/BT1-084?lang=fr        →  API: card=BT1-084  →  title: "Omegamon", titleOriginal: "Omnimon"
+GET /api/tcg/digimon/search?q=Omnimon&lang=en    →  API: n=Omnimon  →  title: "Omnimon" (pas de traduction)
+```
+
 #### Card (détail)
 
 | Champ | Type | Description |

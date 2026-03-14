@@ -23,6 +23,13 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Nouveaux champs** — `color2`, `evolutionColor`, `evolutionLevel`, `xrosRequirement`, `tcgplayerId`
 - **Health check** — URL contenait des espaces non encodés
 
+#### Added
+- **Dictionnaire de noms JP/FR ↔ EN** (`digimon-names.js`) — ~150 entrées organisées par série (Royal Knights, Adventure, Tamers, Frontier, Savers, Xros Wars, Ghost Game, Demon Lords, etc.)
+  - Recherche FR : les noms japonais/français sont traduits en anglais avant l'appel API (ex: `Omegamon` → `Omnimon`, `Dukemon` → `Gallantmon`)
+  - Affichage FR : les noms anglais des résultats sont traduits en japonais/français (ex: `Omnimon` → `Omegamon`) avec `titleOriginal` indiquant le nom EN
+  - 3 stratégies de matching : exact, préfixe (`Omegamon Zwart` → `Omnimon Zwart`), suffixe (`BlackGatomon` → `BlackTailmon`)
+  - Toujours actif quand `lang≠en` (lookup dictionnaire instantané, sans Google Translate)
+
 ### 🏴‍☠️ TCG — Correction images et données One Piece
 
 #### Added
