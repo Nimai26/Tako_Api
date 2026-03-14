@@ -420,13 +420,14 @@ Exemples :
 | `GET /api/comics/bedetheque/search?q=` | Recherche globale (séries + auteurs) |
 | `GET /api/comics/bedetheque/search/series?q=` | Recherche de séries |
 | `GET /api/comics/bedetheque/search/authors?q=` | Recherche d'auteurs |
-| `GET /api/comics/bedetheque/search/albums?q=` | Recherche d'albums |
+| `GET /api/comics/bedetheque/search/albums?q=` | Recherche d'albums (stratégie series-first) |
 | `GET /api/comics/bedetheque/serie/:id` | Détails d'une série |
 | `GET /api/comics/bedetheque/serie/:id/albums` | Albums d'une série |
 | `GET /api/comics/bedetheque/author/:id/works` | Œuvres d'un auteur |
 | `GET /api/comics/bedetheque/album/:id` | Détails d'un album |
+| `GET /api/comics/bedetheque/detail/:id` | Auto-détection série ou album |
 
-**Paramètres** : `q`, `maxResults`, `lang`, `autoTrad`
+**Paramètres** : `q`, `maxResults`, `lang`, `autoTrad`, `enrichCovers`, `url` (album), `type` (detail)
 
 ---
 
@@ -2350,6 +2351,14 @@ Inclut tous les champs de recherche plus :
 ---
 
 ### A.16 Comics — Bedetheque
+
+> **Recherche albums** : stratégie *series-first* — recherche AJAX des séries, puis récupération FlareSolverr des albums de chaque série (en parallèle). La recherche avancée Bedetheque nécessite des tokens CSRF impossibles à scraper directement.
+>
+> **`/detail/:id`** : endpoint intelligent qui teste d'abord en tant que série, puis en tant qu'album. Supporte `?type=serie|album` pour forcer le type.
+>
+> **`enrichCovers`** : paramètre optionnel sur les routes de recherche pour enrichir les résultats AJAX (sans images) avec les couvertures via FlareSolverr.
+>
+> **`url` param** : sur `/album/:id`, permet de passer l'URL Bedetheque directe pour éviter les erreurs de construction de slug (ex: noms composés, IDs ambigus).
 
 #### Album (détail)
 

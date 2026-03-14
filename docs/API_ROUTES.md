@@ -114,21 +114,26 @@
 | `GET /search?q=` | Recherche globale (séries + auteurs) | ✅ Fonctionne |
 | `GET /search/series?q=` | Recherche de séries | ✅ Fonctionne |
 | `GET /search/authors?q=` | Recherche d'auteurs | ✅ Fonctionne |
-| `GET /search/albums?q=` | Recherche d'albums par titre | ⚠️ Partiel |
-| `GET /serie/:id` | Détails d'une série | ⚠️ Partiel |
+| `GET /search/albums?q=` | Recherche d'albums (stratégie series-first) | ✅ Fonctionne |
+| `GET /serie/:id` | Détails d'une série | ✅ Fonctionne |
 | `GET /serie/:id/albums` | Albums d'une série | ✅ Fonctionne |
 | `GET /author/:id/works` | Œuvres d'un auteur | ✅ Fonctionne |
 | `GET /album/:id` | Détails d'un album | ✅ Fonctionne |
+| `GET /detail/:id` | Auto-détection série ou album | ✅ Fonctionne |
 
 **Paramètres communs** :
 - `q` : Terme de recherche (requis pour /search)
 - `maxResults` : Nombre max de résultats (défaut: 20)
 - `lang` : Langue cible pour traduction
 - `autoTrad` : Activer traduction automatique
+- `enrichCovers` : Enrichir les résultats de recherche avec les couvertures via FlareSolverr (défaut: false)
+- `url` : URL Bedetheque de l'album (pour `/album/:id`, évite les erreurs de slug)
+- `type` : Forcer le type pour `/detail/:id` (`serie` ou `album`)
 
 **Technologies** :
-- API AJAX Bedetheque (recherches simples)
-- FlareSolverr (pages protégées anti-bot)
+- API AJAX Bedetheque (autocomplete séries/auteurs)
+- FlareSolverr (pages protégées anti-bot, scraping détails/albums)
+- Stratégie *series-first* pour `searchAlbums` : recherche AJAX des séries → récupération parallèle des albums via FlareSolverr
 
 ---
 

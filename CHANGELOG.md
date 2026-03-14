@@ -7,6 +7,17 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### 🦇 Comics — Réécriture recherche albums Bedetheque
+
+#### Changed
+- **`searchAlbums` réécrit** — La recherche avancée Bedetheque nécessite des tokens CSRF impossibles à scraper. Nouvelle stratégie *series-first* : recherche AJAX des séries → récupération FlareSolverr des albums de chaque série correspondante (en parallèle). Résultats : "asterix" → 20 albums, "wonder woman" → 5 albums
+- **`enrichCovers` param** — Paramètre optionnel `enrichCovers=true` sur les routes de recherche pour enrichir les résultats AJAX (sans images) avec les couvertures via FlareSolverr
+
+### 🦇 Comics — Déduplication galerie ComicVine
+
+#### Fixed
+- **Galerie dupliquée** — `buildImages()` retournait 5 variantes de la même image (original, medium, small, etc.) ; ne conserve désormais que `original_url`
+
 ### 🦇 Comics — Correction URL album Bedetheque + endpoint /detail/:id
 
 #### Fixed
