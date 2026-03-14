@@ -167,7 +167,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: volume.site_detail_url || null,
-        detail: `/api/comics/comicvine/${sourceId}`
+        detail: `/api/comics/comicvine/volume/${sourceId}`
       },
       details: {
         resourceType: 'volume',
@@ -247,7 +247,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: issue.site_detail_url || null,
-        detail: `/api/comics/comicvine/${sourceId}`
+        detail: `/api/comics/comicvine/issue/${sourceId}`
       },
       details: {
         resourceType: 'issue',
@@ -356,7 +356,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: character.site_detail_url || null,
-        detail: `/api/comics/comicvine/${sourceId}`
+        detail: `/api/comics/comicvine/character/${sourceId}`
       },
       details: {
         resourceType: 'character',
@@ -440,7 +440,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: publisher.site_detail_url || null,
-        detail: `/api/comics/comicvine/${sourceId}`
+        detail: null
       },
       details: {
         resourceType: 'publisher',
@@ -473,7 +473,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: person.site_detail_url || null,
-        detail: `/api/comics/comicvine/${sourceId}`
+        detail: `/api/comics/comicvine/creator/${sourceId}`
       },
       details: {
         resourceType: 'person',
@@ -546,7 +546,7 @@ export class ComicVineNormalizer extends BaseNormalizer {
         images,
         urls: {
           source: vol.site_detail_url || null,
-          detail: `/api/comics/comicvine/${sourceId}`
+          detail: `/api/comics/comicvine/volume/${sourceId}`
         },
         details: {
           resourceType: 'volume',
