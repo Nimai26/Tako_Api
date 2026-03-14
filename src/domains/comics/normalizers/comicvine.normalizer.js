@@ -39,17 +39,11 @@ export class ComicVineNormalizer extends BaseNormalizer {
    */
   buildImages(imageObj) {
     if (!imageObj) return { primary: null, thumbnail: null, gallery: [] };
-    const primary = imageObj.original_url || imageObj.medium_url || null;
+    const primary = imageObj.original_url || imageObj.super_url || imageObj.medium_url || null;
     const thumbnail = imageObj.small_url || imageObj.thumb_url || imageObj.medium_url || null;
-    const gallery = [
-      imageObj.original_url,
-      imageObj.super_url,
-      imageObj.medium_url,
-      imageObj.screen_url,
-      imageObj.screen_large_url
-    ].filter(Boolean);
-    // Dédupliquer
-    return { primary, thumbnail, gallery: [...new Set(gallery)] };
+    // Garder uniquement la meilleure qualité (les autres sont le même visuel en résolutions inférieures)
+    const gallery = primary ? [primary] : [];
+    return { primary, thumbnail, gallery };
   }
 
   /**
