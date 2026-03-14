@@ -265,4 +265,67 @@ router.get('/author/:id/works', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+/**
+ * GET /comics/bedetheque/detail/:id
+ * Détails auto-détectés (série ou album)
+ * 
+ * Essaie d'abord de charger en tant que série (/serie/index/s/{id}),
+ * puis en tant qu'album si la série n'est pas trouvée.
+ * Utile quand le client ne connaît pas le type de la ressource.
+ * 
+ * Query params :
+ * - type : Forcer le type (serie|album), sinon auto-détection
+ * - url : URL Bedetheque connue (pour albums)
+ * - lang, autoTrad : Traduction (optionnel)
+ */
+router.get('/detail/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { type, lang, autoTrad, url: resourceUrl } = req.query;
+
+  if (!id) {
+    throw new ValidationError('L\'ID est requis');
+  }
+
+  const autoTradEnabled = isAutoTradEnabled({ autoTrad });
+  const targetLang = extractLangCode(lang);
+
+  let result;
+
+  if (type === 'album') {
+    result = await provider.getAlbumDetails(id, { url: resourceUrl });
+  } else if (type === 'serie') {
+    result = await provider.getSerieDetails(id);
+  } else {
+    // Auto-détection : essayer série d'abord (plus courant dans les recherches)
+    try {
+      result = await provider.getSerieDetails(id);
+    } catch (serieError) {
+      // Si la série n'est pas trouvée, essayer en tant qu'album
+      try {
+        result = await provider.getAlbumDetails(id, { url: resourceUrl });
+      } catch (albumError) {
+        // Aucun résultat trouvé
+        throw serieError; // Renvoyer l'erreur originale
+      }
+    }
+  }
+
+  // Traduction si activée
+  if (autoTradEnabled && targetLang && targetLang !== 'fr' && result.data?.description) {
+    const translated = await translateText(result.data.description, targetLang, true);
+    if (translated.translated) {
+      result = {
+        ...result,
+        data: {
+          ...result.data,
+          description: translated.text,
+          originalDescription: result.data.description
+        }
+      };
+    }
+  }
+
+  res.json(result);
+}));
+
 export default router;
