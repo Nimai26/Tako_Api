@@ -7,7 +7,14 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
-### 🦎 TCG — Correction recherche et données Digimon
+### � TCG — Texte Oracle MTG localisé
+
+#### Fixed
+- **Oracle text non traduit** — `details.oracleText` utilisait toujours `rawCard.oracle_text` (EN brut) sans exploiter `printed_text` (traduction native Scryfall) ; utilise désormais `printed_text` quand disponible, sinon fallback `oracle_text` + Google Translate
+- **`typeLine` non localisé** — Ajout de `printed_type_line` (ex: "Éphémère" au lieu de "Instant") quand disponible
+- **Recherche** — La description courte utilise désormais `printed_text` pour l'aperçu Oracle localisé
+
+### �🦎 TCG — Correction recherche et données Digimon
 
 #### Fixed
 - **Recherche cassée** — Le paramètre `series=Digimon Card Game` par défaut causait des erreurs 500 sur l'API upstream pour les recherches populaires (ex: Omnimon = 69 résultats) ; supprimé le défaut, rendu optionnel
