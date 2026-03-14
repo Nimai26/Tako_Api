@@ -83,6 +83,13 @@ export class BedethequeNormalizer extends BaseNormalizer {
     const imageUrl = item.image || item.coverUrl || null;
     const images = this.buildImages(imageUrl);
 
+    // Construire l'URL detail selon le type de ressource
+    const detailUrlMap = {
+      serie: `/api/comics/bedetheque/serie/${sourceId}`,
+      album: `/api/comics/bedetheque/album/${sourceId}`,
+      author: null // Pas de route /author/:id
+    };
+
     const base = {
       id: `bedetheque:${sourceId}`,
       type: itemType,
@@ -94,7 +101,7 @@ export class BedethequeNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: item.url || null,
-        detail: `/api/comics/bedetheque/${sourceId}`
+        detail: detailUrlMap[itemType] || null
       }
     };
 
@@ -155,7 +162,7 @@ export class BedethequeNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: album.url || null,
-        detail: `/api/comics/bedetheque/${sourceId}`
+        detail: `/api/comics/bedetheque/album/${sourceId}`
       },
       details: {
         resourceType: 'album',
@@ -208,7 +215,7 @@ export class BedethequeNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: serie.url || null,
-        detail: `/api/comics/bedetheque/${sourceId}`
+        detail: `/api/comics/bedetheque/serie/${sourceId}`
       },
       details: {
         resourceType: 'serie',
@@ -260,7 +267,7 @@ export class BedethequeNormalizer extends BaseNormalizer {
       images,
       urls: {
         source: author.url || `https://www.bedetheque.com/auteur/index/a/${sourceId}`,
-        detail: `/api/comics/bedetheque/${sourceId}`
+        detail: null
       },
       details: {
         resourceType: 'author',

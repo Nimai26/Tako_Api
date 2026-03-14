@@ -236,6 +236,46 @@ export class BedethequeProvider extends BaseProvider {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // ENRICHISSEMENT DES COVERS (via FlareSolverr)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Enrichit les résultats de recherche AJAX avec les images de couverture
+   * en récupérant les pages détail via FlareSolverr (en parallèle)
+   * @param {Array} results - Résultats bruts (avant normalisation)
+   * @param {number} maxEnrich - Nombre max de résultats à enrichir
+   */
+  async enrichWithCovers(results, maxEnrich = 10) {
+    if (!results.length) return results;
+
+    const toEnrich = results.slice(0, maxEnrich);
+
+    this.log.debug(`Enrichissement covers: ${toEnrich.length}/${results.length} résultats`);
+
+    const promises = toEnrich.map(async (item) => {
+      try {
+        if (item.type === 'serie') {
+          const url = `${BEDETHEQUE_BASE_URL}/serie/index/s/${item.id}`;
+          const html = await this.flaresolverrRequest(url);
+          const coverMatch = html.match(/<img[^>]*class="[^"]*couv[^"]*"[^>]*src="([^"]+)"/i) ||
+                            html.match(/property="og:image"[^>]*content="([^"]+)"/i);
+          if (coverMatch) item.coverUrl = coverMatch[1];
+        } else if (item.type === 'author') {
+          const url = `${BEDETHEQUE_BASE_URL}/auteur/index/a/${item.id}`;
+          const html = await this.flaresolverrRequest(url);
+          const photoMatch = html.match(/<img[^>]*class="[^"]*auteur-image[^"]*"[^>]*src="([^"]+)"/i);
+          if (photoMatch) item.image = photoMatch[1];
+        }
+      } catch (err) {
+        this.log.warn(`Enrichissement cover échoué pour ${item.type}/${item.id}: ${err.message}`);
+      }
+    });
+
+    await Promise.allSettled(promises);
+    return results;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // RECHERCHE VIA API AJAX
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -245,7 +285,7 @@ export class BedethequeProvider extends BaseProvider {
    * @param {Object} options - Options
    */
   async search(query, options = {}) {
-    const { maxResults = DEFAULT_MAX_RESULTS, searchType = 'all' } = options;
+    const { maxResults = DEFAULT_MAX_RESULTS, searchType = 'all', enrichCovers = true } = options;
 
     try {
       this.log.debug(`Recherche Bedetheque: "${query}" (type: ${searchType})`);
@@ -256,6 +296,10 @@ export class BedethequeProvider extends BaseProvider {
         // Recherche globale (séries + auteurs)
         const data = await this.ajaxRequest('/ajax/tout', { term: query });
         results = this.parseGlobalResults(data, maxResults);
+        // Enrichir avec les covers via FlareSolverr
+        if (enrichCovers) {
+          await this.enrichWithCovers(results);
+        }
       } else if (searchType === 'series') {
         results = await this.searchSeries(query, options);
         return results; // Déjà normalisé
@@ -312,7 +356,7 @@ export class BedethequeProvider extends BaseProvider {
    * Recherche de séries
    */
   async searchSeries(query, options = {}) {
-    const { maxResults = DEFAULT_MAX_RESULTS } = options;
+    const { maxResults = DEFAULT_MAX_RESULTS, enrichCovers = true } = options;
 
     const data = await this.ajaxRequest('/ajax/series', { term: query });
 
@@ -327,6 +371,11 @@ export class BedethequeProvider extends BaseProvider {
       flag: item.desc ? `${BDGEST_URL}/${item.desc}` : null,
       url: `${BEDETHEQUE_BASE_URL}/serie/index/s/${item.id}`
     }));
+
+    // Enrichir avec les covers via FlareSolverr
+    if (enrichCovers) {
+      await this.enrichWithCovers(results);
+    }
 
     return this.normalizer.normalizeSearchResponse(results, {
       query,
@@ -344,7 +393,7 @@ export class BedethequeProvider extends BaseProvider {
    * Recherche d'auteurs
    */
   async searchAuthors(query, options = {}) {
-    const { maxResults = DEFAULT_MAX_RESULTS } = options;
+    const { maxResults = DEFAULT_MAX_RESULTS, enrichCovers = true } = options;
 
     const data = await this.ajaxRequest('/ajax/auteurs', { term: query });
 
@@ -358,6 +407,11 @@ export class BedethequeProvider extends BaseProvider {
       name: this.decodeUnicode(item.label || item.value || ''),
       url: `${BEDETHEQUE_BASE_URL}/auteur/index/a/${item.id}`
     }));
+
+    // Enrichir avec les photos via FlareSolverr
+    if (enrichCovers) {
+      await this.enrichWithCovers(results);
+    }
 
     return this.normalizer.normalizeSearchResponse(results, {
       query,

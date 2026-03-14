@@ -56,7 +56,7 @@ router.get('/health', asyncHandler(async (req, res) => {
  * - autoTrad : Activer la traduction automatique (1 ou true)
  */
 router.get('/search', asyncHandler(async (req, res) => {
-  const { q, maxResults = '20', lang, autoTrad } = req.query;
+  const { q, maxResults = '20', lang, autoTrad, enrichCovers } = req.query;
 
   if (!q || typeof q !== 'string' || q.trim().length === 0) {
     throw new ValidationError('Le paramètre "q" est requis pour la recherche');
@@ -66,7 +66,8 @@ router.get('/search', asyncHandler(async (req, res) => {
   const targetLang = extractLangCode(lang);
 
   let results = await provider.search(q.trim(), {
-    maxResults: parseInt(maxResults) || 20
+    maxResults: parseInt(maxResults) || 20,
+    enrichCovers: enrichCovers !== '0' && enrichCovers !== 'false'
   });
 
   // Traduction automatique si activée et langue != français
@@ -84,7 +85,7 @@ router.get('/search', asyncHandler(async (req, res) => {
  * Rechercher des séries de BD
  */
 router.get('/search/series', asyncHandler(async (req, res) => {
-  const { q, maxResults = '20', lang, autoTrad } = req.query;
+  const { q, maxResults = '20', lang, autoTrad, enrichCovers } = req.query;
 
   if (!q || typeof q !== 'string' || q.trim().length === 0) {
     throw new ValidationError('Le paramètre "q" est requis pour la recherche');
@@ -94,7 +95,8 @@ router.get('/search/series', asyncHandler(async (req, res) => {
   const targetLang = extractLangCode(lang);
 
   let results = await provider.searchSeries(q.trim(), {
-    maxResults: parseInt(maxResults) || 20
+    maxResults: parseInt(maxResults) || 20,
+    enrichCovers: enrichCovers !== '0' && enrichCovers !== 'false'
   });
 
   if (autoTradEnabled && targetLang && targetLang !== 'fr' && results.data?.length > 0) {
@@ -111,14 +113,15 @@ router.get('/search/series', asyncHandler(async (req, res) => {
  * Rechercher des auteurs
  */
 router.get('/search/authors', asyncHandler(async (req, res) => {
-  const { q, maxResults = '20' } = req.query;
+  const { q, maxResults = '20', enrichCovers } = req.query;
 
   if (!q || typeof q !== 'string' || q.trim().length === 0) {
     throw new ValidationError('Le paramètre "q" est requis pour la recherche');
   }
 
   const results = await provider.searchAuthors(q.trim(), {
-    maxResults: parseInt(maxResults) || 20
+    maxResults: parseInt(maxResults) || 20,
+    enrichCovers: enrichCovers !== '0' && enrichCovers !== 'false'
   });
 
   res.json(results);
