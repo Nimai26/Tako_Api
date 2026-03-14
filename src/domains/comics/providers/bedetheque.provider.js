@@ -652,9 +652,20 @@ export class BedethequeProvider extends BaseProvider {
       type: 'serie'
     };
 
-    // Titre
-    const titleMatch = html.match(/<h1[^>]*>(?:<a[^>]*>)?([^<]+)/i);
-    serie.title = titleMatch ? this.cleanHtml(titleMatch[1]) : null;
+    // Titre — extraire depuis <h1><a>...</a></h1> ou og:title
+    const titleInLink = html.match(/<h1[^>]*>\s*<a[^>]*>([^<]+)<\/a>/i);
+    const titleDirect = html.match(/<h1[^>]*>([^<]+)</i);
+    const ogTitle = html.match(/og:title"[^>]*content="([^"]+)"/i);
+    if (titleInLink) {
+      serie.title = this.cleanHtml(titleInLink[1]);
+    } else if (titleDirect) {
+      serie.title = this.cleanHtml(titleDirect[1]);
+    } else if (ogTitle) {
+      // og:title contient souvent des suffixes comme " - BD, informations, cotes"
+      serie.title = ogTitle[1].replace(/\s*-\s*BD,.*$/, '').trim();
+    } else {
+      serie.title = null;
+    }
 
     // Description
     const descMatch = html.match(/<div[^>]*id="p-serie"[^>]*>([\s\S]*?)<\/div>/i);
@@ -682,9 +693,10 @@ export class BedethequeProvider extends BaseProvider {
   parseSerieAlbums(html, maxResults) {
     const albums = [];
 
-    // Chercher dans la liste des albums
-    // Pattern: <li class="album">...<a href="BD-xxx.html">...</a>...</li>
-    const albumPattern = /href="([^"]*BD-([^-]+)-(?:Tome-(\d+)-)?([^"]*)-(\d+)\.html)"[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"/gi;
+    // Pattern pour les liens BD : BD-{slug complet}-{id}.html
+    // Ex: BD-Wonder-Woman-Deesse-de-la-guerre-Tome-1-Insurrection-269516.html
+    // On capture le slug complet et l'ID numérique final
+    const albumPattern = /href="([^"]*BD-(.+?)-(\d+)\.html)"/gi;
     
     let match;
     const seen = new Set();
@@ -692,23 +704,42 @@ export class BedethequeProvider extends BaseProvider {
     while ((match = albumPattern.exec(html)) !== null && albums.length < maxResults) {
       const fullUrl = match[1];
       const url = fullUrl.startsWith('http') ? fullUrl : `${BEDETHEQUE_BASE_URL}/${fullUrl}`;
-      const serie = match[2];
-      const tome = match[3] || null;
-      const titleSlug = match[4];
-      const id = match[5];
-      const coverUrl = match[6];
+      const slug = match[2];
+      const id = match[3];
 
       // Éviter les doublons
       if (seen.has(id)) continue;
       seen.add(id);
 
-      // Construire le titre depuis le slug
-      let title = titleSlug
-        ? titleSlug.replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
-        : `Album ${id}`;
-      
-      // Capitaliser la première lettre
-      title = title.charAt(0).toUpperCase() + title.slice(1);
+      // Extraire le tome depuis le slug
+      const tomeMatch = slug.match(/Tome-(\d+)/i);
+      const tome = tomeMatch ? tomeMatch[1] : null;
+
+      // Extraire le titre album : partie après "Tome-N-" si présent
+      let title;
+      if (tomeMatch) {
+        const afterTome = slug.replace(/.*Tome-\d+-/i, '');
+        title = afterTome
+          ? afterTome.replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+          : null;
+      } else {
+        // Pas de tome — le slug est série + titre, on prend tout
+        title = slug.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+
+      if (title) {
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+      } else {
+        title = `Album ${id}`;
+      }
+
+      // Chercher l'image de couverture à proximité du lien
+      const contextStart = Math.max(0, match.index - 500);
+      const contextEnd = Math.min(html.length, match.index + match[0].length + 500);
+      const nearby = html.substring(contextStart, contextEnd);
+      const imgMatch = nearby.match(/<img[^>]*src="([^"]*Couv[^"]+)"/i) ||
+                       nearby.match(/<img[^>]*src="([^"]*media[^"]+)"/i);
+      const coverUrl = imgMatch ? imgMatch[1] : null;
 
       albums.push({
         id,
