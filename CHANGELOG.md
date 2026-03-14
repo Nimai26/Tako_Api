@@ -6,7 +6,10 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
+### 🐉 TCG — Traduction descriptions DBS Card Game
 
+#### Fixed
+- **Descriptions non traduites** — Le normalizer DBS n'appelait jamais `translateText` ; les descriptions/skills restaient en anglais même avec `lang=fr`. Ajout du support `autoTrad` pour traduire `description`, `skillText` et `back.skillText` via Google Translate
 ### � TCG — Texte Oracle MTG localisé
 
 #### Fixed
