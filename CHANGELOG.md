@@ -7,6 +7,15 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### 🦇 Comics — Correction URL album Bedetheque + endpoint /detail/:id
+
+#### Fixed
+- **URL album cassée** — `getAlbumDetails` construisait `BD--{id}.html` (double tiret, slug vide) causant une redirection vers un album aléatoire (ex: "Xing et Xot" au lieu de "Wonder Woman"). Ajout d'un paramètre `url` optionnel et validation `og:url`
+- **Validation titre série** — `getSerieDetails` retournait des données vides pour des IDs non-série ; ajout d'un check titre pour déclencher 404
+
+#### Added
+- **`GET /detail/:id`** — Endpoint intelligent qui détecte automatiquement le type (série d'abord, puis album). Supporte `?type=serie|album` pour forcer. Résout l'ambiguïté quand l'app ne connaît pas le type de la ressource
+
 ### 🦇 Comics — Correction parsing Bedetheque
 
 #### Fixed
