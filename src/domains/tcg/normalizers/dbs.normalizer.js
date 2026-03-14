@@ -4,25 +4,42 @@
  */
 
 import { logger } from '../../../shared/utils/logger.js';
+import { translateText } from '../../../shared/utils/translator.js';
 
 /**
  * Normalise les résultats de recherche DBS
  */
 export async function normalizeSearchResults(rawData, options = {}) {
-  const { lang = 'fr' } = options;
+  const { lang = 'fr', autoTrad = false } = options;
 
   if (!rawData || !rawData.results || rawData.results.length === 0) {
     return [];
   }
 
-  return rawData.results.map(card => normalizeCard(card));
+  const cards = rawData.results.map(card => normalizeCard(card));
+
+  // Traduire les descriptions si demandé
+  if (autoTrad && lang !== 'en') {
+    await Promise.all(cards.map(async (card) => {
+      if (card.description) {
+        try {
+          const translated = await translateText(card.description, lang, { enabled: true, sourceLang: 'en' });
+          if (translated.translated) card.description = translated.text;
+        } catch (error) {
+          // Garder la version originale
+        }
+      }
+    }));
+  }
+
+  return cards;
 }
 
 /**
  * Normalise les détails d'une carte DBS
  */
 export async function normalizeCardDetails(rawCard, options = {}) {
-  const { lang = 'fr' } = options;
+  const { lang = 'fr', autoTrad = false } = options;
 
   if (!rawCard) {
     throw new Error('Aucune donnée de carte fournie');
@@ -63,7 +80,7 @@ export async function normalizeCardDetails(rawCard, options = {}) {
   const backCharacter = safeJsonParse(rawCard.card_back_character);
   const backEra = safeJsonParse(rawCard.card_back_era);
 
-  return {
+  const result = {
     ...base,
     description: rawCard.card_skill_text || rawCard.card_skill || null,
     images: {
@@ -106,6 +123,29 @@ export async function normalizeCardDetails(rawCard, options = {}) {
       updatedAt: rawCard.updated_at,
     },
   };
+
+  // Traduire les textes si demandé
+  if (autoTrad && lang !== 'en') {
+    const fieldsToTranslate = [
+      { get: () => result.description, set: (v) => { result.description = v; } },
+      { get: () => result.details.skillText, set: (v) => { result.details.skillText = v; } },
+      { get: () => result.details.back?.skillText, set: (v) => { if (result.details.back) result.details.back.skillText = v; } },
+    ];
+
+    await Promise.all(fieldsToTranslate.map(async ({ get, set }) => {
+      const text = get();
+      if (text) {
+        try {
+          const translated = await translateText(text, lang, { enabled: true, sourceLang: 'en' });
+          if (translated.translated) set(translated.text);
+        } catch (error) {
+          // Garder la version originale
+        }
+      }
+    }));
+  }
+
+  return result;
 }
 
 /**

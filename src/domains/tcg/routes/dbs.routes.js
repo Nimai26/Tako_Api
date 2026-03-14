@@ -49,6 +49,7 @@ router.get('/search', async (req, res) => {
       max = 20,
       page = 1,
       lang = 'fr',
+      autoTrad = false,
     } = req.query;
 
     if (!q) {
@@ -69,7 +70,8 @@ router.get('/search', async (req, res) => {
       page: parseInt(page),
     });
 
-    const normalized = await normalizeSearchResults(rawData, { lang });
+    const isAutoTrad = autoTrad === 'true' || autoTrad === '1' || autoTrad === true;
+    const normalized = await normalizeSearchResults(rawData, { lang, autoTrad: isAutoTrad });
 
     res.json({
       success: true,
@@ -87,6 +89,7 @@ router.get('/search', async (req, res) => {
       meta: {
         fetchedAt: new Date().toISOString(),
         lang,
+        autoTrad: autoTrad === 'true' || autoTrad === '1' || autoTrad === true,
         game: game || 'all',
       },
     });
@@ -112,10 +115,11 @@ router.get('/search', async (req, res) => {
 router.get('/card/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { game, lang = 'fr' } = req.query;
+    const { game, lang = 'fr', autoTrad = false } = req.query;
 
     const rawCard = await getDBSCardDetails(id, { game: game || null });
-    const normalized = await normalizeCardDetails(rawCard, { lang });
+    const isAutoTrad = autoTrad === 'true' || autoTrad === '1' || autoTrad === true;
+    const normalized = await normalizeCardDetails(rawCard, { lang, autoTrad: isAutoTrad });
 
     res.json({
       success: true,
