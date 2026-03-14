@@ -164,7 +164,7 @@ router.get('/search/albums', asyncHandler(async (req, res) => {
  */
 router.get('/album/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { lang, autoTrad } = req.query;
+  const { lang, autoTrad, url: albumUrl } = req.query;
 
   if (!id) {
     throw new ValidationError('L\'ID de l\'album est requis');
@@ -173,7 +173,7 @@ router.get('/album/:id', asyncHandler(async (req, res) => {
   const autoTradEnabled = isAutoTradEnabled({ autoTrad });
   const targetLang = extractLangCode(lang);
 
-  let album = await provider.getAlbumDetails(id);
+  let album = await provider.getAlbumDetails(id, { url: albumUrl });
 
   // Traduction de la description si activée et langue != français
   if (autoTradEnabled && targetLang && targetLang !== 'fr' && album.data?.description) {

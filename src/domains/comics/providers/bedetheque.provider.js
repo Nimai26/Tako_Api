@@ -878,7 +878,7 @@ export class BedethequeProvider extends BaseProvider {
    * Récupère les détails d'un album
    * @param {string} albumId - ID de l'album
    */
-  async getAlbumDetails(albumId) {
+  async getAlbumDetails(albumId, options = {}) {
     try {
       this.log.debug(`Détails album: ${albumId}`);
 
@@ -890,8 +890,22 @@ export class BedethequeProvider extends BaseProvider {
         this.log.debug(`Résumé AJAX non disponible: ${e.message}`);
       }
 
-      // Charger la page de l'album via FlareSolverr
-      const url = `${BEDETHEQUE_BASE_URL}/BD--${albumId}.html`;
+      // Déterminer l'URL de la page album
+      // Bedetheque n'a pas d'URL courte pour les albums (contrairement aux séries)
+      // Le format est BD-{slug}-{id}.html — le slug est nécessaire
+      let url;
+      if (options.url) {
+        // URL fournie par le client (provenant de la liste d'albums)
+        url = options.url;
+      } else {
+        // Fallback: essayer la recherche via FlareSolverr
+        url = await this.findAlbumUrl(albumId);
+      }
+
+      if (!url) {
+        throw new NotFoundError(`Album ${albumId} non trouvé — passez le paramètre url pour accéder à cet album`);
+      }
+
       const html = await this.flaresolverrRequest(url);
 
       // Vérifier si la page existe
@@ -899,7 +913,14 @@ export class BedethequeProvider extends BaseProvider {
         throw new NotFoundError(`Album ${albumId} non trouvé`);
       }
 
-      const album = this.parseAlbumDetails(html, albumId, url);
+      // Valider que la page correspond bien à l'album demandé
+      const ogUrl = html.match(/property="og:url"[^>]*content="([^"]+)"/i);
+      if (ogUrl && !ogUrl[1].includes(`-${albumId}.html`)) {
+        this.log.warn(`URL mismatch: demandé ${albumId}, page réelle ${ogUrl[1]}`);
+        throw new NotFoundError(`Album ${albumId} non trouvé`);
+      }
+
+      const album = this.parseAlbumDetails(html, albumId, ogUrl ? ogUrl[1] : url);
 
       // Ajouter le résumé AJAX s'il est disponible
       if (resume && typeof resume === 'string') {
@@ -911,6 +932,32 @@ export class BedethequeProvider extends BaseProvider {
       if (error.name === 'NotFoundError') throw error;
       this.log.error(`Erreur détails album: ${error.message}`);
       throw new BadGatewayError(`Erreur Bedetheque: ${error.message}`);
+    }
+  }
+
+  /**
+   * Cherche l'URL d'un album par son ID via la page de recherche
+   * @param {string} albumId - ID numérique de l'album
+   * @returns {string|null} URL complète ou null
+   */
+  async findAlbumUrl(albumId) {
+    try {
+      // Tenter de résoudre l'URL via le site Bedetheque
+      // Le pattern BD--{id}.html redirige parfois correctement pour les vrais album IDs
+      const testUrl = `${BEDETHEQUE_BASE_URL}/BD--${albumId}.html`;
+      const html = await this.flaresolverrRequest(testUrl);
+
+      // Vérifier que la page obtenue correspond bien à notre album
+      const ogUrl = html.match(/property="og:url"[^>]*content="([^"]+)"/i);
+      if (ogUrl && ogUrl[1].includes(`-${albumId}.html`)) {
+        return ogUrl[1];
+      }
+
+      this.log.debug(`findAlbumUrl: BD--${albumId}.html n'a pas résolu vers le bon album`);
+      return null;
+    } catch (e) {
+      this.log.debug(`findAlbumUrl: échec pour ${albumId}: ${e.message}`);
+      return null;
     }
   }
 
