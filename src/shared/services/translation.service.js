@@ -19,10 +19,10 @@ const log = createLogger('TranslationService');
 
 // Configuration
 const MAX_CHUNK_LENGTH = 500;  // Longueur max d'un chunk (comme auto_trad)
-const MAX_CONCURRENT = 1;      // Séquentiel pour éviter rate-limit Google
+const MAX_CONCURRENT = 10;     // Parallélisation (googleapis.com tolère bien la concurrence)
 const MAX_RETRIES = 3;         // Nombre de retry en cas d'erreur
 const RETRY_DELAY_MS = 1500;   // Délai entre les retry (augmenté)
-const INTER_REQUEST_DELAY = 300; // Délai entre chaque requête (ms)
+const INTER_REQUEST_DELAY = 100; // Délai entre chaque requête (ms)
 
 // Sémaphore simple pour limiter la concurrence
 class Semaphore {
@@ -146,9 +146,6 @@ async function translateChunk(chunk, destLang = 'fr') {
 
       semaphore.release();
 
-      // Petit délai entre requêtes pour éviter rate-limit
-      await sleep(INTER_REQUEST_DELAY);
-
       return {
         text: result.text,
         from: result.from?.language?.iso || null
@@ -204,21 +201,15 @@ export async function translateText(text, destLang = 'fr') {
     };
   }
 
-  // Traduire les chunks séquentiellement pour éviter le rate-limit Google
+  // Traduire les chunks (le sémaphore global gère la concurrence)
   log.debug(`Traduction de ${chunks.length} chunks vers ${destLang}`);
   
-  const translatedChunks = [];
-  let sourceLang = null;
+  const results = await Promise.all(
+    chunks.map(chunk => translateChunk(chunk, destLang))
+  );
   
-  for (const chunk of chunks) {
-    const result = await translateChunk(chunk, destLang);
-    translatedChunks.push(result.text);
-    if (!sourceLang && result.from) {
-      sourceLang = result.from;
-    }
-  }
-
-  const translatedText = translatedChunks.join(' ');
+  const translatedText = results.map(r => r.text).join(' ');
+  const sourceLang = results.find(r => r.from)?.from || null;
 
   return {
     original: text,
